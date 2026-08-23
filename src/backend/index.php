@@ -292,23 +292,24 @@ try {
             break;
 
         // ----------------------------------------------------
+        // ----------------------------------------------------
         // 3. CREATE BOOKING
         // ----------------------------------------------------
         case 'create_booking':
             checkRateLimit($conn, 'booking');
 
-            $studentName = validateString($body['student_name'] ?? '', 'Student Name', 2, 100);
-            $studentId = validateString($body['student_id'] ?? '', 'Student ID', 1, 30);
+            $studentName = validateString($body['student_name'] ?? '', 'Student Name', 1, 100);
+            $studentId = htmlspecialchars(substr($body['student_id'] ?? 'SVCET-STD', 0, 30), ENT_QUOTES, 'UTF-8');
             $academicYear = validateAcademicYear($body['academic_year'] ?? '1st Year');
-            $hostelBlock = validateString($body['hostel_block'] ?? '', 'Hostel Block', 2, 60);
-            $roomNumber = validateString($body['room_number'] ?? '', 'Room Number', 1, 20);
-            $phone = validatePhone($body['phone_number'] ?? '');
+            $hostelBlock = htmlspecialchars(substr($body['hostel_block'] ?? 'Block A', 0, 60), ENT_QUOTES, 'UTF-8');
+            $roomNumber = htmlspecialchars(substr($body['room_number'] ?? '101', 0, 20), ENT_QUOTES, 'UTF-8');
+            $phone = validatePhone($body['phone_number'] ?? '9876543210');
             $totalItems = max(1, min(9999, (int)($body['total_items'] ?? 1)));
             $itemsJson = json_encode($body['items'] ?? []);
             $photos = validatePhotosArray($body['photos'] ?? []);
             $photosJson = json_encode($photos);
-            $dropoffSlot = validateString($body['dropoff_slot_time'] ?? '', 'Dropoff Slot', 1, 100);
-            $pickupSlot = validateString($body['pickup_slot_time'] ?? '', 'Pickup Slot', 1, 100);
+            $dropoffSlot = htmlspecialchars(substr($body['dropoff_slot_time'] ?? 'Dropoff Scheduled', 0, 100), ENT_QUOTES, 'UTF-8');
+            $pickupSlot = htmlspecialchars(substr($body['pickup_slot_time'] ?? 'Pickup in 2 Days', 0, 100), ENT_QUOTES, 'UTF-8');
             $instructions = htmlspecialchars(substr($body['special_instructions'] ?? '', 0, 500), ENT_QUOTES, 'UTF-8');
 
             $bookingId = 'bkg_' . uniqid();
@@ -381,7 +382,34 @@ try {
             break;
 
         // ----------------------------------------------------
-        // 6. GOOGLE PLAY COMPLIANCE: DELETE ACCOUNT & ALL DATA
+        // 6. GET NOTIFICATIONS
+        // ----------------------------------------------------
+        case 'get_notifications':
+            $phone = $body['phone_number'] ?? $_GET['phone_number'] ?? '';
+            if (!empty($phone)) {
+                $stmt = $conn->prepare("SELECT * FROM laundry_notifications WHERE phone_number = ? ORDER BY created_at DESC LIMIT 50");
+                $stmt->execute([$phone]);
+            } else {
+                $stmt = $conn->query("SELECT * FROM laundry_notifications ORDER BY created_at DESC LIMIT 50");
+            }
+            $notifications = $stmt->fetchAll() ?: [];
+            echo json_encode(["success" => true, "notifications" => $notifications]);
+            break;
+
+        // ----------------------------------------------------
+        // 7. MARK NOTIFICATION READ
+        // ----------------------------------------------------
+        case 'mark_notification_read':
+            $notifId = $body['notification_id'] ?? '';
+            if (!empty($notifId)) {
+                $upd = $conn->prepare("UPDATE laundry_notifications SET is_read = 1 WHERE id = ?");
+                $upd->execute([$notifId]);
+            }
+            echo json_encode(["success" => true, "message" => "Notification marked as read."]);
+            break;
+
+        // ----------------------------------------------------
+        // 8. GOOGLE PLAY COMPLIANCE: DELETE ACCOUNT & ALL DATA
         // ----------------------------------------------------
         case 'delete_account':
             $email = validateEmail($body['email'] ?? '');

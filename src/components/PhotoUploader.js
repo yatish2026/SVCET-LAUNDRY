@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
+  Image as RNImage,
   ScrollView,
   StyleSheet,
   Alert,
@@ -16,9 +16,9 @@ import THEME from '../constants/theme';
 // Helper function to compress ANY image to a tiny thumbnail (~20KB)
 const compressImageUri = (uri) => {
   return new Promise((resolve) => {
-    if (typeof document !== 'undefined') {
+    if (typeof document !== 'undefined' && document.createElement) {
       try {
-        const img = new window.Image();
+        const img = document.createElement('img');
         img.crossOrigin = 'anonymous';
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -214,7 +214,7 @@ export const PhotoUploader = ({
         >
           {photos.map((photo, index) => (
             <View key={index} style={styles.thumbnailWrap}>
-              <Image source={{ uri: photo.uri }} style={styles.thumbnail} resizeMode="cover" />
+              <RNImage source={{ uri: photo.uri }} style={styles.thumbnail} resizeMode="cover" />
               <TouchableOpacity
                 style={styles.removeBtn}
                 onPress={() => removePhoto(index)}
