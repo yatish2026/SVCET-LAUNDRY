@@ -90,7 +90,7 @@ export const NewBookingScreen = ({ onBack, onBookingCreated }) => {
     try {
       const newBooking = await createBooking({
         student_name: studentName,
-        student_id: studentRollNo,
+        student_id: studentRollNo || 'SVCET-STD',
         academic_year: studentYear,
         hostel_block: studentBlock,
         room_number: studentRoom,
@@ -98,6 +98,9 @@ export const NewBookingScreen = ({ onBack, onBookingCreated }) => {
         items: selectedItems,
         total_items: totalItemsCount,
         photos: photos.map((p) => p.base64 || p.uri),
+        dropoff_slot_time: `${yearConfig.dropoffDay} (${yearConfig.dropoffSlot})`,
+        pickup_slot_time: `${yearConfig.pickupDay} (Guaranteed Pickup after 2 days)`,
+        counter_number: 'Counter 1',
         special_instructions: specialInstructions.trim(),
       });
 

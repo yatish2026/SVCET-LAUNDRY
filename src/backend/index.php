@@ -298,18 +298,18 @@ try {
         case 'create_booking':
             checkRateLimit($conn, 'booking');
 
-            $studentName = validateString($body['student_name'] ?? '', 'Student Name', 1, 100);
+            $studentName = !empty($body['student_name']) ? htmlspecialchars(substr($body['student_name'], 0, 100), ENT_QUOTES, 'UTF-8') : 'Student';
             $studentId = htmlspecialchars(substr($body['student_id'] ?? 'SVCET-STD', 0, 30), ENT_QUOTES, 'UTF-8');
-            $academicYear = validateAcademicYear($body['academic_year'] ?? '1st Year');
+            $academicYear = in_array($body['academic_year'] ?? '', ['1st Year', '2nd Year', '3rd Year', '4th Year']) ? $body['academic_year'] : '1st Year';
             $hostelBlock = htmlspecialchars(substr($body['hostel_block'] ?? 'Block A', 0, 60), ENT_QUOTES, 'UTF-8');
             $roomNumber = htmlspecialchars(substr($body['room_number'] ?? '101', 0, 20), ENT_QUOTES, 'UTF-8');
-            $phone = validatePhone($body['phone_number'] ?? '9876543210');
+            $phone = !empty($body['phone_number']) ? htmlspecialchars(substr(preg_replace('/[^0-9+]/', '', $body['phone_number']), 0, 20), ENT_QUOTES, 'UTF-8') : '9876543210';
             $totalItems = max(1, min(9999, (int)($body['total_items'] ?? 1)));
             $itemsJson = json_encode($body['items'] ?? []);
             $photos = validatePhotosArray($body['photos'] ?? []);
             $photosJson = json_encode($photos);
-            $dropoffSlot = htmlspecialchars(substr($body['dropoff_slot_time'] ?? 'Dropoff Scheduled', 0, 100), ENT_QUOTES, 'UTF-8');
-            $pickupSlot = htmlspecialchars(substr($body['pickup_slot_time'] ?? 'Pickup in 2 Days', 0, 100), ENT_QUOTES, 'UTF-8');
+            $dropoffSlot = !empty($body['dropoff_slot_time']) ? htmlspecialchars(substr($body['dropoff_slot_time'], 0, 100), ENT_QUOTES, 'UTF-8') : 'Dropoff Scheduled';
+            $pickupSlot = !empty($body['pickup_slot_time']) ? htmlspecialchars(substr($body['pickup_slot_time'], 0, 100), ENT_QUOTES, 'UTF-8') : 'Pickup in 2 Days';
             $instructions = htmlspecialchars(substr($body['special_instructions'] ?? '', 0, 500), ENT_QUOTES, 'UTF-8');
 
             $bookingId = 'bkg_' . uniqid();
