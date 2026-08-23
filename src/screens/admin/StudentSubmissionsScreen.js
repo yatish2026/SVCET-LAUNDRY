@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
+  Image,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
@@ -26,6 +28,7 @@ export const StudentSubmissionsScreen = ({ onSelectBooking }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYearFilter, setSelectedYearFilter] = useState('ALL');
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const [previewPhotoUri, setPreviewPhotoUri] = useState(null);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -188,6 +191,35 @@ export const StudentSubmissionsScreen = ({ onSelectBooking }) => {
                       Collect: {b.pickup_slot_time?.split('(')[0]}
                     </Text>
                   </View>
+
+                  {/* 📸 Attached Photos Strip */}
+                  {(() => {
+                    const rawPhotos = b.photos || [];
+                    const photosList = Array.isArray(rawPhotos)
+                      ? rawPhotos
+                      : typeof rawPhotos === 'string'
+                      ? JSON.parse(rawPhotos || '[]')
+                      : [];
+
+                    if (photosList.length === 0) return null;
+
+                    return (
+                      <View style={styles.cardPhotosStrip}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                          {photosList.map((pUri, pIdx) => (
+                            <TouchableOpacity
+                              key={pIdx}
+                              style={styles.cardPhotoThumbWrap}
+                              onPress={() => setPreviewPhotoUri(pUri)}
+                              activeOpacity={0.8}
+                            >
+                              <Image source={{ uri: pUri }} style={styles.cardPhotoThumb} resizeMode="cover" />
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    );
+                  })()}
                 </TouchableOpacity>
 
                 {/* Clean Checklist Button */}
@@ -213,6 +245,35 @@ export const StudentSubmissionsScreen = ({ onSelectBooking }) => {
         visible={showQRScanner}
         onClose={() => setShowQRScanner(false)}
       />
+
+      {/* 🖼️ Full Screen Photo Zoom Modal */}
+      <Modal
+        visible={!!previewPhotoUri}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewPhotoUri(null)}
+      >
+        <View style={styles.photoModalOverlay}>
+          <View style={styles.photoModalCard}>
+            <View style={styles.photoModalHeader}>
+              <Text style={styles.photoModalTitle}>Clothes Photo Preview</Text>
+              <TouchableOpacity
+                style={styles.photoModalCloseBtn}
+                onPress={() => setPreviewPhotoUri(null)}
+              >
+                <Ionicons name="close" size={22} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            {previewPhotoUri && (
+              <Image
+                source={{ uri: previewPhotoUri }}
+                style={styles.photoModalImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -409,6 +470,61 @@ const styles = StyleSheet.create({
     color: '#1D4ED8',
     fontSize: 12,
     fontWeight: '800',
+  },
+  cardPhotosStrip: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  cardPhotoThumbWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    marginRight: 8,
+    backgroundColor: '#F8FAFC',
+  },
+  cardPhotoThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  photoModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  photoModalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#1E293B',
+    borderRadius: 24,
+    overflow: 'hidden',
+    padding: 16,
+  },
+  photoModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  photoModalTitle: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  photoModalCloseBtn: {
+    padding: 4,
+  },
+  photoModalImage: {
+    width: '100%',
+    height: 380,
+    borderRadius: 16,
+    backgroundColor: '#0F172A',
   },
 });
 

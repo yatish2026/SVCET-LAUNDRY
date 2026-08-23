@@ -77,17 +77,22 @@ export const PhotoUploader = ({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
-        quality: 0.3,
-        base64: false, // Don't create huge raw base64; we compress via canvas
+        quality: 0.25,
+        base64: true,
       });
 
       if (!result.canceled && result.assets) {
         const processedList = await Promise.all(
           result.assets.map(async (asset) => {
-            const compressed = await compressImageUri(asset.uri);
+            let dataUri = '';
+            if (asset.base64) {
+              dataUri = `data:image/jpeg;base64,${asset.base64}`;
+            } else {
+              dataUri = await compressImageUri(asset.uri);
+            }
             return {
-              uri: asset.uri,
-              base64: compressed, // Always use the lightweight 20KB compressed version
+              uri: dataUri || asset.uri,
+              base64: dataUri || asset.uri,
             };
           })
         );
@@ -115,16 +120,21 @@ export const PhotoUploader = ({
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
-        quality: 0.3,
-        base64: false,
+        quality: 0.25,
+        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
-        const compressed = await compressImageUri(asset.uri);
+        let dataUri = '';
+        if (asset.base64) {
+          dataUri = `data:image/jpeg;base64,${asset.base64}`;
+        } else {
+          dataUri = await compressImageUri(asset.uri);
+        }
         const newPhoto = {
-          uri: asset.uri,
-          base64: compressed,
+          uri: dataUri || asset.uri,
+          base64: dataUri || asset.uri,
         };
 
         onPhotosChange([...photos, newPhoto]);

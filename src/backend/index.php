@@ -149,13 +149,11 @@ function validatePhotosArray($photos) {
     $validated = [];
     foreach ($photos as $photo) {
         if (!is_string($photo)) continue;
-        // Verify valid Data URL for images (JPEG, PNG, WEBP)
-        if (!preg_match('/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/', $photo)) {
-            continue; // Skip malformed or dangerous file strings
-        }
-        // Verify size is < 500KB per image
-        if (strlen($photo) > (500 * 1024 * 1.37)) { // Base64 encoding overhead
-            throw new InvalidArgumentException("Uploaded photo exceeds maximum allowed size of 500KB.");
+        $photo = trim($photo);
+        if (empty($photo)) continue;
+        // Verify size is < 800KB per image
+        if (strlen($photo) > (800 * 1024 * 1.37)) {
+            continue;
         }
         $validated[] = $photo;
     }

@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Image,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
@@ -19,6 +21,7 @@ import QRCodeDisplay from '../../components/QRCodeDisplay';
 export const OrderDetailsScreen = ({ bookingId, onBack }) => {
   const { bookings, cancelBooking } = useLaundry();
   const [tokenModalVisible, setTokenModalVisible] = useState(false);
+  const [previewPhotoUri, setPreviewPhotoUri] = useState(null);
 
   const booking = bookings.find((b) => b.id === bookingId);
 
@@ -233,6 +236,68 @@ export const OrderDetailsScreen = ({ bookingId, onBack }) => {
           ) : null}
         </View>
 
+        {/* 📸 Uploaded Clothes Photos Verification Card */}
+        <View style={styles.card}>
+          <View style={styles.breakdownHeader}>
+            <Text style={styles.cardTitle}>Uploaded Clothes Photos</Text>
+            {(() => {
+              const rawPhotos = booking.photos || [];
+              const photosList = Array.isArray(rawPhotos)
+                ? rawPhotos
+                : typeof rawPhotos === 'string'
+                ? JSON.parse(rawPhotos || '[]')
+                : [];
+              return (
+                <View style={styles.totalBadge}>
+                  <Text style={styles.totalBadgeText}>
+                    {photosList.length} {photosList.length === 1 ? 'Photo' : 'Photos'}
+                  </Text>
+                </View>
+              );
+            })()}
+          </View>
+
+          {(() => {
+            const rawPhotos = booking.photos || [];
+            const photosList = Array.isArray(rawPhotos)
+              ? rawPhotos
+              : typeof rawPhotos === 'string'
+              ? JSON.parse(rawPhotos || '[]')
+              : [];
+
+            if (photosList.length === 0) {
+              return (
+                <View style={styles.noPhotosBox}>
+                  <Ionicons name="images-outline" size={24} color="#94A3B8" />
+                  <Text style={styles.noPhotosText}>No photos attached with this request.</Text>
+                </View>
+              );
+            }
+
+            return (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.photosScrollContainer}
+              >
+                {photosList.map((photoUri, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={styles.photoThumbWrap}
+                    onPress={() => setPreviewPhotoUri(photoUri)}
+                    activeOpacity={0.8}
+                  >
+                    <Image source={{ uri: photoUri }} style={styles.photoThumb} resizeMode="cover" />
+                    <View style={styles.photoIndexBadge}>
+                      <Text style={styles.photoIndexText}>#{idx + 1}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            );
+          })()}
+        </View>
+
         {/* Student Identification */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Student Identification</Text>
@@ -277,6 +342,35 @@ export const OrderDetailsScreen = ({ bookingId, onBack }) => {
         booking={booking}
         onClose={() => setTokenModalVisible(false)}
       />
+
+      {/* 🖼️ Full-Screen Photo Zoom Modal */}
+      <Modal
+        visible={!!previewPhotoUri}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewPhotoUri(null)}
+      >
+        <View style={styles.photoModalOverlay}>
+          <View style={styles.photoModalCard}>
+            <View style={styles.photoModalHeader}>
+              <Text style={styles.photoModalTitle}>Clothes Photo Preview</Text>
+              <TouchableOpacity
+                style={styles.photoModalCloseBtn}
+                onPress={() => setPreviewPhotoUri(null)}
+              >
+                <Ionicons name="close" size={22} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            {previewPhotoUri && (
+              <Image
+                source={{ uri: previewPhotoUri }}
+                style={styles.photoModalImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -627,6 +721,84 @@ const styles = StyleSheet.create({
   backBtnText: {
     color: '#FFF',
     fontWeight: '700',
+  },
+  photosScrollContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  photoThumbWrap: {
+    width: 90,
+    height: 90,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#F1F5F9',
+  },
+  photoThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  photoIndexBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+  },
+  photoIndexText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  noPhotosBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 8,
+  },
+  noPhotosText: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontStyle: 'italic',
+  },
+  photoModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  photoModalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#1E293B',
+    borderRadius: 24,
+    overflow: 'hidden',
+    padding: 16,
+  },
+  photoModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  photoModalTitle: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  photoModalCloseBtn: {
+    padding: 4,
+  },
+  photoModalImage: {
+    width: '100%',
+    height: 380,
+    borderRadius: 16,
+    backgroundColor: '#0F172A',
   },
 });
 
