@@ -12,6 +12,7 @@ import THEME from '../../constants/theme';
 import { useLaundry } from '../../context/LaundryContext';
 import { useAuth } from '../../context/AuthContext';
 import { ACADEMIC_YEARS, getYearConfig } from '../../constants/schedule';
+import QRScannerModal from '../../components/QRScannerModal';
 
 export const AdminDashboardScreen = ({
   onNavigateToApprovals,
@@ -27,6 +28,7 @@ export const AdminDashboardScreen = ({
   } = useLaundry();
 
   const [refreshing, setRefreshing] = React.useState(false);
+  const [showQRScanner, setShowQRScanner] = React.useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -76,15 +78,22 @@ export const AdminDashboardScreen = ({
 
         <View style={styles.cardDivider} />
 
+        {/* 📷 Scan Student Pickup QR Button */}
         <TouchableOpacity
-          style={styles.viewScheduleRow}
-          onPress={onNavigateToReports}
-          activeOpacity={0.7}
+          style={styles.scanQrActionBtn}
+          onPress={() => setShowQRScanner(true)}
+          activeOpacity={0.85}
         >
-          <Text style={styles.viewScheduleText}>
-            📊 Campus Laundry Overview ({bookings.length} Total Submissions)
-          </Text>
-          <Ionicons name="chevron-forward" size={18} color="#4338CA" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={styles.scanQrIconCircle}>
+              <Ionicons name="qr-code" size={20} color="#FFF" />
+            </View>
+            <View>
+              <Text style={styles.scanQrBtnTitle}>Scan Student Pickup QR</Text>
+              <Text style={styles.scanQrBtnSub}>Instant counter verification & handover</Text>
+            </View>
+          </View>
+          <Ionicons name="scan-outline" size={22} color="#4338CA" />
         </TouchableOpacity>
       </View>
 
@@ -268,6 +277,12 @@ export const AdminDashboardScreen = ({
           );
         })}
       </View>
+
+      {/* QR Scanner Modal for Handover */}
+      <QRScannerModal
+        visible={showQRScanner}
+        onClose={() => setShowQRScanner(false)}
+      />
     </ScrollView>
   );
 };
@@ -287,9 +302,38 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    marginBottom: 20,
-    overflow: 'hidden',
     ...THEME.shadows.md,
+    marginBottom: 20,
+  },
+  scanQrActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#C7D2FE',
+  },
+  scanQrIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#4338CA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanQrBtnTitle: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#1E1B4B',
+  },
+  scanQrBtnSub: {
+    fontSize: 10.5,
+    color: '#4338CA',
+    fontWeight: '600',
+    marginTop: 1,
   },
   greetingTopRow: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,12 +12,14 @@
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
+
         body {
             background-color: #F8FAFC;
             color: #1E293B;
             line-height: 1.6;
             padding: 24px 16px;
         }
+
         .container {
             max-width: 760px;
             margin: 0 auto;
@@ -26,11 +29,13 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             border: 1px solid #E2E8F0;
         }
+
         .header {
             border-bottom: 2px solid #F1F5F9;
             padding-bottom: 20px;
             margin-bottom: 24px;
         }
+
         .badge {
             display: inline-block;
             background: #EEF2FF;
@@ -42,16 +47,19 @@
             margin-bottom: 10px;
             letter-spacing: 0.5px;
         }
+
         h1 {
             font-size: 26px;
             font-weight: 900;
             color: #0F172A;
             margin-bottom: 6px;
         }
+
         .subtitle {
             font-size: 13px;
             color: #64748B;
         }
+
         h2 {
             font-size: 17px;
             font-weight: 800;
@@ -59,18 +67,23 @@
             margin-top: 24px;
             margin-bottom: 10px;
         }
-        p, li {
+
+        p,
+        li {
             font-size: 14px;
             color: #475569;
             margin-bottom: 12px;
         }
+
         ul {
             padding-left: 20px;
             margin-bottom: 14px;
         }
+
         li {
             margin-bottom: 6px;
         }
+
         .callout {
             background: #F0FDF4;
             border-left: 4px solid #16A34A;
@@ -78,12 +91,14 @@
             border-radius: 8px;
             margin: 16px 0;
         }
+
         .callout p {
             color: #166534;
             font-size: 13px;
             margin: 0;
             font-weight: 600;
         }
+
         .footer {
             border-top: 1px solid #F1F5F9;
             padding-top: 20px;
@@ -94,81 +109,100 @@
         }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <div class="header">
-        <span class="badge">GOOGLE PLAY COMPLIANT</span>
-        <h1>Privacy Policy & Data Safety</h1>
-        <div class="subtitle">SVCET CampusWash • Sri Venkateswara College of Engineering & Technology</div>
-        <div class="subtitle" style="margin-top: 4px;">Last Updated: August 23, 2026</div>
+    <div class="container">
+        <div class="header">
+            <span class="badge">GOOGLE PLAY COMPLIANT</span>
+            <h1>Privacy Policy & Data Safety</h1>
+            <div class="subtitle">SVCET CampusWash • Sri Venkateswara College of Engineering & Technology</div>
+            <div class="subtitle" style="margin-top: 4px;">Last Updated: August 23, 2026</div>
+        </div>
+
+        <h2>1. Introduction</h2>
+        <p>
+            Welcome to <strong>SVCET CampusWash</strong> ("we", "our", or "the App"). This Privacy Policy explains how
+            our smart hostel laundry application collects, uses, and safeguards information provided by students and
+            college staff of Sri Venkateswara College of Engineering and Technology (SVCET).
+        </p>
+
+        <h2>2. Information We Collect</h2>
+        <p>We collect only the minimum information necessary to schedule, process, track, and return hostel laundry
+            bags:</p>
+        <ul>
+            <li><strong>Identity & Hostel Information:</strong> Full Name, Student Roll Number / ID, Academic Year (1st,
+                2nd, 3rd, 4th Year), Hostel Block name, and Room Number.</li>
+            <li><strong>Contact Details:</strong> Mobile Phone Number used strictly for sending real-time SMS / in-app
+                ready-for-pickup notifications.</li>
+            <li><strong>Clothes Intake Verification Photos:</strong> Images of clothing items captured or selected by
+                students to verify piece counts during counter drop-off.</li>
+        </ul>
+
+        <div class="callout">
+            <p>🔒 Photo Data Safety: Uploaded photos are automatically compressed on-device into lightweight thumbnails
+                (&lt;30 KB). They are never analyzed for biometric data and are never shared with external third
+                parties.</p>
+        </div>
+
+        <h2>3. How We Use Your Information</h2>
+        <ul>
+            <li>To assign designated weekly drop-off and pickup dates according to academic year schedules.</li>
+            <li>To generate unique numeric Pickup Tokens (e.g., <code>#LND-XXXX</code>) for secure counter clothes
+                collection.</li>
+            <li>To allow hostel staff to cross-verify physical clothes bags with student digital checklists.</li>
+            <li>To notify students when laundry transitions to <em>Ready for Pickup</em>.</li>
+        </ul>
+
+        <h2>4. Data Storage & Encryption</h2>
+        <p>
+            All communications between the mobile application and our cloud servers are encrypted in transit using
+            industry-standard <strong>HTTPS / TLS 1.3 encryption</strong>. Personal records are stored in secure,
+            access-controlled MySQL databases.
+        </p>
+
+        <h2>5. Third-Party Sharing & Advertising</h2>
+        <p>
+            <strong>Zero Third-Party Sharing:</strong> We do not sell, rent, or trade student personal information to
+            advertisers, tracking networks, or commercial third parties. The app contains <strong>no
+                advertisements</strong>.
+        </p>
+
+        <h2>6. Permissions Requested</h2>
+        <ul>
+            <li><code>CAMERA</code>: Used optionally when the user chooses to snap photos of their clothes bag directly
+                inside the app.</li>
+            <li><code>READ_EXTERNAL_STORAGE</code>: Used optionally to select photos from the device gallery.</li>
+        </ul>
+
+        <h2>7. User Rights & Account / Data Deletion</h2>
+        <p>
+            In strict adherence to Google Play Developer policies, any student or staff member may request the complete,
+            permanent deletion of their account and all associated booking history and photos:
+        </p>
+        <ul>
+            <li><strong>In-App Deletion:</strong> Open the App &rarr; Navigate to <em>Profile</em> &rarr; Tap
+                <em>"Request Account & Data Deletion"</em>.</li>
+            <li><strong>Administrative Request:</strong> Contact the campus hostel administration or email
+                <code>laundry-support@svcet.edu.in</code> with your registered phone number.</li>
+        </ul>
+
+        <h2>8. Contact & Administration</h2>
+        <p>
+            For inquiries or support regarding this Privacy Policy or hostel laundry operations, please reach out to:
+        </p>
+        <p>
+            <strong>Hostel Laundry Administration</strong><br>
+            Sri Venkateswara College of Engineering and Technology (SVCET)<br>
+            Email: <code>22781A1234@svcet.edu.in</code><br>
+            Office: Hostel Office Counter 1 & 2, SVCET Campus
+        </p>
+
+        <div class="footer">
+            &copy; 2026 Sri Venkateswara College of Engineering and Technology. All rights reserved.
+        </div>
     </div>
-
-    <h2>1. Introduction</h2>
-    <p>
-        Welcome to <strong>SVCET CampusWash</strong> ("we", "our", or "the App"). This Privacy Policy explains how our smart hostel laundry application collects, uses, and safeguards information provided by students and college staff of Sri Venkateswara College of Engineering and Technology (SVCET).
-    </p>
-
-    <h2>2. Information We Collect</h2>
-    <p>We collect only the minimum information necessary to schedule, process, track, and return hostel laundry bags:</p>
-    <ul>
-        <li><strong>Identity & Hostel Information:</strong> Full Name, Student Roll Number / ID, Academic Year (1st, 2nd, 3rd, 4th Year), Hostel Block name, and Room Number.</li>
-        <li><strong>Contact Details:</strong> Mobile Phone Number used strictly for sending real-time SMS / in-app ready-for-pickup notifications.</li>
-        <li><strong>Clothes Intake Verification Photos:</strong> Images of clothing items captured or selected by students to verify piece counts during counter drop-off.</li>
-    </ul>
-
-    <div class="callout">
-        <p>🔒 Photo Data Safety: Uploaded photos are automatically compressed on-device into lightweight thumbnails (&lt;30 KB). They are never analyzed for biometric data and are never shared with external third parties.</p>
-    </div>
-
-    <h2>3. How We Use Your Information</h2>
-    <ul>
-        <li>To assign designated weekly drop-off and pickup dates according to academic year schedules.</li>
-        <li>To generate unique numeric Pickup Tokens (e.g., <code>#LND-XXXX</code>) for secure counter clothes collection.</li>
-        <li>To allow hostel staff to cross-verify physical clothes bags with student digital checklists.</li>
-        <li>To notify students when laundry transitions to <em>Ready for Pickup</em>.</li>
-    </ul>
-
-    <h2>4. Data Storage & Encryption</h2>
-    <p>
-        All communications between the mobile application and our cloud servers are encrypted in transit using industry-standard <strong>HTTPS / TLS 1.3 encryption</strong>. Personal records are stored in secure, access-controlled MySQL databases.
-    </p>
-
-    <h2>5. Third-Party Sharing & Advertising</h2>
-    <p>
-        <strong>Zero Third-Party Sharing:</strong> We do not sell, rent, or trade student personal information to advertisers, tracking networks, or commercial third parties. The app contains <strong>no advertisements</strong>.
-    </p>
-
-    <h2>6. Permissions Requested</h2>
-    <ul>
-        <li><code>CAMERA</code>: Used optionally when the user chooses to snap photos of their clothes bag directly inside the app.</li>
-        <li><code>READ_EXTERNAL_STORAGE</code>: Used optionally to select photos from the device gallery.</li>
-    </ul>
-
-    <h2>7. User Rights & Account / Data Deletion</h2>
-    <p>
-        In strict adherence to Google Play Developer policies, any student or staff member may request the complete, permanent deletion of their account and all associated booking history and photos:
-    </p>
-    <ul>
-        <li><strong>In-App Deletion:</strong> Open the App &rarr; Navigate to <em>Profile</em> &rarr; Tap <em>"Request Account & Data Deletion"</em>.</li>
-        <li><strong>Administrative Request:</strong> Contact the campus hostel administration or email <code>laundry-support@svcet.edu.in</code> with your registered phone number.</li>
-    </ul>
-
-    <h2>8. Contact & Administration</h2>
-    <p>
-        For inquiries or support regarding this Privacy Policy or hostel laundry operations, please reach out to:
-    </p>
-    <p>
-        <strong>Hostel Laundry Administration</strong><br>
-        Sri Venkateswara College of Engineering and Technology (SVCET)<br>
-        Email: <code>laundry-support@svcet.edu.in</code><br>
-        Office: Hostel Office Counter 1 & 2, SVCET Campus
-    </p>
-
-    <div class="footer">
-        &copy; 2026 Sri Venkateswara College of Engineering and Technology. All rights reserved.
-    </div>
-</div>
 
 </body>
+
 </html>

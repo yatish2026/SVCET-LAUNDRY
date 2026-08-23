@@ -14,6 +14,7 @@ import { CLOTHES_CATEGORIES } from '../../constants/categories';
 import StatusBadge from '../../components/StatusBadge';
 import StepTracker from '../../components/StepTracker';
 import PickupTokenModal from '../../components/PickupTokenModal';
+import QRCodeDisplay from '../../components/QRCodeDisplay';
 
 export const OrderDetailsScreen = ({ bookingId, onBack }) => {
   const { bookings, cancelBooking } = useLaundry();
@@ -63,6 +64,15 @@ export const OrderDetailsScreen = ({ bookingId, onBack }) => {
   const isPending = booking.status === 'pending_approval';
   const isReady = booking.status === 'ready_for_pickup';
 
+  const qrPayload = {
+    token: booking.pickup_token,
+    booking_id: booking.id,
+    student_name: booking.student_name,
+    student_id: booking.student_id,
+    phone_number: booking.phone_number,
+    total_items: booking.total_items,
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -91,6 +101,26 @@ export const OrderDetailsScreen = ({ bookingId, onBack }) => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* 🎫 Live Digital QR Pass Card */}
+        <View style={styles.qrPassCard}>
+          <View style={styles.qrPassHeader}>
+            <View style={styles.qrPassIconWrap}>
+              <Ionicons name="qr-code" size={20} color="#4338CA" />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.qrPassTitle}>Digital Pickup QR Pass</Text>
+              <Text style={styles.qrPassSub}>Scan at counter for clothes handover</Text>
+            </View>
+          </View>
+
+          <QRCodeDisplay
+            value={qrPayload}
+            size={150}
+            token={booking.pickup_token}
+            studentName={booking.student_name}
+            showTokenLabel={true}
+          />
+        </View>
         {/* Ready for Pickup Card Callout */}
         {isReady && (
           <View style={styles.readyCard}>
@@ -305,6 +335,38 @@ const styles = StyleSheet.create({
   content: {
     padding: THEME.spacing.lg,
     paddingBottom: 40,
+  },
+  qrPassCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#C7D2FE',
+    ...THEME.shadows.md,
+  },
+  qrPassHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  qrPassIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrPassTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  qrPassSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
   },
   readyCard: {
     backgroundColor: THEME.colors.secondary,

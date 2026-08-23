@@ -8,9 +8,18 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
+import QRCodeDisplay from './QRCodeDisplay';
 
 export const OrderConfirmedModal = ({ visible, booking, onClose }) => {
   if (!booking) return null;
+
+  const qrData = {
+    token: booking.pickup_token,
+    booking_id: booking.id,
+    student_name: booking.student_name,
+    student_id: booking.student_id,
+    total_items: booking.total_items,
+  };
 
   return (
     <Modal
@@ -23,19 +32,22 @@ export const OrderConfirmedModal = ({ visible, booking, onClose }) => {
         <View style={styles.modalCard}>
           {/* Success Check Icon */}
           <View style={styles.iconCircle}>
-            <Ionicons name="checkmark-circle" size={48} color="#059669" />
+            <Ionicons name="checkmark-circle" size={40} color="#059669" />
           </View>
 
           <Text style={styles.title}>Order Confirmed! 🎉</Text>
           <Text style={styles.subtitle}>
-            Your laundry request has been registered in the system.
+            Show this digital QR pass at the counter during clothes drop-off & pickup.
           </Text>
 
-          {/* Token Callout */}
-          <View style={styles.tokenBox}>
-            <Text style={styles.tokenLabel}>YOUR PICKUP TOKEN</Text>
-            <Text style={styles.tokenNumber}>#{booking.pickup_token}</Text>
-          </View>
+          {/* Dynamic Scannable QR Code */}
+          <QRCodeDisplay
+            value={qrData}
+            size={140}
+            token={booking.pickup_token}
+            studentName={booking.student_name}
+            showTokenLabel={true}
+          />
 
           {/* Schedule Breakdown */}
           <View style={styles.infoCard}>

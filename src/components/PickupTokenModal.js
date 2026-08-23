@@ -3,9 +3,19 @@ import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
 import StatusBadge from './StatusBadge';
+import QRCodeDisplay from './QRCodeDisplay';
 
 export const PickupTokenModal = ({ visible, onClose, booking }) => {
   if (!booking) return null;
+
+  const qrData = {
+    token: booking.pickup_token,
+    booking_id: booking.id,
+    student_name: booking.student_name,
+    student_id: booking.student_id,
+    phone_number: booking.phone_number,
+    total_items: booking.total_items,
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -17,20 +27,24 @@ export const PickupTokenModal = ({ visible, onClose, booking }) => {
 
           <View style={styles.header}>
             <View style={styles.iconCircle}>
-              <Ionicons name="sparkles" size={24} color={THEME.colors.primary} />
+              <Ionicons name="qr-code" size={24} color="#4338CA" />
             </View>
-            <Text style={styles.title}>Digital Pickup Token</Text>
-            <Text style={styles.subtitle}>Present this token at the laundry desk to collect</Text>
+            <Text style={styles.title}>Digital Pickup QR Pass</Text>
+            <Text style={styles.subtitle}>Present this QR code to counter staff for quick collection</Text>
           </View>
 
-          {/* Token Box */}
-          <View style={styles.tokenBox}>
-            <Text style={styles.tokenLabel}>PICKUP TOKEN CODE</Text>
-            <Text style={styles.tokenCode}>{booking.pickup_token || 'LND-0000'}</Text>
-            <View style={styles.qrSimulation}>
-              <Ionicons name="qr-code-outline" size={72} color={THEME.colors.primaryDark} />
+          {/* Dynamic Scannable QR Box */}
+          <View style={styles.qrContainer}>
+            <QRCodeDisplay
+              value={qrData}
+              size={160}
+              token={booking.pickup_token}
+              studentName={booking.student_name}
+              showTokenLabel={true}
+            />
+            <View style={{ marginTop: 8 }}>
+              <StatusBadge status={booking.status} size="sm" />
             </View>
-            <StatusBadge status={booking.status} size="sm" />
           </View>
 
           {/* Booking Summary */}

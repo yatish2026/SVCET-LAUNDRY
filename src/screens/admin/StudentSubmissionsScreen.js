@@ -13,6 +13,7 @@ import THEME from '../../constants/theme';
 import { useLaundry } from '../../context/LaundryContext';
 import { ACADEMIC_YEARS } from '../../constants/schedule';
 import StatusBadge from '../../components/StatusBadge';
+import QRScannerModal from '../../components/QRScannerModal';
 
 export const StudentSubmissionsScreen = ({ onSelectBooking }) => {
   const {
@@ -24,6 +25,7 @@ export const StudentSubmissionsScreen = ({ onSelectBooking }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYearFilter, setSelectedYearFilter] = useState('ALL');
+  const [showQRScanner, setShowQRScanner] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -77,10 +79,20 @@ export const StudentSubmissionsScreen = ({ onSelectBooking }) => {
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={{ marginRight: 6 }}>
               <Ionicons name="close-circle" size={18} color="#94A3B8" />
             </TouchableOpacity>
           )}
+
+          {/* Quick Scan QR Trigger Button */}
+          <TouchableOpacity
+            style={styles.headerScanBtn}
+            onPress={() => setShowQRScanner(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="qr-code" size={16} color="#FFF" />
+            <Text style={styles.headerScanBtnText}>Scan QR</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Year Filter Tabs */}
@@ -195,6 +207,12 @@ export const StudentSubmissionsScreen = ({ onSelectBooking }) => {
           })
         )}
       </ScrollView>
+
+      {/* QR Scanner Modal */}
+      <QRScannerModal
+        visible={showQRScanner}
+        onClose={() => setShowQRScanner(false)}
+      />
     </View>
   );
 };
@@ -218,8 +236,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     borderRadius: 12,
     paddingHorizontal: 12,
-    height: 42,
+    height: 44,
     marginBottom: 10,
+  },
+  headerScanBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4338CA',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    gap: 4,
+  },
+  headerScanBtnText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   searchInput: {
     flex: 1,
