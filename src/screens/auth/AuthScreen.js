@@ -102,11 +102,15 @@ export const AuthScreen = () => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 0}
     >
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         {/* College Emblem Brand Header */}
         <View style={styles.brandHero}>
@@ -115,7 +119,8 @@ export const AuthScreen = () => {
             style={styles.collegeEmblem}
             resizeMode="contain"
           />
-          <Text style={styles.brandSub}>Hostel Laundry Portal</Text>
+          <Text style={styles.brandTitle}>SVCET CampusWash</Text>
+          <Text style={styles.brandSub}>Hostel Laundry Management Portal</Text>
         </View>
 
         {/* Card Container */}
@@ -426,61 +431,70 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
+  },
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 180, // Generous padding so inputs never get hidden under keyboard
     width: '100%',
-    maxWidth: 440,
+    maxWidth: 480,
     alignSelf: 'center',
   },
   brandHero: {
     alignItems: 'center',
-    marginVertical: 14,
+    marginBottom: 14,
+    marginTop: Platform.OS === 'ios' ? 10 : 6,
   },
   collegeEmblem: {
-    width: 170,
-    height: 60,
+    width: 140,
+    height: 52,
     marginBottom: 4,
   },
+  brandTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: 0.2,
+  },
   brandSub: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
     fontWeight: '600',
     textAlign: 'center',
+    marginTop: 1,
   },
   card: {
     width: '100%',
-    maxWidth: 440,
-    alignSelf: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 24,
+    padding: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    ...THEME.shadows.sm,
+    ...THEME.shadows.md,
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    padding: 3,
-    marginBottom: 14,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 16,
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 9,
+    paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 11,
   },
   tabBtnActive: {
     backgroundColor: '#FFFFFF',
     ...THEME.shadows.sm,
   },
   tabBtnText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#64748B',
   },
@@ -492,35 +506,35 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   formTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
   },
   formSub: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#64748B',
-    marginTop: 1,
-    marginBottom: 12,
+    marginTop: 2,
+    marginBottom: 14,
   },
   inputGroup: {
-    marginBottom: 11,
+    marginBottom: 12,
   },
   inputLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
-    marginBottom: 4,
+    color: '#334155',
+    marginBottom: 5,
   },
   dropdownBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 44,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 48,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
   },
   dropdownLeft: {
     flexDirection: 'row',
@@ -534,9 +548,9 @@ const styles = StyleSheet.create({
   },
   dropdownMenu: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     marginTop: 4,
     overflow: 'hidden',
     ...THEME.shadows.md,
@@ -545,8 +559,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
@@ -554,7 +568,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
   },
   dropdownItemText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#0F172A',
   },
@@ -563,29 +577,29 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   dropdownItemSub: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#64748B',
   },
   yearNoticeText: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#64748B',
-    marginTop: 4,
-    lineHeight: 14,
+    marginTop: 5,
+    lineHeight: 15,
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    height: 44,
+    borderColor: '#CBD5E1',
+    height: 48,
   },
   input: {
     flex: 1,
-    marginLeft: 8,
-    fontSize: 13,
+    marginLeft: 10,
+    fontSize: 13.5,
     color: '#0F172A',
   },
   rowInputs: {
@@ -594,22 +608,22 @@ const styles = StyleSheet.create({
   blocksPicker: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 5,
+    gap: 6,
   },
   blockChip: {
-    paddingVertical: 5,
-    paddingHorizontal: 9,
+    paddingVertical: 6,
+    paddingHorizontal: 11,
     borderRadius: 999,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
   },
   blockChipActive: {
     backgroundColor: '#1E40AF',
     borderColor: '#1E40AF',
   },
   blockChipText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: '#64748B',
   },
@@ -622,32 +636,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#1E40AF',
-    paddingVertical: 13,
-    borderRadius: 12,
-    marginTop: 10,
-    ...THEME.shadows.sm,
+    height: 50,
+    borderRadius: 14,
+    marginTop: 12,
+    ...THEME.shadows.md,
   },
   btnDisabled: {
     opacity: 0.6,
   },
   primaryBtnText: {
     color: '#FFF',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
   },
   switchPrompt: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 14,
+    marginTop: 16,
+    paddingBottom: 6,
   },
   switchPromptText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#64748B',
   },
   switchPromptLink: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     color: '#1E40AF',
   },
 });
