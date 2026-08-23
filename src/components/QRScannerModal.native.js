@@ -13,9 +13,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
 import { useLaundry } from '../context/LaundryContext';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 export const QRScannerModal = ({ visible, onClose }) => {
   const { bookings, advanceBookingStatus } = useLaundry();
+
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState(false);
 
   const [inputToken, setInputToken] = useState('');
   const [matchedBooking, setMatchedBooking] = useState(null);
@@ -24,11 +28,32 @@ export const QRScannerModal = ({ visible, onClose }) => {
 
   useEffect(() => {
     if (visible) {
+      setScanned(false);
       setMatchedBooking(null);
       setCompletedSuccess(false);
       setInputToken('');
     }
   }, [visible]);
+
+  // Handle live barcode scanning from camera
+  const handleBarCodeScanned = ({ data }) => {
+    if (scanned || matchedBooking) return;
+    setScanned(true);
+
+    try {
+      let parsed = data;
+      try {
+        const json = JSON.parse(data);
+        if (json.token) parsed = json.token;
+        else if (json.booking_id) parsed = json.booking_id;
+      } catch (e) {
+        // Plain string
+      }
+      lookupBooking(parsed);
+    } catch (err) {
+      setScanned(false);
+    }
+  };
 
   const lookupBooking = (searchQuery) => {
     const clean = (searchQuery || inputToken)
@@ -51,8 +76,9 @@ export const QRScannerModal = ({ visible, onClose }) => {
     } else {
       setMatchedBooking(null);
       Alert.alert(
-        'QR Code / Token Not Found',
-        `No booking matched "${clean}". Please verify the student's QR code or token.`
+        'QR Code Not Found',
+        `No booking matched "${clean}". Please verify the student's QR code.`,
+        [{ text: 'Try Again', onPress: () => setScanned(false) }]
       );
     }
   };
@@ -75,6 +101,7 @@ export const QRScannerModal = ({ visible, onClose }) => {
     setMatchedBooking(null);
     setInputToken('');
     setCompletedSuccess(false);
+    setScanned(false);
   };
 
   return (
@@ -87,8 +114,8 @@ export const QRScannerModal = ({ visible, onClose }) => {
               <Ionicons name="qr-code" size={24} color="#4338CA" />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.title}>Counter QR Handover</Text>
-              <Text style={styles.subtitle}>Scan student QR code or verify token</Text>
+              <Text style={styles.title}>Counter QR Scanner</Text>
+              <Text style={styles.subtitle}>Scan student's QR code for instant pickup</Text>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
               <Ionicons name="close" size={22} color="#64748B" />
@@ -112,7 +139,7 @@ export const QRScannerModal = ({ visible, onClose }) => {
                 </Text>
 
                 <TouchableOpacity style={styles.scanNextBtn} onPress={handleReset}>
-                  <Ionicons name="scan-outline" size={18} color="#FFF" />
+                  <Ionicons name="camera-outline" size={18} color="#FFF" />
                   <Text style={styles.scanNextBtnText}>Scan Next Student QR</Text>
                 </TouchableOpacity>
               </View>
@@ -175,22 +202,42 @@ export const QRScannerModal = ({ visible, onClose }) => {
                 </TouchableOpacity>
               </View>
             ) : (
-              /* Web / Fast Token Lookup Viewport */
+              /* Live Camera Scanner Viewport & Search Option */
               <View>
-                {/* Visual Viewfinder Box for Web */}
-                <View style={styles.webScannerBox}>
-                  <View style={styles.targetFrame}>
-                    <View style={styles.laserLine} />
-                    <Ionicons name="qr-code-outline" size={48} color="#4338CA" style={{ opacity: 0.6 }} />
-                  </View>
-                  <Text style={styles.targetHint}>Camera scanner active on mobile APK • Type or paste token below</Text>
+                <View style={styles.cameraBox}>
+                  {!permission?.granted ? (
+                    <View style={styles.permWrap}>
+                      <Ionicons name="camera" size={40} color="#4338CA" />
+                      <Text style={styles.permTitle}>Camera Access Required</Text>
+                      <Text style={styles.permSub}>Allow camera permission to scan student QR passes</Text>
+                      <TouchableOpacity style={styles.grantBtn} onPress={requestPermission}>
+                        <Text style={styles.grantBtnText}>Enable Camera</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <CameraView
+                      style={StyleSheet.absoluteFillObject}
+                      facing="back"
+                      barcodeScannerSettings={{
+                        barcodeTypes: ['qr'],
+                      }}
+                      onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+                    >
+                      <View style={styles.viewFinderOverlay}>
+                        <View style={styles.targetFrame}>
+                          <View style={styles.laserLine} />
+                        </View>
+                        <Text style={styles.targetHint}>Align student QR pass within frame</Text>
+                      </View>
+                    </CameraView>
+                  )}
                 </View>
 
-                {/* Token / ID Input Bar */}
+                {/* Manual Token Entry Bar */}
                 <View style={styles.manualEntrySection}>
-                  <Text style={styles.manualLabel}>ENTER STUDENT TOKEN OR ROLL NUMBER:</Text>
+                  <Text style={styles.manualLabel}>OR ENTER STUDENT TOKEN / ID:</Text>
                   <View style={styles.searchBar}>
-                    <Ionicons name="scan-outline" size={20} color="#4338CA" />
+                    <Ionicons name="keypad-outline" size={20} color="#4338CA" />
                     <TextInput
                       style={styles.searchInput}
                       placeholder="e.g. LND-4921 or Roll No"
@@ -211,7 +258,7 @@ export const QRScannerModal = ({ visible, onClose }) => {
                   </View>
                 </View>
 
-                {/* Quick Pick: Orders Ready for Pickup */}
+                {/* Quick List of Ready For Pickup Orders */}
                 <View style={styles.recentWrap}>
                   <Text style={styles.recentTitle}>Ready for Pickup at Counter:</Text>
                   {bookings
@@ -221,7 +268,7 @@ export const QRScannerModal = ({ visible, onClose }) => {
                         b.status === 'drying_ironing' ||
                         b.status === 'in_wash'
                     )
-                    .slice(0, 5)
+                    .slice(0, 4)
                     .map((b) => (
                       <TouchableOpacity
                         key={b.id}
@@ -291,39 +338,77 @@ const styles = StyleSheet.create({
   closeBtn: {
     padding: 6,
   },
-  webScannerBox: {
-    height: 180,
+  cameraBox: {
+    height: 220,
     borderRadius: 20,
-    backgroundColor: '#EEF2FF',
+    overflow: 'hidden',
+    backgroundColor: '#0F172A',
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: '#C7D2FE',
+    borderColor: '#4338CA',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  viewFinderOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   targetFrame: {
-    width: 120,
-    height: 100,
+    width: 150,
+    height: 150,
     borderWidth: 2.5,
-    borderColor: '#4338CA',
+    borderColor: '#22C55E',
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
   },
   laserLine: {
-    position: 'absolute',
     width: '90%',
     height: 2,
-    backgroundColor: '#16A34A',
+    backgroundColor: '#22C55E',
+    shadowColor: '#22C55E',
+    shadowOpacity: 1,
+    shadowRadius: 8,
   },
   targetHint: {
-    color: '#4338CA',
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
-    marginTop: 10,
+    marginTop: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  permWrap: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  permTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFF',
+    marginTop: 8,
+  },
+  permSub: {
+    fontSize: 11,
+    color: '#94A3B8',
     textAlign: 'center',
-    paddingHorizontal: 12,
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  grantBtn: {
+    backgroundColor: '#4338CA',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  grantBtnText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   manualEntrySection: {
     marginBottom: 12,
