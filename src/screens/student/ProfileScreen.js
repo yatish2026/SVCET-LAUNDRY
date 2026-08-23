@@ -179,32 +179,14 @@ export const ProfileScreen = () => {
 
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>Hostel Block</Text>
-          {isEditing ? (
-            <View style={styles.blockChips}>
-              {HOSTEL_BLOCKS.map((blk) => (
-                <TouchableOpacity
-                  key={blk}
-                  style={[styles.blockChip, hostelBlock === blk && styles.blockChipActive]}
-                  onPress={() => setHostelBlock(blk)}
-                >
-                  <Text
-                    style={[
-                      styles.blockChipText,
-                      hostelBlock === blk && styles.blockChipTextActive,
-                    ]}
-                  >
-                    {blk.split(' ')[0]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <TextInput
-              style={[styles.input, styles.inputDisabled]}
-              value={hostelBlock}
-              editable={false}
-            />
-          )}
+          <TextInput
+            style={[styles.input, !isEditing && styles.inputDisabled]}
+            value={hostelBlock}
+            onChangeText={setHostelBlock}
+            placeholder="e.g. Block A (Boys Hostel) or Kaveri Block"
+            placeholderTextColor={THEME.colors.textMuted}
+            editable={isEditing}
+          />
         </View>
 
         <View style={styles.field}>

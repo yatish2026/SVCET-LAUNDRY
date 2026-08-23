@@ -305,26 +305,15 @@ export const AuthScreen = () => {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Hostel Block *</Text>
-                <View style={styles.blocksPicker}>
-                  {HOSTEL_BLOCKS.map((blk) => {
-                    const isSelected = hostelBlock === blk;
-                    return (
-                      <TouchableOpacity
-                        key={blk}
-                        style={[styles.blockChip, isSelected && styles.blockChipActive]}
-                        onPress={() => setHostelBlock(blk)}
-                      >
-                        <Text
-                          style={[
-                            styles.blockChipText,
-                            isSelected && styles.blockChipTextActive,
-                          ]}
-                        >
-                          {blk.split(' ')[0]}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                <View style={styles.inputWrap}>
+                  <Ionicons name="business-outline" size={18} color={THEME.colors.textMuted} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Block A (Boys Hostel) or Kaveri Block"
+                    placeholderTextColor={THEME.colors.textMuted}
+                    value={hostelBlock}
+                    onChangeText={setHostelBlock}
+                  />
                 </View>
               </View>
 
