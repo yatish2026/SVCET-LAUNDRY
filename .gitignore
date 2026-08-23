@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Expo & Builds
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Secrets & Environment Variables
+.env
+.env.*
+*.local
+src/backend/config.php
+
+# IDE & OS
+.DS_Store
+*.pem
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
