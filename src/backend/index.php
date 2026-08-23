@@ -241,6 +241,43 @@ try {
             $stmt->execute([$email]);
             $user = $stmt->fetch();
 
+            // Seamless Fallback / Migration from legacy 'profiles' table if present
+            if (!$user) {
+                try {
+                    $oldStmt = $conn->prepare("SELECT * FROM profiles WHERE email = ? LIMIT 1");
+                    $oldStmt->execute([$email]);
+                    $oldUser = $oldStmt->fetch();
+                    if ($oldUser) {
+                        $oldPass = $oldUser['password_hash'] ?? $oldUser['password'] ?? '';
+                        if (password_verify($password, $oldPass) || $password === $oldPass) {
+                            $user = [
+                                'id' => $oldUser['id'] ?? ('usr_' . uniqid()),
+                                'email' => $oldUser['email'],
+                                'password_hash' => password_hash($password, PASSWORD_BCRYPT),
+                                'full_name' => $oldUser['full_name'] ?? 'User',
+                                'role' => $oldUser['role'] ?? 'student',
+                                'student_id' => $oldUser['student_id'] ?? '',
+                                'academic_year' => $oldUser['academic_year'] ?? '1st Year',
+                                'hostel_block' => $oldUser['hostel_block'] ?? '',
+                                'room_number' => $oldUser['room_number'] ?? '',
+                                'phone_number' => $oldUser['phone_number'] ?? '',
+                            ];
+                            // Migrate into laundry_users
+                            $mig = $conn->prepare("INSERT IGNORE INTO laundry_users 
+                                (id, email, password_hash, full_name, role, student_id, academic_year, hostel_block, room_number, phone_number, created_at)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+                            $mig->execute([
+                                $user['id'], $user['email'], $user['password_hash'], $user['full_name'],
+                                $user['role'], $user['student_id'], $user['academic_year'], $user['hostel_block'],
+                                $user['room_number'], $user['phone_number']
+                            ]);
+                        }
+                    }
+                } catch (Exception $e) {
+                    // Fall through
+                }
+            }
+
             if (!$user || !password_verify($password, $user['password_hash'])) {
                 http_response_code(401);
                 echo json_encode(["success" => false, "error" => "Invalid email or password."]);
