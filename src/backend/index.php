@@ -371,8 +371,9 @@ try {
         // 5. UPDATE STATUS
         // ----------------------------------------------------
         case 'update_status':
-            $bookingId = validateString($body['booking_id'] ?? '', 'Booking ID', 1, 40);
-            $newStatus = validateStatus($body['new_status'] ?? '');
+            $bookingId = validateString($body['booking_id'] ?? '', 'Booking ID', 1, 64);
+            $statusParam = $body['new_status'] ?? $body['status'] ?? '';
+            $newStatus = validateStatus($statusParam);
             $notes = isset($body['notes']) ? htmlspecialchars(substr($body['notes'], 0, 500), ENT_QUOTES, 'UTF-8') : null;
 
             $upd = $conn->prepare("UPDATE laundry_bookings SET status = ?, notes_by_staff = ?, updated_at = NOW() WHERE id = ?");

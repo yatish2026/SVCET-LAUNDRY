@@ -80,15 +80,18 @@ export const LaundryProvider = ({ children }) => {
     }
   };
 
-  // Advance booking wash stage
+  // Advance booking wash stage (Optimistic UI update)
   const advanceBookingStatus = async (bookingId, newStatus) => {
+    // 1. Instantly update UI optimistically
+    setBookings((prev) =>
+      prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b))
+    );
+
+    // 2. Send update to GoDaddy API in background
     try {
       await apiService.updateStatus(bookingId, newStatus);
-      setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b))
-      );
     } catch (err) {
-      console.log('Error updating status:', err);
+      console.log('Error updating status on server:', err);
     }
   };
 

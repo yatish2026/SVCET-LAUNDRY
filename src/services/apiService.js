@@ -92,7 +92,11 @@ export const apiService = {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify({ booking_id: bookingId, status: newStatus }),
+      body: JSON.stringify({
+        booking_id: bookingId,
+        new_status: newStatus,
+        status: newStatus,
+      }),
     });
 
     const data = await response.json();
