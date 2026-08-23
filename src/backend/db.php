@@ -1,7 +1,7 @@
 <?php
 /**
- * SVCET CampusWash - Database Connection & Self-Healing Tables
- * Safe for Version Control & Production Deployments
+ * SVCET CampusWash - Database Connection & Self-Healing Table Generator
+ * Automatically creates all tables with proper indexes if they do not exist
  */
 
 header("Access-Control-Allow-Origin: *");
@@ -62,8 +62,67 @@ if (!$conn) {
     exit();
 }
 
-// Ensure Rate Limiting Table Exists
+// ====================================================
+// 🛠️ SELF-HEALING DATABASE TABLES AUTO-CREATION
+// ====================================================
 try {
+    // 1. Users Table
+    $conn->exec("CREATE TABLE IF NOT EXISTS laundry_users (
+        id VARCHAR(64) PRIMARY KEY,
+        email VARCHAR(100) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        full_name VARCHAR(100) NOT NULL,
+        role VARCHAR(20) DEFAULT 'student',
+        student_id VARCHAR(50) DEFAULT '',
+        academic_year VARCHAR(30) DEFAULT '1st Year',
+        hostel_block VARCHAR(100) DEFAULT '',
+        room_number VARCHAR(50) DEFAULT '',
+        phone_number VARCHAR(30) DEFAULT '',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_email (email),
+        INDEX idx_phone (phone_number)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // 2. Bookings Table
+    $conn->exec("CREATE TABLE IF NOT EXISTS laundry_bookings (
+        id VARCHAR(64) PRIMARY KEY,
+        pickup_token VARCHAR(20) NOT NULL,
+        student_name VARCHAR(100) NOT NULL,
+        student_id VARCHAR(50) DEFAULT '',
+        academic_year VARCHAR(30) DEFAULT '1st Year',
+        hostel_block VARCHAR(100) DEFAULT '',
+        room_number VARCHAR(50) DEFAULT '',
+        phone_number VARCHAR(30) DEFAULT '',
+        items LONGTEXT,
+        total_items INT DEFAULT 1,
+        status VARCHAR(40) DEFAULT 'pending_approval',
+        dropoff_slot_time VARCHAR(100) DEFAULT '',
+        pickup_slot_time VARCHAR(100) DEFAULT '',
+        counter_number VARCHAR(50) DEFAULT 'Counter 1',
+        special_instructions TEXT,
+        notes_by_staff TEXT,
+        photos LONGTEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_token (pickup_token),
+        INDEX idx_status (status),
+        INDEX idx_phone (phone_number)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // 3. Notifications Table
+    $conn->exec("CREATE TABLE IF NOT EXISTS laundry_notifications (
+        id VARCHAR(64) PRIMARY KEY,
+        recipient_role VARCHAR(20) DEFAULT 'student',
+        target_user_phone VARCHAR(30) DEFAULT '',
+        booking_id VARCHAR(64) DEFAULT '',
+        title VARCHAR(150) NOT NULL,
+        message TEXT NOT NULL,
+        type VARCHAR(40) DEFAULT 'info',
+        is_read TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // 4. Rate Limits Table
     $conn->exec("CREATE TABLE IF NOT EXISTS laundry_rate_limits (
         id INT AUTO_INCREMENT PRIMARY KEY,
         ip_address VARCHAR(45) NOT NULL,
@@ -76,6 +135,7 @@ try {
         INDEX idx_ip_endpoint (ip_address, endpoint_type),
         INDEX idx_account (account_key)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
 } catch (Exception $e) {
     // Non-fatal
 }
