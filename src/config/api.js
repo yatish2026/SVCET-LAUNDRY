@@ -1,5 +1,6 @@
-// GoDaddy Backend API Base URL
-export const API_BASE_URL = 'https://rvsu.org/api/index.php';
+// GoDaddy Backend API Base URL (reads from .env or uses default)
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL || 'https://rvsu.org/api/index.php';
 
 export const API_ENDPOINTS = {
   REGISTER: `${API_BASE_URL}?action=register`,
@@ -8,6 +9,7 @@ export const API_ENDPOINTS = {
   CREATE_BOOKING: `${API_BASE_URL}?action=create_booking`,
   UPDATE_STATUS: `${API_BASE_URL}?action=update_status`,
   GET_NOTIFICATIONS: `${API_BASE_URL}?action=get_notifications`,
+  DELETE_ACCOUNT: `${API_BASE_URL}?action=delete_account`,
 };
 
 export default API_BASE_URL;
