@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,29 +10,67 @@ import {
   Alert,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
 import { useLaundry } from '../context/LaundryContext';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 export const QRScannerModal = ({ visible, onClose }) => {
   const { bookings, advanceBookingStatus } = useLaundry();
+
+  const [permission, requestPermission] = useCameraPermissions();
+  const [useCamera, setUseCamera] = useState(true);
+  const [scanned, setScanned] = useState(false);
 
   const [inputToken, setInputToken] = useState('');
   const [matchedBooking, setMatchedBooking] = useState(null);
   const [completedSuccess, setCompletedSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleSearchToken = (searchVal) => {
-    const query = (searchVal || inputToken).trim().toUpperCase().replace('#', '');
-    if (!query) return;
+  useEffect(() => {
+    if (visible) {
+      setScanned(false);
+      setMatchedBooking(null);
+      setCompletedSuccess(false);
+      setInputToken('');
+    }
+  }, [visible]);
 
-    // Find booking matching token or ID or student_id
+  // Handle live barcode scanning from camera
+  const handleBarCodeScanned = ({ data }) => {
+    if (scanned || matchedBooking) return;
+    setScanned(true);
+
+    try {
+      let parsed = data;
+      try {
+        const json = JSON.parse(data);
+        if (json.token) parsed = json.token;
+        else if (json.booking_id) parsed = json.booking_id;
+      } catch (e) {
+        // Plain string
+      }
+      lookupBooking(parsed);
+    } catch (err) {
+      setScanned(false);
+    }
+  };
+
+  const lookupBooking = (searchQuery) => {
+    const clean = (searchQuery || inputToken)
+      .trim()
+      .toUpperCase()
+      .replace('#', '');
+    if (!clean) return;
+
     const found = bookings.find(
       (b) =>
-        b.pickup_token?.toUpperCase().replace('#', '') === query ||
-        b.id === query ||
-        b.student_id?.toUpperCase() === query
+        b.pickup_token?.toUpperCase().replace('#', '') === clean ||
+        b.id === clean ||
+        b.student_id?.toUpperCase() === clean ||
+        b.phone_number?.replace(/\s+/g, '') === clean.replace(/\s+/g, '')
     );
 
     if (found) {
@@ -41,8 +79,9 @@ export const QRScannerModal = ({ visible, onClose }) => {
     } else {
       setMatchedBooking(null);
       Alert.alert(
-        'Token Not Found',
-        `No laundry booking found for "${query}". Please check the student's QR code or token number.`
+        'QR Code Not Found',
+        `No booking matched "${clean}". Please verify the student's QR code.`,
+        [{ text: 'Try Again', onPress: () => setScanned(false) }]
       );
     }
   };
@@ -65,6 +104,7 @@ export const QRScannerModal = ({ visible, onClose }) => {
     setMatchedBooking(null);
     setInputToken('');
     setCompletedSuccess(false);
+    setScanned(false);
   };
 
   return (
@@ -77,50 +117,32 @@ export const QRScannerModal = ({ visible, onClose }) => {
               <Ionicons name="qr-code" size={24} color="#4338CA" />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.title}>Student QR Handover</Text>
-              <Text style={styles.subtitle}>Scan or enter token to complete pickup</Text>
+              <Text style={styles.title}>Counter QR Scanner</Text>
+              <Text style={styles.subtitle}>Scan student's QR code for instant pickup</Text>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
               <Ionicons name="close" size={22} color="#64748B" />
             </TouchableOpacity>
           </View>
 
-          {/* Search Input Bar */}
-          <View style={styles.searchBar}>
-            <Ionicons name="scan-outline" size={20} color="#4338CA" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Enter Token (e.g. LND-4921) or Student ID"
-              placeholderTextColor="#94A3B8"
-              value={inputToken}
-              onChangeText={(txt) => {
-                setInputToken(txt);
-                if (txt.length >= 7) handleSearchToken(txt);
-              }}
-              autoCapitalize="characters"
-            />
-            <TouchableOpacity
-              style={styles.searchActionBtn}
-              onPress={() => handleSearchToken()}
-            >
-              <Text style={styles.searchActionBtnText}>Verify</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={{ width: '100%', maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={{ width: '100%', maxHeight: 520 }}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            showsVerticalScrollIndicator={false}
+          >
             {completedSuccess ? (
               /* Success Confirmation Banner */
               <View style={styles.successBox}>
                 <View style={styles.successCheckCircle}>
                   <Ionicons name="checkmark-done" size={48} color="#16A34A" />
                 </View>
-                <Text style={styles.successTitle}>Handover Completed! ✅</Text>
+                <Text style={styles.successTitle}>Handover Verified! ✅</Text>
                 <Text style={styles.successSub}>
                   Clothes successfully returned to {matchedBooking?.student_name}. The order has been marked as Completed.
                 </Text>
 
                 <TouchableOpacity style={styles.scanNextBtn} onPress={handleReset}>
-                  <Ionicons name="qr-code-outline" size={18} color="#FFF" />
+                  <Ionicons name="camera-outline" size={18} color="#FFF" />
                   <Text style={styles.scanNextBtnText}>Scan Next Student QR</Text>
                 </TouchableOpacity>
               </View>
@@ -179,35 +201,99 @@ export const QRScannerModal = ({ visible, onClose }) => {
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.cancelVerifyBtn} onPress={handleReset}>
-                  <Text style={styles.cancelVerifyBtnText}>Cancel</Text>
+                  <Text style={styles.cancelVerifyBtnText}>Scan Another Code</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              /* Quick Suggestions: Recent Ready for Pickup orders */
-              <View style={styles.recentWrap}>
-                <Text style={styles.recentTitle}>Ready for Pickup at Counter:</Text>
-                {bookings
-                  .filter((b) => b.status === 'ready_for_pickup' || b.status === 'drying_ironing' || b.status === 'in_wash')
-                  .slice(0, 5)
-                  .map((b) => (
-                    <TouchableOpacity
-                      key={b.id}
-                      style={styles.quickPickRow}
-                      onPress={() => {
-                        setMatchedBooking(b);
-                        setInputToken(b.pickup_token);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.quickPickName}>{b.student_name}</Text>
-                        <Text style={styles.quickPickMeta}>
-                          #{b.pickup_token} • {b.total_items} clothes • Rm {b.room_number}
-                        </Text>
+              /* Live Camera Scanner Viewport & Search Option */
+              <View>
+                {Platform.OS !== 'web' && useCamera ? (
+                  <View style={styles.cameraBox}>
+                    {!permission?.granted ? (
+                      <View style={styles.permWrap}>
+                        <Ionicons name="camera" size={40} color="#4338CA" />
+                        <Text style={styles.permTitle}>Camera Access Required</Text>
+                        <Text style={styles.permSub}>Allow camera permission to scan student QR passes</Text>
+                        <TouchableOpacity style={styles.grantBtn} onPress={requestPermission}>
+                          <Text style={styles.grantBtnText}>Enable Camera</Text>
+                        </TouchableOpacity>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                    ) : (
+                      <CameraView
+                        style={StyleSheet.absoluteFillObject}
+                        facing="back"
+                        barcodeScannerSettings={{
+                          barcodeTypes: ['qr'],
+                        }}
+                        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+                      >
+                        <View style={styles.viewFinderOverlay}>
+                          <View style={styles.targetFrame}>
+                            <View style={styles.laserLine} />
+                          </View>
+                          <Text style={styles.targetHint}>Align student QR pass within frame</Text>
+                        </View>
+                      </CameraView>
+                    )}
+                  </View>
+                ) : null}
+
+                {/* Manual Token Entry Bar */}
+                <View style={styles.manualEntrySection}>
+                  <Text style={styles.manualLabel}>OR ENTER STUDENT TOKEN / ID:</Text>
+                  <View style={styles.searchBar}>
+                    <Ionicons name="keypad-outline" size={20} color="#4338CA" />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="e.g. LND-4921 or Roll No"
+                      placeholderTextColor="#94A3B8"
+                      value={inputToken}
+                      onChangeText={(txt) => {
+                        setInputToken(txt);
+                        if (txt.length >= 7) lookupBooking(txt);
+                      }}
+                      autoCapitalize="characters"
+                    />
+                    <TouchableOpacity
+                      style={styles.searchActionBtn}
+                      onPress={() => lookupBooking()}
+                    >
+                      <Text style={styles.searchActionBtnText}>Verify</Text>
                     </TouchableOpacity>
-                  ))}
+                  </View>
+                </View>
+
+                {/* Quick List of Ready For Pickup Orders */}
+                <View style={styles.recentWrap}>
+                  <Text style={styles.recentTitle}>Ready for Pickup at Counter:</Text>
+                  {bookings
+                    .filter(
+                      (b) =>
+                        b.status === 'ready_for_pickup' ||
+                        b.status === 'drying_ironing' ||
+                        b.status === 'in_wash'
+                    )
+                    .slice(0, 4)
+                    .map((b) => (
+                      <TouchableOpacity
+                        key={b.id}
+                        style={styles.quickPickRow}
+                        onPress={() => {
+                          setMatchedBooking(b);
+                          setInputToken(b.pickup_token);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.quickPickName}>{b.student_name}</Text>
+                          <Text style={styles.quickPickMeta}>
+                            #{b.pickup_token} • {b.total_items} clothes • Rm {b.room_number}
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ))}
+                </View>
               </View>
             )}
           </ScrollView>
@@ -220,7 +306,7 @@ export const QRScannerModal = ({ visible, onClose }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
     justifyContent: 'flex-end',
   },
   card: {
@@ -228,13 +314,13 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 20,
-    maxHeight: '90%',
+    maxHeight: '92%',
     ...THEME.shadows.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   iconCircle: {
     width: 44,
@@ -257,6 +343,88 @@ const styles = StyleSheet.create({
   closeBtn: {
     padding: 6,
   },
+  cameraBox: {
+    height: 220,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#0F172A',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#4338CA',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewFinderOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  targetFrame: {
+    width: 150,
+    height: 150,
+    borderWidth: 2.5,
+    borderColor: '#22C55E',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  laserLine: {
+    width: '90%',
+    height: 2,
+    backgroundColor: '#22C55E',
+    shadowColor: '#22C55E',
+    shadowOpacity: 1,
+    shadowRadius: 8,
+  },
+  targetHint: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  permWrap: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  permTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFF',
+    marginTop: 8,
+  },
+  permSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  grantBtn: {
+    backgroundColor: '#4338CA',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  grantBtnText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  manualEntrySection: {
+    marginBottom: 12,
+  },
+  manualLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -266,7 +434,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#C7D2FE',
     height: 48,
-    marginBottom: 16,
   },
   searchInput: {
     flex: 1,
@@ -277,7 +444,7 @@ const styles = StyleSheet.create({
   },
   searchActionBtn: {
     backgroundColor: '#4338CA',
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 10,
   },
