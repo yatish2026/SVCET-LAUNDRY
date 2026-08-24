@@ -134,14 +134,16 @@ export const AuthScreen = () => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 20}
     >
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 280 }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets={true}
+        contentInsetAdjustmentBehavior="always"
         showsVerticalScrollIndicator={true}
       >
         {/* 🌟 3D Radiant University Brand Header */}
@@ -419,7 +421,7 @@ export const AuthScreen = () => {
 
                   {/* Continue Button */}
                   <TouchableOpacity
-                    style={styles.primaryBtn}
+                    style={[styles.primaryBtn, { marginTop: 16 }]}
                     onPress={handleGoToStep2}
                     activeOpacity={0.85}
                   >
