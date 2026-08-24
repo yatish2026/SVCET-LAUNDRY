@@ -42,7 +42,11 @@ export const ProfileScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
   const [hostelBlock, setHostelBlock] = useState(profile?.hostel_block || HOSTEL_BLOCKS[0]);
   const [academicYear, setAcademicYear] = useState(profile?.academic_year || ACADEMIC_COURSES[0]);
-  const [avatarUri, setAvatarUri] = useState(profile?.avatar_url || null);
+  const userAvatarKey = useMemo(() => {
+    if (profile?.id) return `@dobix_user_avatar_${profile.id}`;
+    if (profile?.email) return `@dobix_user_avatar_${profile.email.trim().toLowerCase()}`;
+    return null;
+  }, [profile?.id, profile?.email]);
 
   // Sync state if profile changes globally
   useEffect(() => {
@@ -55,9 +59,27 @@ export const ProfileScreen = () => {
       setPhoneNumber(profile.phone_number || '');
       setHostelBlock(profile.hostel_block || HOSTEL_BLOCKS[0]);
       setAcademicYear(profile.academic_year || ACADEMIC_COURSES[0]);
-      if (profile.avatar_url) setAvatarUri(profile.avatar_url);
+
+      // Load avatar strictly for THIS specific user account
+      const loadUserAvatar = async () => {
+        if (profile.avatar_url) {
+          setAvatarUri(profile.avatar_url);
+        } else if (userAvatarKey) {
+          try {
+            const stored = await AsyncStorage.getItem(userAvatarKey);
+            setAvatarUri(stored || null);
+          } catch (e) {
+            setAvatarUri(null);
+          }
+        } else {
+          setAvatarUri(null);
+        }
+      };
+      loadUserAvatar();
+    } else {
+      setAvatarUri(null);
     }
-  }, [profile]);
+  }, [profile, userAvatarKey]);
 
   // Edit Modal & UI State
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -69,21 +91,6 @@ export const ProfileScreen = () => {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10)); // 'YYYY-MM-DD'
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7)); // 'YYYY-MM'
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear().toString()); // 'YYYY'
-
-  // Load avatar from storage on mount
-  useEffect(() => {
-    const loadAvatar = async () => {
-      try {
-        const storedAvatar = await AsyncStorage.getItem('@dobix_user_avatar');
-        if (storedAvatar) {
-          setAvatarUri(storedAvatar);
-        }
-      } catch (e) {
-        console.log('Error loading avatar:', e);
-      }
-    };
-    loadAvatar();
-  }, []);
 
   // Compute student-specific schedule based on official RVS rules
   const userSchedule = useMemo(() => {
@@ -249,7 +256,13 @@ export const ProfileScreen = () => {
       if (!result.canceled && result.assets && result.assets[0]) {
         const compressed = await compressAvatar(result.assets[0].uri);
         setAvatarUri(compressed);
-        await AsyncStorage.setItem('@dobix_user_avatar', compressed);
+        if (userAvatarKey) {
+          await AsyncStorage.setItem(userAvatarKey, compressed);
+        }
+        if (updateProfile) {
+          await updateProfile({ avatar_url: compressed });
+        }
+        await AsyncStorage.removeItem('@dobix_user_avatar').catch(() => {});
         if (Platform.OS === 'web') {
           window.alert('Profile photo updated successfully!');
         } else {
@@ -284,7 +297,13 @@ export const ProfileScreen = () => {
       if (!result.canceled && result.assets && result.assets[0]) {
         const compressed = await compressAvatar(result.assets[0].uri);
         setAvatarUri(compressed);
-        await AsyncStorage.setItem('@dobix_user_avatar', compressed);
+        if (userAvatarKey) {
+          await AsyncStorage.setItem(userAvatarKey, compressed);
+        }
+        if (updateProfile) {
+          await updateProfile({ avatar_url: compressed });
+        }
+        await AsyncStorage.removeItem('@dobix_user_avatar').catch(() => {});
         if (Platform.OS === 'web') {
           window.alert('Profile photo captured and updated!');
         } else {
