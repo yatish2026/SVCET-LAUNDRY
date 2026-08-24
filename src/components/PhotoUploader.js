@@ -239,12 +239,10 @@ export const PhotoUploader = ({
         </ScrollView>
       )}
 
-      {/* Helper validation note */}
-      {requiredCount > 0 && photos.length !== requiredCount && (
-        <Text style={styles.hintText}>
-          💡 Please attach {Math.abs(requiredCount - photos.length)} more photo(s) to match the {requiredCount} clothes entered.
-        </Text>
-      )}
+      {/* Friendly photo helper note */}
+      <Text style={styles.hintText}>
+        📸 Upload photos of your clothes bag for instant counter verification (Unlimited).
+      </Text>
     </View>
   );
 };

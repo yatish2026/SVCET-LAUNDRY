@@ -71,22 +71,6 @@ export const NewBookingScreen = ({ onBack, onBookingCreated }) => {
       return;
     }
 
-    if (photos.length === 0) {
-      Alert.alert(
-        'Photos Required',
-        `Please upload ${totalItemsCount} photo(s) of your clothes before submitting.`
-      );
-      return;
-    }
-
-    if (photos.length !== totalItemsCount) {
-      Alert.alert(
-        'Photo Count Mismatch',
-        `You entered ${totalItemsCount} clothes but uploaded ${photos.length} photos. Please upload exactly ${totalItemsCount} photo(s) matching your items.`
-      );
-      return;
-    }
-
     try {
       const newBooking = await createBooking({
         user_id: profile?.id || '',

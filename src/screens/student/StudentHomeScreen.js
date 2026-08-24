@@ -260,8 +260,8 @@ export const StudentHomeScreen = ({
 
           <View style={styles.cardMetricRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardMetricLabel}>Max Limit</Text>
-              <Text style={[styles.cardMetricVal, { color: '#5B21B6' }]}>20 Clothes</Text>
+              <Text style={styles.cardMetricLabel}>Capacity</Text>
+              <Text style={[styles.cardMetricVal, { color: '#5B21B6' }]}>Unlimited Wash</Text>
             </View>
             <Ionicons name="add-circle" size={18} color="#7C3AED" />
           </View>
@@ -521,7 +521,7 @@ export const StudentHomeScreen = ({
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
               <View style={styles.ruleItem}>
                 <Ionicons name="checkmark-circle" size={18} color="#059669" />
-                <Text style={styles.ruleText}>Maximum 20 clothes allowed per intake.</Text>
+                <Text style={styles.ruleText}>No item limit on clothes per intake.</Text>
               </View>
               <View style={styles.ruleItem}>
                 <Ionicons name="checkmark-circle" size={18} color="#059669" />
