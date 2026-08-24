@@ -379,7 +379,7 @@ export const ProfileScreen = () => {
           <Text style={styles.idCardEmail}>{profile?.email}</Text>
           <Text style={styles.idCardPhone}>{phoneNumber || profile?.phone_number || 'No Phone'}</Text>
         </View>
-      </TouchableOpacity>
+      </View>
 
       {/* 📊 Lifetime Laundry Statistics Card */}
       <View style={styles.statsCard}>
