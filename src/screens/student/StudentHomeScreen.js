@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ export const StudentHomeScreen = ({
   const [selectedTokenBooking, setSelectedTokenBooking] = useState(null);
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [rulesModalVisible, setRulesModalVisible] = useState(false);
+  const [activityTimeframe, setActivityTimeframe] = useState('ALL'); // 'ALL' | 'MONTH' | 'WEEK'
 
   const studentName = profile?.full_name || profile?.email?.split('@')[0] || 'Student';
   const studentPhone = profile?.phone_number || '';
@@ -46,22 +47,24 @@ export const StudentHomeScreen = ({
   const studentRollNo = (profile?.student_id || '').trim();
   const cleanStudentName = studentName.trim().toLowerCase();
 
-  const studentBookings = bookings.filter((b) => {
-    // 1. Unique User ID match
-    if (b.user_id && profile?.id && b.user_id === profile.id) return true;
-    // 2. Unique Email match
-    if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
-    // 3. Exact Student Name match (STRICT equality, NO substring match)
-    const bName = (b.student_name || '').trim().toLowerCase();
-    if (cleanStudentName && bName && bName === cleanStudentName) {
-      return true;
-    }
-    // 4. Roll Number match (if valid and not default placeholder)
-    if (studentRollNo && studentRollNo !== 'SVCET-STD' && studentRollNo !== 'RVS-STD' && b.student_id === studentRollNo) {
-      return true;
-    }
-    return false;
-  });
+  const studentBookings = useMemo(() => {
+    return bookings.filter((b) => {
+      // 1. Unique User ID match
+      if (b.user_id && profile?.id && b.user_id === profile.id) return true;
+      // 2. Unique Email match
+      if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
+      // 3. Exact Student Name match (STRICT equality, NO substring match)
+      const bName = (b.student_name || '').trim().toLowerCase();
+      if (cleanStudentName && bName && bName === cleanStudentName) {
+        return true;
+      }
+      // 4. Roll Number match (if valid and not default placeholder)
+      if (studentRollNo && studentRollNo !== 'SVCET-STD' && studentRollNo !== 'RVS-STD' && b.student_id === studentRollNo) {
+        return true;
+      }
+      return false;
+    });
+  }, [bookings, profile, studentEmail, cleanStudentName, studentRollNo]);
 
   const activeBookings = studentBookings.filter(
     (b) => b.status !== 'completed' && b.status !== 'cancelled'
@@ -71,25 +74,62 @@ export const StudentHomeScreen = ({
   const completedBookings = studentBookings.filter((b) => b.status === 'completed');
   const primaryActive = activeBookings[0];
 
+  // 📊 Time-based Analytics Calculations
+  const currentYearMonth = today.toISOString().slice(0, 7);
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const totalClothesAllTime = useMemo(() => {
+    return studentBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
+  }, [studentBookings]);
+
+  const thisMonthBookings = useMemo(() => {
+    return studentBookings.filter((b) => (b.created_at || '').startsWith(currentYearMonth));
+  }, [studentBookings, currentYearMonth]);
+
+  const thisMonthClothes = useMemo(() => {
+    return thisMonthBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
+  }, [thisMonthBookings]);
+
+  const thisWeekBookings = useMemo(() => {
+    return studentBookings.filter((b) => {
+      if (!b.created_at) return false;
+      const bDate = new Date(b.created_at);
+      return bDate >= sevenDaysAgo;
+    });
+  }, [studentBookings, sevenDaysAgo]);
+
+  const thisWeekClothes = useMemo(() => {
+    return thisWeekBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
+  }, [thisWeekBookings]);
+
+  // Displayed activity list based on selected tab
+  const displayedActivityBookings = useMemo(() => {
+    if (activityTimeframe === 'WEEK') return thisWeekBookings;
+    if (activityTimeframe === 'MONTH') return thisMonthBookings;
+    return studentBookings;
+  }, [activityTimeframe, studentBookings, thisMonthBookings, thisWeekBookings]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await refreshData();
     setRefreshing(false);
   };
 
-  const getStatusLabel = (status) => {
+  const getStatusInfo = (status) => {
     switch (status) {
-      case 'in_wash':
-        return 'In Washing Machine';
-      case 'drying_ironing':
-        return 'Drying & Ironing';
+      case 'completed':
+        return { label: 'Collected & Done', color: '#16A34A', bg: '#DCFCE7' };
       case 'ready_for_pickup':
-        return 'Ready for Pickup';
+        return { label: 'Ready for Pickup', color: '#D97706', bg: '#FEF3C7' };
+      case 'drying_ironing':
+        return { label: 'Drying & Ironing', color: '#7C3AED', bg: '#F3E8FF' };
+      case 'in_wash':
+        return { label: 'In Washing Machine', color: '#2563EB', bg: '#DBEAFE' };
       case 'dropoff_scheduled':
       case 'pending_approval':
-        return 'Drop-Off Scheduled';
+        return { label: 'Drop-off Pending', color: '#475569', bg: '#F1F5F9' };
       default:
-        return 'No Active Wash';
+        return { label: status, color: '#475569', bg: '#F1F5F9' };
     }
   };
 
@@ -100,7 +140,7 @@ export const StudentHomeScreen = ({
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      {/* 🌟 Top Greeting Card (Exact reference design) */}
+      {/* 🌟 Top Greeting Card */}
       <View style={styles.greetingCard}>
         <View style={styles.greetingTopRow}>
           <View style={{ flex: 1 }}>
@@ -132,7 +172,7 @@ export const StudentHomeScreen = ({
         </TouchableOpacity>
       </View>
 
-      {/* 📌 ESSENTIALS SECTION (2x2 Grid of Curated Squircles) */}
+      {/* 📌 ESSENTIALS SECTION (2x2 Grid of Curated Cards) */}
       <Text style={styles.sectionHeader}>ESSENTIALS</Text>
 
       <View style={styles.essentialsGrid}>
@@ -158,7 +198,7 @@ export const StudentHomeScreen = ({
             <View style={{ flex: 1 }}>
               <Text style={styles.cardMetricLabel}>Status</Text>
               <Text style={[styles.cardMetricVal, { color: '#9A3412' }]} numberOfLines={1}>
-                {primaryActive ? getStatusLabel(primaryActive.status) : 'No Active Bag'}
+                {primaryActive ? getStatusInfo(primaryActive.status).label : 'No Active Bag'}
               </Text>
             </View>
             <Ionicons name="sync-outline" size={16} color="#EA580C" />
@@ -220,23 +260,23 @@ export const StudentHomeScreen = ({
 
           <View style={styles.cardMetricRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardMetricLabel}>Assigned Day</Text>
-              <Text style={[styles.cardMetricVal, { color: '#6B21A8' }]}>{yearConfig.dropoffDay}</Text>
+              <Text style={styles.cardMetricLabel}>Max Limit</Text>
+              <Text style={[styles.cardMetricVal, { color: '#5B21B6' }]}>20 Clothes</Text>
             </View>
-            <Ionicons name="calendar-outline" size={16} color="#7C3AED" />
+            <Ionicons name="add-circle" size={18} color="#7C3AED" />
           </View>
 
-          <Text style={styles.cardFooterSub}>Pickup: {yearConfig.pickupDay} (+2 days)</Text>
+          <Text style={styles.cardFooterSub}>
+            Drop: {yearConfig.dropoffDay} • Pick: {yearConfig.pickupDay}
+          </Text>
         </TouchableOpacity>
 
-        {/* Card 4: Pickup Tokens (Ocean Azure Sky) */}
+        {/* Card 4: Pickup Tokens (Sky Blue / Aqua) */}
         <TouchableOpacity
-          style={[styles.pastelCard, styles.pastelAzure]}
+          style={[styles.pastelCard, styles.pastelSky]}
           onPress={() => {
             if (readyBookings.length > 0) {
               setSelectedTokenBooking(readyBookings[0]);
-            } else if (primaryActive) {
-              setSelectedTokenBooking(primaryActive);
             } else if (studentBookings.length > 0) {
               setSelectedTokenBooking(studentBookings[0]);
             } else {
@@ -267,8 +307,116 @@ export const StudentHomeScreen = ({
         </TouchableOpacity>
       </View>
 
-      {/* 🛠️ TOOLS SECTION (2 Rounded White Shortcut Cards) */}
-      <Text style={styles.sectionHeader}>TOOLS</Text>
+      {/* 📊 LAUNDRY USAGE & ACTIVITY BREAKDOWN SECTION */}
+      <View style={styles.usageContainer}>
+        <View style={styles.usageHeaderRow}>
+          <Text style={styles.sectionHeader}>LAUNDRY USAGE & HABITS</Text>
+          <TouchableOpacity onPress={onNavigateToHistory} activeOpacity={0.7}>
+            <Text style={styles.seeAllText}>View All Log →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 4 Summary Stat Tiles */}
+        <View style={styles.usageStatsGrid}>
+          <View style={[styles.usageStatBox, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+            <Text style={[styles.usageStatNum, { color: '#1D4ED8' }]}>{thisWeekClothes}</Text>
+            <Text style={styles.usageStatLabel}>This Week</Text>
+            <Text style={styles.usageStatSub}>{thisWeekBookings.length} {thisWeekBookings.length === 1 ? 'drop' : 'drops'}</Text>
+          </View>
+
+          <View style={[styles.usageStatBox, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+            <Text style={[styles.usageStatNum, { color: '#15803D' }]}>{thisMonthClothes}</Text>
+            <Text style={styles.usageStatLabel}>This Month</Text>
+            <Text style={styles.usageStatSub}>{thisMonthBookings.length} {thisMonthBookings.length === 1 ? 'drop' : 'drops'}</Text>
+          </View>
+
+          <View style={[styles.usageStatBox, { backgroundColor: '#FAF5FF', borderColor: '#E9D5FF' }]}>
+            <Text style={[styles.usageStatNum, { color: '#7E22CE' }]}>{totalClothesAllTime}</Text>
+            <Text style={styles.usageStatLabel}>All-Time Total</Text>
+            <Text style={styles.usageStatSub}>{studentBookings.length} total bags</Text>
+          </View>
+
+          <View style={[styles.usageStatBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+            <Text style={[styles.usageStatNum, { color: '#C2410C' }]}>{completedBookings.length}</Text>
+            <Text style={styles.usageStatLabel}>Cleaned Loads</Text>
+            <Text style={styles.usageStatSub}>{activeBookings.length} active now</Text>
+          </View>
+        </View>
+
+        {/* Timeframe Filter Tabs for Activity Timeline */}
+        <View style={styles.activityTabs}>
+          {[
+            { id: 'ALL', label: `All Drops (${studentBookings.length})` },
+            { id: 'MONTH', label: `This Month (${thisMonthBookings.length})` },
+            { id: 'WEEK', label: `This Week (${thisWeekBookings.length})` },
+          ].map((tab) => (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.activityTab, activityTimeframe === tab.id && styles.activityTabActive]}
+              onPress={() => setActivityTimeframe(tab.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.activityTabText, activityTimeframe === tab.id && styles.activityTabTextActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Date-wise Drop-off Breakdown List */}
+        {displayedActivityBookings.length === 0 ? (
+          <View style={styles.emptyActivityCard}>
+            <Ionicons name="calendar-outline" size={32} color="#94A3B8" />
+            <Text style={styles.emptyActivityTitle}>No Laundry In This Period</Text>
+            <Text style={styles.emptyActivitySub}>
+              {activityTimeframe === 'WEEK'
+                ? 'You have not submitted any laundry in the last 7 days.'
+                : 'No laundry drop-offs recorded for this timeframe.'}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.activityList}>
+            {displayedActivityBookings.slice(0, 4).map((b) => {
+              const statusInfo = getStatusInfo(b.status);
+              const itemsCount = b.total_items || 0;
+              const dateText = b.created_at ? new Date(b.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recent Drop';
+
+              return (
+                <TouchableOpacity
+                  key={b.id}
+                  style={styles.activityCard}
+                  onPress={() => onSelectBooking(b.id)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.activityCardLeft}>
+                    <View style={styles.activityIconCircle}>
+                      <Ionicons name="shirt-outline" size={18} color="#4338CA" />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={styles.activityDate}>{dateText}</Text>
+                        <Text style={styles.activityToken}>#{b.pickup_token}</Text>
+                      </View>
+                      <Text style={styles.activityItems}>
+                        🧺 <Text style={{ fontWeight: '800' }}>{itemsCount}</Text> clothes submitted
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.activityStatusBadge, { backgroundColor: statusInfo.bg }]}>
+                    <Text style={[styles.activityStatusText, { color: statusInfo.color }]}>
+                      {statusInfo.label}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
+      {/* 🛠️ TOOLS SECTION */}
+      <Text style={styles.sectionHeader}>TOOLS & GUIDELINES</Text>
 
       <View style={styles.toolsGrid}>
         <TouchableOpacity
@@ -329,38 +477,33 @@ export const StudentHomeScreen = ({
                       isStudentYear && styles.scheduleRosterCardActive,
                     ]}
                   >
-                    <View style={styles.rosterTop}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={styles.rosterYearName}>{yr}</Text>
-                        {isStudentYear && (
-                          <View style={styles.youBadge}>
-                            <Text style={styles.youBadgeText}>YOUR YEAR</Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={styles.rosterDaysText}>
-                        🗓️ {cfg.dropoffDay} $\rightarrow$ {cfg.pickupDay}
+                    <View style={styles.scheduleRosterHeader}>
+                      <Text
+                        style={[
+                          styles.scheduleRosterYear,
+                          isStudentYear && { color: THEME.colors.primaryDark, fontWeight: '800' },
+                        ]}
+                      >
+                        {yr}
                       </Text>
+                      {isStudentYear && (
+                        <View style={styles.yourScheduleBadge}>
+                          <Text style={styles.yourScheduleBadgeText}>Your Year</Text>
+                        </View>
+                      )}
                     </View>
-                    <Text style={styles.rosterSub}>
-                      Drop clothes every {cfg.dropoffDay} • Guaranteed collection on {cfg.pickupDay} (after 2 days).
+                    <Text style={styles.scheduleRosterDays}>
+                      Drop: <Text style={{ fontWeight: '700' }}>{cfg.dropoffDay}</Text> • Collect: <Text style={{ fontWeight: '700' }}>{cfg.pickupDay}</Text>
                     </Text>
                   </View>
                 );
               })}
             </ScrollView>
-
-            <TouchableOpacity
-              style={styles.modalCloseBtn}
-              onPress={() => setScheduleModalVisible(false)}
-            >
-              <Text style={styles.modalCloseBtnText}>Close Schedule</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Hostel Guidelines Modal */}
+      {/* Rules Modal */}
       <Modal
         visible={rulesModalVisible}
         transparent
@@ -370,39 +513,25 @@ export const StudentHomeScreen = ({
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Hostel Laundry Rules</Text>
+              <Text style={styles.modalTitle}>Laundry Rules & Guidelines</Text>
               <TouchableOpacity onPress={() => setRulesModalVisible(false)}>
                 <Ionicons name="close-circle" size={24} color={THEME.colors.textMuted} />
               </TouchableOpacity>
             </View>
-
-            <View style={styles.guidelineItem}>
-              <Ionicons name="shirt-outline" size={18} color="#2563EB" />
-              <Text style={styles.guidelineText}>
-                Maximum 20 items per student load.
-              </Text>
-            </View>
-
-            <View style={styles.guidelineItem}>
-              <Ionicons name="calendar-outline" size={18} color="#2563EB" />
-              <Text style={styles.guidelineText}>
-                Drop clothes on your allocated year day (1st: Mon, 2nd: Tue, 3rd: Wed, 4th: Fri).
-              </Text>
-            </View>
-
-            <View style={styles.guidelineItem}>
-              <Ionicons name="gift-outline" size={18} color="#059669" />
-              <Text style={styles.guidelineText}>
-                Collect clean laundry after 2 days by presenting your in-app Pickup Token.
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.modalCloseBtn}
-              onPress={() => setRulesModalVisible(false)}
-            >
-              <Text style={styles.modalCloseBtnText}>Got It</Text>
-            </TouchableOpacity>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
+              <View style={styles.ruleItem}>
+                <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                <Text style={styles.ruleText}>Maximum 20 clothes allowed per intake.</Text>
+              </View>
+              <View style={styles.ruleItem}>
+                <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                <Text style={styles.ruleText}>Tag your clothes with your Roll Number.</Text>
+              </View>
+              <View style={styles.ruleItem}>
+                <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                <Text style={styles.ruleText}>Collect clothes within 24 hours of completion.</Text>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -421,181 +550,312 @@ const styles = StyleSheet.create({
   },
   greetingCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 32, // ✨ Ultra-smooth rounded greeting card
-    padding: 20,
-    borderWidth: 1.5,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 20,
-    overflow: 'hidden',
-    ...THEME.shadows.md,
+    marginBottom: 16,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
   },
   greetingTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
   },
   greetingName: {
-    fontSize: 17,
-    fontWeight: '900',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: -0.5,
   },
   greetingSub: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#64748B',
     marginTop: 2,
+    fontWeight: '600',
   },
   weatherBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F1F5F9',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 10,
   },
   weatherIcon: {
-    fontSize: 18,
+    fontSize: 16,
   },
   weatherTemp: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#334155',
   },
   weatherSub: {
-    fontSize: 8,
+    fontSize: 8.5,
     color: '#64748B',
   },
   cardDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginVertical: 6,
+    marginVertical: 12,
   },
   viewScheduleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
   },
   viewScheduleText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#0284C7',
   },
   sectionHeader: {
     fontSize: 12,
-    fontWeight: '900',
-    color: '#334155',
-    letterSpacing: 1,
-    marginBottom: 14,
-    marginTop: 4,
+    fontWeight: '800',
+    color: '#475569',
+    letterSpacing: 0.8,
+    marginBottom: 10,
   },
   essentialsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 14,
-    marginBottom: 24,
+    gap: 12,
+    marginBottom: 20,
   },
   pastelCard: {
-    width: '47.5%',
-    borderRadius: 38, // 🌟 Dramatic curved squircle edges
-    padding: 18,
-    minHeight: 160,
+    width: '48%',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    minHeight: 145,
     justifyContent: 'space-between',
-    borderWidth: 1.5,
-    overflow: 'hidden',
-    ...THEME.shadows.md,
   },
   pastelSunset: {
-    backgroundColor: '#FFEAD5', // Rich Warm Sunset Peach / Coral
-    borderColor: '#FDBA74',
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FFEDD5',
   },
   pastelMatcha: {
-    backgroundColor: '#DCFCE7', // Rich Crisp Matcha Mint
-    borderColor: '#86EFAC',
+    backgroundColor: '#F0FDF4',
+    borderColor: '#DCFCE7',
   },
   pastelViolet: {
-    backgroundColor: '#F3E8FF', // Rich Royal Iris Lilac
-    borderColor: '#D8B4FE',
+    backgroundColor: '#FAF5FF',
+    borderColor: '#F3E8FF',
   },
-  pastelAzure: {
-    backgroundColor: '#E0F2FE', // Rich Ocean Sky Azure
-    borderColor: '#7DD3FC',
+  pastelSky: {
+    backgroundColor: '#F0F9FF',
+    borderColor: '#E0F2FE',
   },
   iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22, // Full round circle/pill badge
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    ...THEME.shadows.sm,
+    marginBottom: 6,
   },
   cardMainTitle: {
-    fontSize: 15,
-    fontWeight: '900',
+    fontSize: 14,
+    fontWeight: '800',
     color: '#0F172A',
-    marginTop: 8,
   },
   cardMetricRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 4,
+    marginVertical: 4,
   },
   cardMetricLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#475569',
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '600',
   },
   cardMetricVal: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
-    marginTop: 1,
   },
   cardFooterSub: {
-    fontSize: 9,
-    fontWeight: '600',
+    fontSize: 10,
     color: '#64748B',
-    marginTop: 4,
+    fontWeight: '600',
+  },
+  usageContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 20,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+  },
+  usageHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  seeAllText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#4338CA',
+  },
+  usageStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  usageStatBox: {
+    flex: 1,
+    minWidth: '47%',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+  },
+  usageStatNum: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  usageStatLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
+    marginTop: 2,
+  },
+  usageStatSub: {
+    fontSize: 9.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  activityTabs: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    padding: 3,
+    gap: 4,
+    marginBottom: 12,
+  },
+  activityTab: {
+    flex: 1,
+    paddingVertical: 6,
+    alignItems: 'center',
+    borderRadius: 7,
+  },
+  activityTabActive: {
+    backgroundColor: '#FFFFFF',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+  },
+  activityTabText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  activityTabTextActive: {
+    color: '#4338CA',
+  },
+  activityList: {
+    gap: 8,
+  },
+  activityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  activityCardLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activityIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityDate: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  activityToken: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#4338CA',
+  },
+  activityItems: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  activityStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  activityStatusText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  emptyActivityCard: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  emptyActivityTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+    marginTop: 6,
+  },
+  emptyActivitySub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 2,
   },
   toolsGrid: {
     flexDirection: 'row',
-    gap: 14,
+    gap: 12,
     marginBottom: 20,
   },
   toolCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 32, // 🌟 Distinct curved tool box
-    paddingVertical: 20,
-    paddingHorizontal: 14,
+    borderRadius: 16,
+    padding: 14,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#E2E8F0',
-    overflow: 'hidden',
-    ...THEME.shadows.md,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
   },
   toolIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26, // Round bubble
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   toolTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#1E293B',
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -603,84 +863,63 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
   },
   scheduleRosterCard: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   scheduleRosterCardActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#3B82F6',
+    borderColor: '#6366F1',
+    backgroundColor: '#EEF2FF',
   },
-  rosterTop: {
+  scheduleRosterHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 4,
   },
-  rosterYearName: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  youBadge: {
-    backgroundColor: '#1E40AF',
-    paddingVertical: 1,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-  },
-  youBadgeText: {
-    fontSize: 8,
-    fontWeight: '800',
-    color: '#FFF',
-  },
-  rosterDaysText: {
-    fontSize: 11,
+  scheduleRosterYear: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#1D4ED8',
+    color: '#1E293B',
   },
-  rosterSub: {
+  yourScheduleBadge: {
+    backgroundColor: '#4338CA',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  yourScheduleBadgeText: {
+    color: '#FFF',
     fontSize: 10,
-    color: '#475569',
-    lineHeight: 14,
+    fontWeight: '700',
   },
-  guidelineItem: {
+  scheduleRosterDays: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  ruleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    gap: 10,
+    gap: 8,
+    marginBottom: 10,
   },
-  guidelineText: {
-    fontSize: 12,
+  ruleText: {
+    fontSize: 13,
     color: '#334155',
     flex: 1,
-    lineHeight: 16,
-  },
-  modalCloseBtn: {
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  modalCloseBtnText: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '700',
   },
 });
 

@@ -5,6 +5,7 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
+  Image,
   StyleSheet,
   Alert,
   Platform,
@@ -13,12 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
 import { HOSTEL_BLOCKS } from '../../constants/categories';
 import { useAuth } from '../../context/AuthContext';
+import { useLaundry } from '../../context/LaundryContext';
 import { apiService } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PrivacyPolicyModal from '../common/PrivacyPolicyModal';
 
 export const ProfileScreen = () => {
   const { profile, signOut } = useAuth();
+  const { bookings } = useLaundry();
 
   const [name, setName] = useState(profile?.full_name || '');
   const [studentId, setStudentId] = useState(profile?.student_id || '');
@@ -28,6 +31,24 @@ export const ProfileScreen = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+
+  // Compute student-specific metrics
+  const studentEmail = (profile?.email || '').trim().toLowerCase();
+  const studentRollNo = (profile?.student_id || '').trim();
+  const cleanStudentName = (profile?.full_name || '').trim().toLowerCase();
+
+  const studentBookings = bookings.filter((b) => {
+    if (b.user_id && profile?.id && b.user_id === profile.id) return true;
+    if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
+    const bName = (b.student_name || '').trim().toLowerCase();
+    if (cleanStudentName && bName && bName === cleanStudentName) return true;
+    if (studentRollNo && studentRollNo !== 'SVCET-STD' && studentRollNo !== 'RVS-STD' && b.student_id === studentRollNo) return true;
+    return false;
+  });
+
+  const totalClothesCleaned = studentBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
+  const completedOrders = studentBookings.filter((b) => b.status === 'completed').length;
+  const activeOrders = studentBookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled').length;
 
   const handleDeleteAccount = () => {
     const confirmMessage =
@@ -66,7 +87,6 @@ export const ProfileScreen = () => {
         Alert.alert('Account Deleted', 'Your account and personal data have been permanently deleted.');
       }
     } catch (e) {
-      // Clear local session in all cases
       await AsyncStorage.clear();
       signOut();
     }
@@ -88,7 +108,7 @@ export const ProfileScreen = () => {
         JSON.stringify(updatedProfile)
       );
       setIsEditing(false);
-      Alert.alert('Profile Saved', 'Your hostel and room details have been updated.');
+      Alert.alert('Profile Saved', 'Your student hostel details have been updated successfully.');
     } catch (e) {
       Alert.alert('Error', 'Unable to save profile changes.');
     } finally {
@@ -98,14 +118,14 @@ export const ProfileScreen = () => {
 
   const handleSignOut = () => {
     if (Platform.OS === 'web') {
-      const confirmSignout = window.confirm('Are you sure you want to sign out?');
+      const confirmSignout = window.confirm('Are you sure you want to sign out from DobiX?');
       if (confirmSignout) {
         signOut();
       }
     } else {
       Alert.alert(
         'Sign Out',
-        'Are you sure you want to sign out?',
+        'Are you sure you want to sign out from DobiX?',
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -124,38 +144,90 @@ export const ProfileScreen = () => {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Profile Hero Card */}
-      <View style={styles.profileCard}>
-        <View style={styles.avatarLarge}>
-          <Text style={styles.avatarLargeText}>
-            {(name || profile?.email || 'S').charAt(0).toUpperCase()}
-          </Text>
+      {/* 🪪 Digital Campus Identity Card */}
+      <View style={styles.idCard}>
+        <View style={styles.idCardTop}>
+          <Image
+            source={require('../../assets/rvs_logo.png')}
+            style={styles.idCardLogo}
+            resizeMode="contain"
+          />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.idCardUniversity}>RVS UNIVERSITY</Text>
+            <Text style={styles.idCardSub}>Hostel Laundry Digital ID</Text>
+          </View>
+          <View style={styles.yearPill}>
+            <Text style={styles.yearPillText}>{profile?.academic_year || '1st Year'}</Text>
+          </View>
         </View>
 
-        <Text style={styles.profileName}>{name || profile?.email}</Text>
-        <Text style={styles.profileTag}>
-          {profile?.email} • {hostelBlock?.split(' ')[0]}
-        </Text>
+        <View style={styles.idCardDivider} />
 
-        <TouchableOpacity
-          style={styles.editToggleBtn}
-          onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
-          disabled={saving}
-        >
-          <Ionicons
-            name={isEditing ? 'checkmark-circle-outline' : 'create-outline'}
-            size={16}
-            color={THEME.colors.primaryDark}
-          />
-          <Text style={styles.editToggleBtnText}>
-            {saving ? 'Saving...' : isEditing ? 'Save Profile' : 'Edit Information'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.idCardBody}>
+          <View style={styles.idCardAvatar}>
+            <Text style={styles.idCardAvatarText}>
+              {(name || profile?.email || 'S').charAt(0).toUpperCase()}
+            </Text>
+          </View>
+
+          <View style={styles.idCardDetails}>
+            <Text style={styles.idCardName}>{name || 'Student'}</Text>
+            <Text style={styles.idCardRoll}>
+              Roll No: <Text style={{ fontWeight: '800', color: '#1E293B' }}>{studentId || profile?.student_id || 'N/A'}</Text>
+            </Text>
+            <Text style={styles.idCardRoom}>
+              {hostelBlock || 'Hostel Block'} • Rm {roomNumber || 'N/A'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.idCardFooter}>
+          <Text style={styles.idCardEmail}>{profile?.email}</Text>
+          <Text style={styles.idCardPhone}>{phoneNumber || profile?.phone_number || 'No Phone'}</Text>
+        </View>
       </View>
 
-      {/* Profile Form Fields */}
+      {/* 📊 Lifetime Laundry Statistics Card */}
+      <View style={styles.statsCard}>
+        <Text style={styles.cardTitle}>🧺 Lifetime Laundry Activity</Text>
+
+        <View style={styles.statsGrid}>
+          <View style={styles.statBox}>
+            <Text style={[styles.statNum, { color: '#4338CA' }]}>{totalClothesCleaned}</Text>
+            <Text style={styles.statLabel}>Clothes Washed</Text>
+          </View>
+
+          <View style={styles.statBox}>
+            <Text style={[styles.statNum, { color: '#15803D' }]}>{completedOrders}</Text>
+            <Text style={styles.statLabel}>Completed Drops</Text>
+          </View>
+
+          <View style={styles.statBox}>
+            <Text style={[styles.statNum, { color: '#D97706' }]}>{activeOrders}</Text>
+            <Text style={styles.statLabel}>Active Bags</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 📝 Profile Edit Form Fields */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Student Hostel Information</Text>
+        <View style={styles.cardHeaderRow}>
+          <Text style={styles.cardTitle}>Room & Contact Information</Text>
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
+            disabled={saving}
+          >
+            <Ionicons
+              name={isEditing ? 'checkmark-circle' : 'create-outline'}
+              size={16}
+              color={isEditing ? '#FFF' : '#4338CA'}
+            />
+            <Text style={[styles.editBtnText, isEditing && { color: '#FFF' }]}>
+              {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Edit Details'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>Full Name</Text>
@@ -183,7 +255,7 @@ export const ProfileScreen = () => {
             style={[styles.input, !isEditing && styles.inputDisabled]}
             value={hostelBlock}
             onChangeText={setHostelBlock}
-            placeholder="e.g. Block A (Boys Hostel) or Kaveri Block"
+            placeholder="e.g. Block A (Boys Hostel)"
             placeholderTextColor={THEME.colors.textMuted}
             editable={isEditing}
           />
@@ -200,7 +272,7 @@ export const ProfileScreen = () => {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Mobile Number (For Alerts)</Text>
+          <Text style={styles.fieldLabel}>Mobile Number (SMS / Alerts)</Text>
           <TextInput
             style={[styles.input, !isEditing && styles.inputDisabled]}
             value={phoneNumber}
@@ -211,65 +283,55 @@ export const ProfileScreen = () => {
         </View>
       </View>
 
-      {/* Laundry Rules & Guidelines Card */}
+      {/* 🔒 Privacy, Security & Account Management */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Campus Laundry Guidelines</Text>
-
-        <View style={styles.guideItem}>
-          <Ionicons name="bag-check-outline" size={18} color={THEME.colors.primary} />
-          <View style={styles.guideTextWrap}>
-            <Text style={styles.guideHeading}>Maximum 20 Items per Request</Text>
-            <Text style={styles.guideSub}>
-              Ensure all clothes are tagged or tied inside your hostel laundry bag.
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.guideItem}>
-          <Ionicons name="time-outline" size={18} color={THEME.colors.primary} />
-          <View style={styles.guideTextWrap}>
-            <Text style={styles.guideHeading}>Strict Drop-off Slot Timings</Text>
-            <Text style={styles.guideSub}>
-              Drop clothes within your allocated slot window to prevent queue bottlenecks.
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Privacy, Data Safety & Legal */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Privacy & Data Protection</Text>
+        <Text style={styles.cardTitle}>Privacy & Security</Text>
 
         <TouchableOpacity
-          style={styles.legalRow}
+          style={styles.actionRow}
           onPress={() => setShowPrivacyModal(true)}
           activeOpacity={0.7}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="shield-checkmark-outline" size={18} color="#16A34A" />
-            <Text style={styles.legalRowText}>Privacy Policy & Data Safety Disclosures</Text>
+          <View style={styles.actionRowLeft}>
+            <Ionicons name="shield-checkmark-outline" size={20} color="#16A34A" />
+            <Text style={styles.actionRowText}>Privacy Policy & Data Safety Disclosures</Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color="#64748B" />
+          <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
         </TouchableOpacity>
 
+        <View style={styles.actionDivider} />
+
         <TouchableOpacity
-          style={styles.deleteAccountRow}
+          style={styles.actionRow}
           onPress={handleDeleteAccount}
           activeOpacity={0.7}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="trash-outline" size={18} color="#E11D48" />
-            <Text style={styles.deleteAccountText}>Request Account & Data Deletion</Text>
+          <View style={styles.actionRowLeft}>
+            <Ionicons name="trash-outline" size={20} color="#DC2626" />
+            <Text style={[styles.actionRowText, { color: '#DC2626' }]}>
+              Delete Account & Laundry History
+            </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color="#E11D48" />
+          <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
         </TouchableOpacity>
       </View>
 
-      {/* Sign Out Button */}
-      <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut} activeOpacity={0.85}>
-        <Ionicons name="log-out-outline" size={18} color="#4338CA" />
+      {/* 🚪 Sign Out Button */}
+      <TouchableOpacity
+        style={styles.signOutBtn}
+        onPress={handleSignOut}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="log-out-outline" size={20} color="#FFF" />
         <Text style={styles.signOutBtnText}>Sign Out from DobiX</Text>
       </TouchableOpacity>
+
+      {/* App Version Info */}
+      <View style={styles.footerVersion}>
+        <Text style={styles.footerVersionText}>
+          DobiX v1.0.0 • RVS University Hostel Laundry Portal
+        </Text>
+      </View>
 
       {/* Privacy Policy Modal */}
       <PrivacyPolicyModal
@@ -283,187 +345,254 @@ export const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
+    backgroundColor: '#F8FAFC',
   },
   content: {
-    padding: THEME.spacing.lg,
+    padding: 16,
     paddingBottom: 40,
   },
-  profileCard: {
-    backgroundColor: THEME.colors.surface,
-    borderRadius: THEME.radius.xl,
-    padding: THEME.spacing.lg,
-    alignItems: 'center',
-    marginBottom: THEME.spacing.md,
+  idCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
-    ...THEME.shadows.sm,
+    borderColor: '#CBD5E1',
+    marginBottom: 16,
+    boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
   },
-  avatarLarge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: THEME.colors.primaryDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  avatarLargeText: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFF',
-  },
-  profileName: {
-    fontSize: THEME.typography.sizes.lg,
-    fontWeight: '800',
-    color: THEME.colors.textPrimary,
-  },
-  profileTag: {
-    fontSize: 12,
-    color: THEME.colors.textSecondary,
-    marginTop: 2,
-    marginBottom: 12,
-  },
-  editToggleBtn: {
+  idCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.primarySoft,
-    paddingVertical: 7,
-    paddingHorizontal: 16,
-    borderRadius: THEME.radius.full,
+    justifyContent: 'space-between',
   },
-  editToggleBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: THEME.colors.primaryDark,
-    marginLeft: 6,
+  idCardLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
-  card: {
-    backgroundColor: THEME.colors.surface,
-    borderRadius: THEME.radius.lg,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
+  idCardUniversity: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: 0.5,
+  },
+  idCardSub: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  yearPill: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
-    ...THEME.shadows.sm,
+    borderColor: '#C7D2FE',
   },
-  cardTitle: {
-    fontSize: THEME.typography.sizes.sm,
+  yearPillText: {
+    fontSize: 11,
     fontWeight: '800',
-    color: THEME.colors.textPrimary,
+    color: '#4338CA',
+  },
+  idCardDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 14,
+  },
+  idCardBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
   },
+  idCardAvatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#4338CA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  idCardAvatarText: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  idCardDetails: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  idCardName: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  idCardRoll: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  idCardRoom: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  idCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  idCardEmail: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  idCardPhone: {
+    fontSize: 11,
+    color: '#1E293B',
+    fontWeight: '700',
+  },
+  statsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 12,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  statNum: {
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  statLabel: {
+    fontSize: 10.5,
+    color: '#64748B',
+    fontWeight: '700',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 16,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    gap: 5,
+  },
+  editBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#4338CA',
+  },
   field: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
   fieldLabel: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
-    color: THEME.colors.textSecondary,
+    color: '#475569',
     marginBottom: 4,
   },
   input: {
-    backgroundColor: THEME.colors.surfaceSubtle,
-    borderRadius: THEME.radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 13,
-    color: THEME.colors.textPrimary,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 13,
+    color: '#0F172A',
   },
   inputDisabled: {
-    backgroundColor: THEME.colors.surfaceSubtle,
-    color: THEME.colors.textSecondary,
+    backgroundColor: '#F8FAFC',
+    color: '#64748B',
+    borderColor: '#E2E8F0',
   },
-  blockChips: {
+  actionRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
   },
-  blockChip: {
-    backgroundColor: THEME.colors.surfaceSubtle,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: THEME.radius.full,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-  },
-  blockChipActive: {
-    backgroundColor: THEME.colors.primaryDark,
-    borderColor: THEME.colors.primaryDark,
-  },
-  blockChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: THEME.colors.textSecondary,
-  },
-  blockChipTextActive: {
-    color: '#FFF',
-    fontWeight: '700',
-  },
-  guideItem: {
+  actionRowLeft: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.divider,
-  },
-  guideTextWrap: {
+    alignItems: 'center',
+    gap: 10,
     flex: 1,
-    marginLeft: 10,
   },
-  guideHeading: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: THEME.colors.textPrimary,
+  actionRowText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1E293B',
   },
-  guideSub: {
-    fontSize: 11,
-    color: THEME.colors.textSecondary,
-    marginTop: 2,
-    lineHeight: 16,
+  actionDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 4,
   },
   signOutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEF2FF',
-    borderRadius: THEME.radius.lg,
+    backgroundColor: '#0F172A',
     paddingVertical: 14,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderRadius: 14,
+    gap: 8,
+    marginTop: 4,
   },
   signOutBtnText: {
-    fontSize: 13,
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '800',
-    color: '#4338CA',
-    marginLeft: 8,
   },
-  legalRow: {
-    flexDirection: 'row',
+  footerVersion: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    marginTop: 18,
   },
-  legalRowText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  deleteAccountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-  deleteAccountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#E11D48',
+  footerVersionText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
   },
 });
 
