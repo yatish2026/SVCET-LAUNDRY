@@ -28,7 +28,7 @@ export const AuthScreen = () => {
   const { signIn, signUp } = useAuth();
 
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
-  const [regStep, setRegStep] = useState(1); // 1: Demographics & Slot, 2: Room & Account Details
+  const [regStep, setRegStep] = useState(1); // 1: Room & Account Details, 2: Course & Assigned Slot
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -84,7 +84,7 @@ export const AuthScreen = () => {
     }
   };
 
-  const handleRegister = async () => {
+  const handleGoToStep2 = () => {
     if (!fullName.trim()) {
       Alert.alert('Missing Name', 'Please enter your full name.');
       return;
@@ -105,7 +105,10 @@ export const AuthScreen = () => {
       Alert.alert('Password Requirement', 'Password must be at least 6 characters.');
       return;
     }
+    setRegStep(2);
+  };
 
+  const handleRegister = async () => {
     try {
       setLoading(true);
       await signUp({
@@ -147,7 +150,7 @@ export const AuthScreen = () => {
             <Image
               source={require('../../assets/rvs_logo.png')}
               style={styles.brandLogo}
-              resizeMode="contain"
+              resizeMode="cover"
             />
           </View>
           <View style={styles.brandUnivPill}>
@@ -267,7 +270,7 @@ export const AuthScreen = () => {
                     <Text style={[styles.stepNumberText, regStep === 1 && styles.stepNumberTextActive]}>1</Text>
                   </View>
                   <Text style={[styles.stepTabText, regStep === 1 && styles.stepTabTextActive]}>
-                    Batch & Slot
+                    Room & Account
                   </Text>
                 </TouchableOpacity>
 
@@ -275,129 +278,23 @@ export const AuthScreen = () => {
 
                 <TouchableOpacity
                   style={[styles.stepTab, regStep === 2 && styles.stepTabActive]}
-                  onPress={() => setRegStep(2)}
+                  onPress={handleGoToStep2}
                   activeOpacity={0.8}
                 >
                   <View style={[styles.stepNumberBadge, regStep === 2 && styles.stepNumberBadgeActive]}>
                     <Text style={[styles.stepNumberText, regStep === 2 && styles.stepNumberTextActive]}>2</Text>
                   </View>
                   <Text style={[styles.stepTabText, regStep === 2 && styles.stepTabTextActive]}>
-                    Room & Account
+                    Course & Slot
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* STEP 1: DEMOGRAPHICS & ASSIGNED SLOT */}
+              {/* STEP 1: PERSONAL, ROOM & ACCOUNT DETAILS */}
               {regStep === 1 && (
                 <View>
-                  <Text style={styles.formTitle}>Select Your Course & Batch</Text>
-                  <Text style={styles.formSub}>Your designated laundry days are calculated automatically</Text>
-
-                  {/* 1. 🚻 Gender Selection */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Gender / Hostel Type *</Text>
-                    <View style={styles.genderRow}>
-                      {STUDENT_GENDERS.map((g) => {
-                        const isSelected = gender === g.id;
-                        return (
-                          <TouchableOpacity
-                            key={g.id}
-                            style={[styles.genderBtn, isSelected && styles.genderBtnActive]}
-                            onPress={() => handleGenderChange(g.id)}
-                            activeOpacity={0.8}
-                          >
-                            <Ionicons
-                              name={g.icon}
-                              size={18}
-                              color={isSelected ? '#FFF' : '#64748B'}
-                            />
-                            <Text style={[styles.genderBtnText, isSelected && styles.genderBtnTextActive]}>
-                              {g.label}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-
-                  {/* 2. 📍 Home State / Location Picker Button */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Home State / Region *</Text>
-                    <TouchableOpacity
-                      style={styles.dropdownBtn}
-                      onPress={() => setLocationModalVisible(true)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.dropdownLeft}>
-                        <Ionicons name="location-outline" size={18} color="#4338CA" />
-                        <Text style={styles.dropdownSelectedText}>{stateLocation}</Text>
-                      </View>
-                      <Ionicons name="chevron-down" size={18} color="#64748B" />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* 3. 🎓 Academic Course / Branch Picker Button */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Course & Year of Study *</Text>
-                    <TouchableOpacity
-                      style={styles.dropdownBtn}
-                      onPress={() => setCourseModalVisible(true)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.dropdownLeft}>
-                        <Ionicons name="school-outline" size={18} color="#1D4ED8" />
-                        <Text style={styles.dropdownSelectedText}>{academicCourse}</Text>
-                      </View>
-                      <Ionicons name="chevron-down" size={18} color="#64748B" />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* 🌟 Dynamic Laundry Slot Calculation Card */}
-                  <View style={[styles.slotPreviewCard, { backgroundColor: computedSchedule.badgeBg, borderColor: computedSchedule.badgeBorder }]}>
-                    <View style={styles.slotPreviewHeader}>
-                      <Ionicons name="calendar" size={16} color={computedSchedule.badgeColor} />
-                      <Text style={[styles.slotPreviewTitle, { color: computedSchedule.badgeColor }]}>
-                        Assigned Slot: {computedSchedule.category}
-                      </Text>
-                    </View>
-
-                    <View style={styles.slotPreviewBody}>
-                      <View style={styles.slotPreviewItem}>
-                        <Text style={styles.slotPreviewLabel}>DROP-OFF DAY</Text>
-                        <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
-                          {computedSchedule.dropoffDay}
-                        </Text>
-                      </View>
-
-                      <Ionicons name="arrow-forward" size={18} color={computedSchedule.badgeColor} />
-
-                      <View style={styles.slotPreviewItem}>
-                        <Text style={styles.slotPreviewLabel}>RETURN / PICKUP</Text>
-                        <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
-                          {computedSchedule.pickupDay}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.slotPreviewNotice}>{computedSchedule.description}</Text>
-                  </View>
-
-                  {/* Continue Button */}
-                  <TouchableOpacity
-                    style={styles.primaryBtn}
-                    onPress={() => setRegStep(2)}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.primaryBtnText}>Continue: Room & Account Details</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#FFF" style={{ marginLeft: 6 }} />
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {/* STEP 2: PERSONAL, ROOM & ACCOUNT DETAILS */}
-              {regStep === 2 && (
-                <View>
                   <Text style={styles.formTitle}>Student Room & Account</Text>
-                  <Text style={styles.formSub}>Enter your hostel details and set your password</Text>
+                  <Text style={styles.formSub}>Enter your hostel room details and set your password</Text>
 
                   {/* Full Name */}
                   <View style={styles.inputGroup}>
@@ -520,7 +417,113 @@ export const AuthScreen = () => {
                     </View>
                   </View>
 
-                  {/* Register Button */}
+                  {/* Continue Button */}
+                  <TouchableOpacity
+                    style={styles.primaryBtn}
+                    onPress={handleGoToStep2}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.primaryBtnText}>Next: Select Course & Laundry Slot</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#FFF" style={{ marginLeft: 6 }} />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* STEP 2: DEMOGRAPHICS & ASSIGNED SLOT */}
+              {regStep === 2 && (
+                <View>
+                  <Text style={styles.formTitle}>Select Your Course & Batch</Text>
+                  <Text style={styles.formSub}>Your designated laundry days are calculated automatically</Text>
+
+                  {/* 1. 🚻 Gender Selection */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Gender / Hostel Type *</Text>
+                    <View style={styles.genderRow}>
+                      {STUDENT_GENDERS.map((g) => {
+                        const isSelected = gender === g.id;
+                        return (
+                          <TouchableOpacity
+                            key={g.id}
+                            style={[styles.genderBtn, isSelected && styles.genderBtnActive]}
+                            onPress={() => handleGenderChange(g.id)}
+                            activeOpacity={0.8}
+                          >
+                            <Ionicons
+                              name={g.icon}
+                              size={18}
+                              color={isSelected ? '#FFF' : '#64748B'}
+                            />
+                            <Text style={[styles.genderBtnText, isSelected && styles.genderBtnTextActive]}>
+                              {g.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* 2. 📍 Home State / Location Picker Button */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Home State / Region *</Text>
+                    <TouchableOpacity
+                      style={styles.dropdownBtn}
+                      onPress={() => setLocationModalVisible(true)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.dropdownLeft}>
+                        <Ionicons name="location-outline" size={18} color="#4338CA" />
+                        <Text style={styles.dropdownSelectedText}>{stateLocation}</Text>
+                      </View>
+                      <Ionicons name="chevron-down" size={18} color="#64748B" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* 3. 🎓 Academic Course / Branch Picker Button */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Course & Year of Study *</Text>
+                    <TouchableOpacity
+                      style={styles.dropdownBtn}
+                      onPress={() => setCourseModalVisible(true)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.dropdownLeft}>
+                        <Ionicons name="school-outline" size={18} color="#1D4ED8" />
+                        <Text style={styles.dropdownSelectedText}>{academicCourse}</Text>
+                      </View>
+                      <Ionicons name="chevron-down" size={18} color="#64748B" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* 🌟 Dynamic Laundry Slot Calculation Card */}
+                  <View style={[styles.slotPreviewCard, { backgroundColor: computedSchedule.badgeBg, borderColor: computedSchedule.badgeBorder }]}>
+                    <View style={styles.slotPreviewHeader}>
+                      <Ionicons name="calendar" size={16} color={computedSchedule.badgeColor} />
+                      <Text style={[styles.slotPreviewTitle, { color: computedSchedule.badgeColor }]}>
+                        Assigned Slot: {computedSchedule.category}
+                      </Text>
+                    </View>
+
+                    <View style={styles.slotPreviewBody}>
+                      <View style={styles.slotPreviewItem}>
+                        <Text style={styles.slotPreviewLabel}>DROP-OFF DAY</Text>
+                        <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
+                          {computedSchedule.dropoffDay}
+                        </Text>
+                      </View>
+
+                      <Ionicons name="arrow-forward" size={18} color={computedSchedule.badgeColor} />
+
+                      <View style={styles.slotPreviewItem}>
+                        <Text style={styles.slotPreviewLabel}>RETURN / PICKUP</Text>
+                        <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
+                          {computedSchedule.pickupDay}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.slotPreviewNotice}>{computedSchedule.description}</Text>
+                  </View>
+
+                  {/* Complete Registration Button */}
                   <TouchableOpacity
                     style={[styles.primaryBtn, loading && styles.btnDisabled]}
                     onPress={handleRegister}
@@ -544,7 +547,7 @@ export const AuthScreen = () => {
                     activeOpacity={0.7}
                   >
                     <Ionicons name="arrow-back" size={16} color="#64748B" />
-                    <Text style={styles.backStepBtnText}>Back to Course & Batch Selection</Text>
+                    <Text style={styles.backStepBtnText}>Back to Room & Account Details</Text>
                   </TouchableOpacity>
                 </View>
               )}
