@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
-import { getYearConfig, ACADEMIC_YEARS } from '../../constants/schedule';
+import { getStudentSchedule, getYearConfig, ACADEMIC_YEARS } from '../../constants/schedule';
 import { useAuth } from '../../context/AuthContext';
 import { useLaundry } from '../../context/LaundryContext';
 import StepTracker from '../../components/StepTracker';
