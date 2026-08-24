@@ -35,6 +35,7 @@ export const AdminDashboardScreen = ({
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [showQRScanner, setShowQRScanner] = React.useState(false);
+  const [showYearModal, setShowYearModal] = React.useState(false);
   const [selectedTicket, setSelectedTicket] = React.useState(null);
   const [ticketFilter, setTicketFilter] = React.useState('all'); // 'all' | 'open' | 'resolved'
 
@@ -221,77 +222,40 @@ export const AdminDashboardScreen = ({
         </TouchableOpacity>
       </View>
 
-      {/* 📊 Year-Wise Breakdown Section */}
-      <Text style={styles.sectionHeader}>COLLEGE YEAR BREAKDOWN</Text>
+      {/* 📊 Compact College Year Breakdown Button Card */}
+      <View style={styles.breakdownHeaderWrap}>
+        <Text style={styles.sectionHeader}>COLLEGE YEAR & BATCH ANALYTICS</Text>
+      </View>
 
-      <View style={styles.yearGrid}>
-        {ACADEMIC_YEARS.map((yr) => {
-          const stats = yearWiseStats[yr] || { totalClothes: 0, studentCount: 0, activeCount: 0 };
-          const cfg = getYearConfig(yr);
-
-          const getYearTheme = (yearName) => {
-            switch (yearName) {
-              case '1st Year':
-                return { bg: '#FFF7ED', border: '#FFEDD5', text: '#EA580C', icon: 'school' };
-              case '2nd Year':
-                return { bg: '#F0FDF4', border: '#DCFCE7', text: '#16A34A', icon: 'school-outline' };
-              case '3rd Year':
-                return { bg: '#FAF5FF', border: '#F3E8FF', text: '#7C3AED', icon: 'school' };
-              case '4th Year':
-                return { bg: '#F0F9FF', border: '#E0F2FE', text: '#0284C7', icon: 'school-outline' };
-              default:
-                return { bg: '#FFF7ED', border: '#FFEDD5', text: '#EA580C', icon: 'school' };
-            }
-          };
-
-          const theme = getYearTheme(yr);
-
-          return (
-            <View
-              key={yr}
-              style={[
-                styles.yearCard,
-                { backgroundColor: theme.bg, borderColor: theme.border },
-              ]}
-            >
-              <View style={styles.yearHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Ionicons name={theme.icon} size={18} color={theme.text} />
-                  <Text style={[styles.yearTitle, { color: theme.text }]}>{yr}</Text>
-                </View>
-                <View style={[styles.dayPill, { backgroundColor: '#FFFFFF' }]}>
-                  <Text style={[styles.dayPillText, { color: theme.text }]}>
-                    {cfg.dropoffDay}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.yearStatsRow}>
-                <View style={styles.yearStatBlock}>
-                  <Text style={styles.statNumber}>{stats.totalClothes}</Text>
-                  <Text style={styles.statLabel}>Clothes</Text>
-                </View>
-
-                <View style={styles.yearStatDivider} />
-
-                <View style={styles.yearStatBlock}>
-                  <Text style={styles.statNumber}>{stats.studentCount}</Text>
-                  <Text style={styles.statLabel}>Students</Text>
-                </View>
-
-                <View style={styles.yearStatDivider} />
-
-                <View style={styles.yearStatBlock}>
-                  <Text style={[styles.statNumber, { color: theme.text }]}>
-                    {stats.activeCount}
-                  </Text>
-                  <Text style={styles.statLabel}>In Wash</Text>
-                </View>
+      <TouchableOpacity
+        style={styles.compactYearBreakdownCard}
+        onPress={() => setShowYearModal(true)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.compactYearLeft}>
+          <View style={styles.compactYearIconBox}>
+            <Ionicons name="school" size={20} color="#4338CA" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <Text style={styles.compactYearTitle}>Batch Breakdown</Text>
+              <View style={styles.compactBatchBadge}>
+                <Text style={styles.compactBatchBadgeText}>{ACADEMIC_YEARS.length} Batches</Text>
               </View>
             </View>
-          );
-        })}
-      </View>
+            <Text style={styles.compactYearSub}>
+              Tap to view live clothes, students & schedule per year
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.compactYearRight}>
+          <View style={styles.compactOpenBtn}>
+            <Text style={styles.compactOpenBtnText}>Open</Text>
+            <Ionicons name="chevron-forward" size={14} color="#4338CA" />
+          </View>
+        </View>
+      </TouchableOpacity>
 
       {/* 🎫 STUDENT COMPLAINTS & TECHNICAL ISSUES HUB */}
       <View style={styles.complaintsHeaderRow}>
@@ -509,6 +473,130 @@ export const AdminDashboardScreen = ({
         </View>
       </Modal>
 
+      {/* 🎓 COLLEGE YEAR & BATCH BREAKDOWN POPUP MODAL */}
+      <Modal
+        visible={showYearModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowYearModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowYearModal(false)}
+          />
+
+          <View style={styles.yearModalSheet}>
+            {/* Header */}
+            <View style={styles.yearModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={styles.compactYearIconBox}>
+                  <Ionicons name="school" size={20} color="#4338CA" />
+                </View>
+                <View>
+                  <Text style={styles.yearModalTitle}>College Year Breakdown</Text>
+                  <Text style={styles.yearModalSubtitle}>Live Batch Analytics & Intake Days</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setShowYearModal(false)}
+                style={styles.modalCloseBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Ionicons name="close" size={22} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Scrollable Year Cards */}
+            <ScrollView
+              style={styles.yearModalScroll}
+              contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+              showsVerticalScrollIndicator={true}
+            >
+              {ACADEMIC_YEARS.map((yr) => {
+                const stats = yearWiseStats[yr] || { totalClothes: 0, studentCount: 0, activeCount: 0 };
+                const cfg = getYearConfig(yr);
+
+                const getYearTheme = (yearName) => {
+                  switch (yearName) {
+                    case '1st Year':
+                      return { bg: '#FFF7ED', border: '#FFEDD5', text: '#EA580C', icon: 'school' };
+                    case '2nd Year':
+                      return { bg: '#F0FDF4', border: '#DCFCE7', text: '#16A34A', icon: 'school-outline' };
+                    case '3rd Year':
+                      return { bg: '#FAF5FF', border: '#F3E8FF', text: '#7C3AED', icon: 'school' };
+                    case '4th Year':
+                      return { bg: '#F0F9FF', border: '#E0F2FE', text: '#0284C7', icon: 'school-outline' };
+                    default:
+                      return { bg: '#FFF7ED', border: '#FFEDD5', text: '#EA580C', icon: 'school' };
+                  }
+                };
+
+                const theme = getYearTheme(yr);
+
+                return (
+                  <View
+                    key={yr}
+                    style={[
+                      styles.yearCard,
+                      { backgroundColor: theme.bg, borderColor: theme.border, marginBottom: 12 },
+                    ]}
+                  >
+                    <View style={styles.yearHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name={theme.icon} size={18} color={theme.text} />
+                        <Text style={[styles.yearTitle, { color: theme.text }]}>{yr}</Text>
+                      </View>
+                      <View style={[styles.dayPill, { backgroundColor: '#FFFFFF' }]}>
+                        <Text style={[styles.dayPillText, { color: theme.text }]}>
+                          {cfg.dropoffDay}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.yearStatsRow}>
+                      <View style={styles.yearStatBlock}>
+                        <Text style={styles.statNumber}>{stats.totalClothes}</Text>
+                        <Text style={styles.statLabel}>Clothes</Text>
+                      </View>
+
+                      <View style={styles.yearStatDivider} />
+
+                      <View style={styles.yearStatBlock}>
+                        <Text style={styles.statNumber}>{stats.studentCount}</Text>
+                        <Text style={styles.statLabel}>Students</Text>
+                      </View>
+
+                      <View style={styles.yearStatDivider} />
+
+                      <View style={styles.yearStatBlock}>
+                        <Text style={[styles.statNumber, { color: theme.text }]}>
+                          {stats.activeCount}
+                        </Text>
+                        <Text style={styles.statLabel}>In Wash</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            {/* Bottom Done Button */}
+            <View style={styles.yearModalFooter}>
+              <TouchableOpacity
+                style={styles.yearModalDoneBtn}
+                onPress={() => setShowYearModal(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.yearModalDoneBtnText}>Done / Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* QR Scanner Modal for Handover */}
       <QRScannerModal
         visible={showQRScanner}
@@ -705,6 +793,135 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#64748B',
     marginTop: 4,
+  },
+  breakdownHeaderWrap: {
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  compactYearBreakdownCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    marginBottom: 24,
+    ...THEME.shadows.md,
+  },
+  compactYearLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  compactYearIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  compactYearTitle: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  compactBatchBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  compactBatchBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#4338CA',
+  },
+  compactYearSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  compactYearRight: {
+    marginLeft: 8,
+  },
+  compactOpenBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  compactOpenBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#4338CA',
+  },
+  yearModalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    maxHeight: '85%',
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
+    overflow: 'hidden',
+    ...THEME.shadows.lg,
+  },
+  yearModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    backgroundColor: '#FAFAFA',
+  },
+  yearModalTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  yearModalSubtitle: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  yearModalScroll: {
+    maxHeight: 480,
+  },
+  yearModalFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    backgroundColor: '#FAFAFA',
+  },
+  yearModalDoneBtn: {
+    backgroundColor: '#4338CA',
+    borderRadius: 16,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...THEME.shadows.sm,
+  },
+  yearModalDoneBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   yearGrid: {
     gap: 12,
