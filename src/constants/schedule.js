@@ -40,12 +40,12 @@ export const ACADEMIC_YEARS = ACADEMIC_COURSES;
  * 6. Girls Hostel: Drop Tuesday -> Pickup Friday
  */
 export const getStudentSchedule = (studentProfile) => {
-  const gender = (studentProfile?.gender || '').toLowerCase();
-  const location = (studentProfile?.location || studentProfile?.state || '').toLowerCase();
-  const category = (studentProfile?.academic_year || studentProfile?.course || '').toLowerCase();
-  const hostel = (studentProfile?.hostel_block || '').toLowerCase();
+  const gender = (studentProfile?.gender || '').toLowerCase().trim();
+  const location = (studentProfile?.location || studentProfile?.state || '').toLowerCase().trim();
+  const category = (studentProfile?.academic_year || studentProfile?.course || '').toLowerCase().trim();
+  const hostel = (studentProfile?.hostel_block || '').toLowerCase().trim();
 
-  // 1. Girls Hostel: Drop-off Tuesday -> Pickup Friday
+  // 1. Girls Hostel: Drop-off Tuesday -> Pickup Friday (All female students in Girls Hostel)
   if (gender === 'female' || hostel.includes('girl') || hostel.includes('women') || hostel.includes('ladies')) {
     return {
       category: 'Girls Hostel (All Branches)',
@@ -60,28 +60,15 @@ export const getStudentSchedule = (studentProfile) => {
     };
   }
 
-  // 2. Bihar Batch: Drop-off Wednesday -> Return Friday
-  if (location.includes('bihar')) {
-    return {
-      category: 'Bihar Batch',
-      dropoffDay: 'Wednesday',
-      pickupDay: 'Friday',
-      dropoffSlot: '08:00 AM - 11:30 AM',
-      pickupSlot: '04:00 PM - 07:30 PM',
-      badgeColor: '#D97706', // Amber
-      badgeBg: '#FEF3C7',
-      badgeBorder: '#FDE68A',
-      description: 'Bihar Batch: Drop-off on Wednesday • Return on Friday',
-    };
-  }
-
-  // 3. Nepal, 2nd Year Diploma, BBT, Nursing: Drop-off Tuesday -> Return Thursday
+  // 2. Nepal, 2nd Year Diploma, BBT, Nursing: Drop-off Tuesday -> Return Thursday
   if (
-    location.includes('nepal') ||
+    category.includes('nursing') ||
+    category.includes('bbt') ||
+    category.includes('bio') ||
     category.includes('2nd year diploma') ||
     category.includes('diploma 2') ||
-    category.includes('bbt') ||
-    category.includes('nursing')
+    category.includes('2nd dip') ||
+    location.includes('nepal')
   ) {
     return {
       category: 'Nepal / 2nd Dip / BBT / Nursing',
@@ -93,6 +80,21 @@ export const getStudentSchedule = (studentProfile) => {
       badgeBg: '#ECFDF5',
       badgeBorder: '#A7F3D0',
       description: 'Tuesday Batch: Drop-off on Tuesday • Return on Thursday',
+    };
+  }
+
+  // 3. Bihar Batch: Drop-off Wednesday -> Return Friday
+  if (location.includes('bihar')) {
+    return {
+      category: 'Bihar Batch',
+      dropoffDay: 'Wednesday',
+      pickupDay: 'Friday',
+      dropoffSlot: '08:00 AM - 11:30 AM',
+      pickupSlot: '04:00 PM - 07:30 PM',
+      badgeColor: '#D97706', // Amber
+      badgeBg: '#FEF3C7',
+      badgeBorder: '#FDE68A',
+      description: 'Bihar Batch: Drop-off on Wednesday • Return on Friday',
     };
   }
 
@@ -122,7 +124,8 @@ export const getStudentSchedule = (studentProfile) => {
     category.includes('2nd year b') ||
     category.includes('2nd b') ||
     category.includes('1st year diploma') ||
-    category.includes('diploma 1')
+    category.includes('diploma 1') ||
+    category.includes('1st dip')
   ) {
     return {
       category: '2nd B.Tech & 1st Diploma',

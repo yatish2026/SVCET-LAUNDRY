@@ -31,8 +31,8 @@ export const StudentHomeScreen = ({
 
   const studentName = profile?.full_name || profile?.email?.split('@')[0] || 'Student';
   const studentPhone = profile?.phone_number || '';
-  const studentYear = profile?.academic_year || '1st Year';
-  const yearConfig = getYearConfig(profile);
+  const studentYear = profile?.academic_year || '1st Year B.Tech';
+  const yearConfig = useMemo(() => getStudentSchedule(profile), [profile]);
 
   // Current Date formatting
   const today = new Date();
@@ -130,7 +130,7 @@ export const StudentHomeScreen = ({
           activeOpacity={0.7}
         >
           <Text style={styles.viewScheduleText}>
-            View {studentYear} Wash Schedule ({yearConfig.dropoffDay} Drop-off)
+            {yearConfig.category}: Drop {yearConfig.dropoffDay} → Collect {yearConfig.pickupDay}
           </Text>
           <Ionicons name="chevron-forward" size={18} color="#0284C7" />
         </TouchableOpacity>
