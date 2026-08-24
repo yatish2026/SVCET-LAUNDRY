@@ -802,17 +802,18 @@ export const ProfileScreen = () => {
             {/* State Location */}
             <View style={styles.modalField}>
               <Text style={styles.modalFieldLabel}>Home State / Region</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingTop: 4 }}>
                 {STUDENT_LOCATIONS.map((loc) => (
                   <TouchableOpacity
                     key={loc}
                     style={[styles.chipModalBtn, stateLocation === loc && styles.chipModalBtnActive]}
                     onPress={() => setStateLocation(loc)}
+                    activeOpacity={0.7}
                   >
                     <Text style={[styles.chipModalBtnText, stateLocation === loc && { color: '#FFF' }]}>{loc}</Text>
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
+              </View>
             </View>
 
             {/* Form Fields */}
@@ -840,19 +841,20 @@ export const ProfileScreen = () => {
 
             <View style={styles.modalField}>
               <Text style={styles.modalFieldLabel}>Academic Course / Branch</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingTop: 4 }}>
                 {ACADEMIC_COURSES.map((crs) => (
                   <TouchableOpacity
                     key={crs}
                     style={[styles.chipModalBtn, academicYear === crs && styles.chipModalBtnActive]}
                     onPress={() => setAcademicYear(crs)}
+                    activeOpacity={0.7}
                   >
                     <Text style={[styles.chipModalBtnText, academicYear === crs && { color: '#FFF' }]}>
                       {crs}
                     </Text>
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
+              </View>
             </View>
 
             <View style={styles.modalField}>

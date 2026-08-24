@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
@@ -42,9 +43,9 @@ export const AuthScreen = () => {
   const [roomNumber, setRoomNumber] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
 
-  // Dropdown visibility toggles
-  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
-  const [showCourseDropdown, setShowCourseDropdown] = useState(false);
+  // Clean Modal Selectors
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [courseModalVisible, setCourseModalVisible] = useState(false);
 
   // Auto-switch default hostel block when gender changes
   const handleGenderChange = (selectedGender) => {
@@ -83,22 +84,11 @@ export const AuthScreen = () => {
   };
 
   const handleRegister = async () => {
-    if (!fullName.trim()) {
-      Alert.alert('Required Field', 'Please enter your full name.');
+    if (!email.trim() || !password || !fullName.trim() || !studentId.trim() || !roomNumber.trim()) {
+      Alert.alert('Required Fields', 'Please fill in all details marked with an asterisk (*).');
       return;
     }
-    if (!roomNumber.trim()) {
-      Alert.alert('Required Field', 'Please enter your hostel room number (e.g. 204).');
-      return;
-    }
-    if (!phoneNumber.trim()) {
-      Alert.alert('Required Field', 'Please enter your mobile phone number for pickup alerts.');
-      return;
-    }
-    if (!email.trim() || !password) {
-      Alert.alert('Required Field', 'Please enter a valid email and password.');
-      return;
-    }
+
     if (password.length < 6) {
       Alert.alert('Weak Password', 'Password must be at least 6 characters.');
       return;
@@ -112,18 +102,15 @@ export const AuthScreen = () => {
         full_name: fullName.trim(),
         gender,
         location: stateLocation,
-        academic_year: academicCourse,
+        student_id: studentId.trim(),
         hostel_block: hostelBlock,
         room_number: roomNumber.trim(),
         phone_number: phoneNumber.trim(),
-        student_id: studentId.trim(),
+        academic_year: academicCourse,
+        role: 'student',
       });
-      Alert.alert(
-        'Account Registered! 🎉',
-        `Welcome to DobiX! Your allocated laundry drop-off day is every ${computedSchedule.dropoffDay} with collection on ${computedSchedule.pickupDay}.`
-      );
     } catch (err) {
-      Alert.alert('Registration Failed', err.message || 'Unable to register. Please try again.');
+      Alert.alert('Registration Failed', err.message || 'Unable to register student account. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -132,72 +119,64 @@ export const AuthScreen = () => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* RVS University Emblem Brand Header */}
-        <View style={styles.brandHero}>
+        {/* 🌟 Top University Brand Header */}
+        <View style={styles.brandHeader}>
           <Image
             source={require('../../assets/rvs_logo.png')}
-            style={styles.collegeEmblem}
+            style={styles.brandLogo}
             resizeMode="contain"
           />
           <Text style={styles.brandTitle}>DobiX</Text>
-          <Text style={styles.brandSub}>RVS University • Hostel Laundry Portal</Text>
+          <Text style={styles.brandSubtitle}>RVS University Smart Hostel Laundry Portal</Text>
         </View>
 
-        {/* Auth Card */}
+        {/* 🌟 Main Authentication Card */}
         <View style={styles.card}>
-          {/* Tab Switcher */}
+          {/* Mode Switcher Tabs */}
           <View style={styles.tabContainer}>
             <TouchableOpacity
-              style={[styles.tabBtn, authMode === 'login' && styles.tabBtnActive]}
+              style={[styles.tab, authMode === 'login' && styles.tabActive]}
               onPress={() => setAuthMode('login')}
               activeOpacity={0.8}
             >
-              <Text
-                style={[
-                  styles.tabBtnText,
-                  authMode === 'login' && styles.tabBtnTextActive,
-                ]}
-              >
+              <Text style={[styles.tabText, authMode === 'login' && styles.tabTextActive]}>
                 Sign In
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.tabBtn, authMode === 'register' && styles.tabBtnActive]}
+              style={[styles.tab, authMode === 'register' && styles.tabActive]}
               onPress={() => setAuthMode('register')}
               activeOpacity={0.8}
             >
-              <Text
-                style={[
-                  styles.tabBtnText,
-                  authMode === 'register' && styles.tabBtnTextActive,
-                ]}
-              >
-                Create Account
+              <Text style={[styles.tabText, authMode === 'register' && styles.tabTextActive]}>
+                Student Sign Up
               </Text>
             </TouchableOpacity>
           </View>
 
+          {/* Form Content */}
           {authMode === 'login' ? (
             /* Login Form */
             <View style={styles.form}>
-              <Text style={styles.formTitle}>Welcome to DobiX</Text>
-              <Text style={styles.formSub}>Sign in with your RVS account</Text>
+              <Text style={styles.formTitle}>Welcome Back</Text>
+              <Text style={styles.formSub}>Sign in to track your laundry orders & pickup tokens</Text>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email Address</Text>
-                <View style={styles.inputWrap}>
-                  <Ionicons name="mail-outline" size={18} color={THEME.colors.textMuted} />
+                <Text style={styles.inputLabel}>University Email / Username</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="mail-outline" size={18} color="#64748B" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="student@campus.edu or staff@campus.edu"
-                    placeholderTextColor={THEME.colors.textMuted}
+                    placeholder="student@rvs.edu.in"
+                    placeholderTextColor="#94A3B8"
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
@@ -208,21 +187,24 @@ export const AuthScreen = () => {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Password</Text>
-                <View style={styles.inputWrap}>
-                  <Ionicons name="lock-closed-outline" size={18} color={THEME.colors.textMuted} />
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="lock-closed-outline" size={18} color="#64748B" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     placeholder="Enter your password"
-                    placeholderTextColor={THEME.colors.textMuted}
+                    placeholderTextColor="#94A3B8"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeBtn}
+                  >
                     <Ionicons
                       name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                       size={18}
-                      color={THEME.colors.textMuted}
+                      color="#64748B"
                     />
                   </TouchableOpacity>
                 </View>
@@ -235,7 +217,7 @@ export const AuthScreen = () => {
                 activeOpacity={0.85}
               >
                 {loading ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color="#FFF" size="small" />
                 ) : (
                   <>
                     <Text style={styles.primaryBtnText}>Sign In</Text>
@@ -284,212 +266,154 @@ export const AuthScreen = () => {
                 </View>
               </View>
 
-              {/* 2. 📍 State / Location Region Dropdown */}
+              {/* 2. 📍 Home State / Location Picker Button */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Home State / Regional Location *</Text>
+                <Text style={styles.inputLabel}>Home State / Region *</Text>
                 <TouchableOpacity
                   style={styles.dropdownBtn}
-                  onPress={() => {
-                    setShowLocationDropdown(!showLocationDropdown);
-                    setShowCourseDropdown(false);
-                  }}
+                  onPress={() => setLocationModalVisible(true)}
                   activeOpacity={0.8}
                 >
                   <View style={styles.dropdownLeft}>
                     <Ionicons name="location-outline" size={18} color="#4338CA" />
                     <Text style={styles.dropdownSelectedText}>{stateLocation}</Text>
                   </View>
-                  <Ionicons
-                    name={showLocationDropdown ? 'chevron-up' : 'chevron-down'}
-                    size={18}
-                    color="#64748B"
-                  />
+                  <Ionicons name="chevron-down" size={18} color="#64748B" />
                 </TouchableOpacity>
-
-                {showLocationDropdown && (
-                  <View style={styles.dropdownMenu}>
-                    {STUDENT_LOCATIONS.map((loc) => {
-                      const isSelected = stateLocation === loc;
-                      return (
-                        <TouchableOpacity
-                          key={loc}
-                          style={[styles.dropdownItem, isSelected && styles.dropdownItemActive]}
-                          onPress={() => {
-                            setStateLocation(loc);
-                            setShowLocationDropdown(false);
-                          }}
-                        >
-                          <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextActive]}>
-                            {loc}
-                          </Text>
-                          {isSelected && <Ionicons name="checkmark" size={16} color="#4338CA" />}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
               </View>
 
-              {/* 3. 🎓 Academic Course / Branch Dropdown */}
+              {/* 3. 🎓 Academic Course / Branch Picker Button */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Course & Year of Study *</Text>
                 <TouchableOpacity
                   style={styles.dropdownBtn}
-                  onPress={() => {
-                    setShowCourseDropdown(!showCourseDropdown);
-                    setShowLocationDropdown(false);
-                  }}
+                  onPress={() => setCourseModalVisible(true)}
                   activeOpacity={0.8}
                 >
                   <View style={styles.dropdownLeft}>
                     <Ionicons name="school-outline" size={18} color="#1D4ED8" />
                     <Text style={styles.dropdownSelectedText}>{academicCourse}</Text>
                   </View>
-                  <Ionicons
-                    name={showCourseDropdown ? 'chevron-up' : 'chevron-down'}
-                    size={18}
-                    color="#64748B"
-                  />
+                  <Ionicons name="chevron-down" size={18} color="#64748B" />
                 </TouchableOpacity>
-
-                {showCourseDropdown && (
-                  <View style={styles.dropdownMenu}>
-                    {ACADEMIC_COURSES.map((crs) => {
-                      const isSelected = academicCourse === crs;
-                      return (
-                        <TouchableOpacity
-                          key={crs}
-                          style={[styles.dropdownItem, isSelected && styles.dropdownItemActive]}
-                          onPress={() => {
-                            setAcademicCourse(crs);
-                            setShowCourseDropdown(false);
-                          }}
-                        >
-                          <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextActive]}>
-                            {crs}
-                          </Text>
-                          {isSelected && <Ionicons name="checkmark" size={16} color="#1D4ED8" />}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
               </View>
 
               {/* 🌟 Dynamic Laundry Slot Calculation Card */}
               <View style={[styles.slotPreviewCard, { backgroundColor: computedSchedule.badgeBg, borderColor: computedSchedule.badgeBorder }]}>
                 <View style={styles.slotPreviewHeader}>
-                  <Ionicons name="sparkles" size={16} color={computedSchedule.badgeColor} />
+                  <Ionicons name="calendar" size={16} color={computedSchedule.badgeColor} />
                   <Text style={[styles.slotPreviewTitle, { color: computedSchedule.badgeColor }]}>
-                    Your Assigned Laundry Slot ({computedSchedule.category})
+                    Your Laundry Slot: {computedSchedule.category}
                   </Text>
                 </View>
+
                 <View style={styles.slotPreviewBody}>
                   <View style={styles.slotPreviewItem}>
-                    <Text style={styles.slotPreviewLabel}>Drop-off Day</Text>
+                    <Text style={styles.slotPreviewLabel}>DROP-OFF</Text>
                     <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
                       {computedSchedule.dropoffDay}
                     </Text>
                   </View>
-                  <Ionicons name="arrow-forward" size={16} color="#94A3B8" />
+
+                  <Ionicons name="arrow-forward" size={18} color={computedSchedule.badgeColor} />
+
                   <View style={styles.slotPreviewItem}>
-                    <Text style={styles.slotPreviewLabel}>Collection Day</Text>
+                    <Text style={styles.slotPreviewLabel}>RETURN / PICKUP</Text>
                     <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
                       {computedSchedule.pickupDay}
                     </Text>
                   </View>
                 </View>
-                <Text style={styles.slotPreviewNotice}>
-                  ✨ Automatic schedule assigned based on RVS University official roster!
-                </Text>
+                <Text style={styles.slotPreviewNotice}>{computedSchedule.description}</Text>
               </View>
 
               {/* Full Name */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Full Name *</Text>
-                <View style={styles.inputWrap}>
-                  <Ionicons name="person-outline" size={18} color={THEME.colors.textMuted} />
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="person-outline" size={18} color="#64748B" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="e.g. Rahul Sharma"
-                    placeholderTextColor={THEME.colors.textMuted}
+                    placeholder="Enter your full name"
+                    placeholderTextColor="#94A3B8"
                     value={fullName}
                     onChangeText={setFullName}
                   />
                 </View>
               </View>
 
-              {/* Student ID / Roll Number */}
+              {/* Roll / Student ID */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Student ID / Roll Number</Text>
-                <View style={styles.inputWrap}>
-                  <Ionicons name="id-card-outline" size={18} color={THEME.colors.textMuted} />
+                <Text style={styles.inputLabel}>Student / Roll Number *</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="card-outline" size={18} color="#64748B" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     placeholder="e.g. 21RVS045"
-                    placeholderTextColor={THEME.colors.textMuted}
+                    placeholderTextColor="#94A3B8"
                     value={studentId}
                     onChangeText={setStudentId}
+                    autoCapitalize="characters"
                   />
                 </View>
               </View>
 
-              {/* Hostel Block */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Hostel Block *</Text>
-                <View style={styles.inputWrap}>
-                  <Ionicons name="business-outline" size={18} color={THEME.colors.textMuted} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Block A (Boys) or Kaveri (Girls)"
-                    placeholderTextColor={THEME.colors.textMuted}
-                    value={hostelBlock}
-                    onChangeText={setHostelBlock}
-                  />
-                </View>
-              </View>
-
-              {/* Room & Mobile */}
+              {/* Hostel Block & Room Number */}
               <View style={styles.rowInputs}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                <View style={[styles.inputGroup, { flex: 1.2, marginRight: 8 }]}>
+                  <Text style={styles.inputLabel}>Hostel Block *</Text>
+                  <View style={styles.inputWrapper}>
+                    <Ionicons name="business-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. Block A"
+                      placeholderTextColor="#94A3B8"
+                      value={hostelBlock}
+                      onChangeText={setHostelBlock}
+                    />
+                  </View>
+                </View>
+
+                <View style={[styles.inputGroup, { flex: 0.8 }]}>
                   <Text style={styles.inputLabel}>Room No *</Text>
-                  <View style={styles.inputWrap}>
-                    <Ionicons name="home-outline" size={18} color={THEME.colors.textMuted} />
+                  <View style={styles.inputWrapper}>
+                    <Ionicons name="key-outline" size={18} color="#64748B" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="e.g. 204"
-                      placeholderTextColor={THEME.colors.textMuted}
+                      placeholderTextColor="#94A3B8"
                       value={roomNumber}
                       onChangeText={setRoomNumber}
                     />
                   </View>
                 </View>
+              </View>
 
-                <View style={[styles.inputGroup, { flex: 1.4 }]}>
-                  <Text style={styles.inputLabel}>Mobile Phone *</Text>
-                  <View style={styles.inputWrap}>
-                    <Ionicons name="call-outline" size={18} color={THEME.colors.textMuted} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="10-digit mobile number"
-                      placeholderTextColor={THEME.colors.textMuted}
-                      value={phoneNumber}
-                      onChangeText={setPhoneNumber}
-                      keyboardType="phone-pad"
-                    />
-                  </View>
+              {/* Mobile Number */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Mobile Number (for SMS & WhatsApp Alerts)</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="call-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="10-digit mobile number"
+                    placeholderTextColor="#94A3B8"
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    keyboardType="phone-pad"
+                  />
                 </View>
               </View>
 
-              {/* Email Address */}
+              {/* Email */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email Address *</Text>
-                <View style={styles.inputWrap}>
-                  <Ionicons name="mail-outline" size={18} color={THEME.colors.textMuted} />
+                <Text style={styles.inputLabel}>University Email *</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="mail-outline" size={18} color="#64748B" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="student@campus.edu"
-                    placeholderTextColor={THEME.colors.textMuted}
+                    placeholder="student@rvs.edu.in"
+                    placeholderTextColor="#94A3B8"
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
@@ -500,22 +424,25 @@ export const AuthScreen = () => {
 
               {/* Password */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Password * (min 6 characters)</Text>
-                <View style={styles.inputWrap}>
-                  <Ionicons name="lock-closed-outline" size={18} color={THEME.colors.textMuted} />
+                <Text style={styles.inputLabel}>Create Password *</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="lock-closed-outline" size={18} color="#64748B" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Create a secure password"
-                    placeholderTextColor={THEME.colors.textMuted}
+                    placeholder="Minimum 6 characters"
+                    placeholderTextColor="#94A3B8"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeBtn}
+                  >
                     <Ionicons
                       name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                       size={18}
-                      color={THEME.colors.textMuted}
+                      color="#64748B"
                     />
                   </TouchableOpacity>
                 </View>
@@ -529,7 +456,7 @@ export const AuthScreen = () => {
                 activeOpacity={0.85}
               >
                 {loading ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color="#FFF" size="small" />
                 ) : (
                   <>
                     <Text style={styles.primaryBtnText}>Complete Registration</Text>
@@ -539,15 +466,111 @@ export const AuthScreen = () => {
               </TouchableOpacity>
 
               <View style={styles.switchPrompt}>
-                <Text style={styles.switchPromptText}>Already have an account? </Text>
+                <Text style={styles.switchPromptText}>Already registered? </Text>
                 <TouchableOpacity onPress={() => setAuthMode('login')}>
-                  <Text style={styles.switchPromptLink}>Sign in here</Text>
+                  <Text style={styles.switchPromptLink}>Sign In here</Text>
                 </TouchableOpacity>
               </View>
             </View>
           )}
         </View>
       </ScrollView>
+
+      {/* 📍 CLEAN LOCATION SELECTION MODAL */}
+      <Modal
+        visible={locationModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setLocationModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setLocationModalVisible(false)}
+        >
+          <View style={styles.modalSheet}>
+            <View style={styles.modalSheetHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="location" size={20} color="#4338CA" />
+                <Text style={styles.modalSheetTitle}>Select Home State / Region</Text>
+              </View>
+              <TouchableOpacity onPress={() => setLocationModalVisible(false)} style={styles.closeBtn}>
+                <Ionicons name="close" size={22} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 350 }} showsVerticalScrollIndicator={true}>
+              {STUDENT_LOCATIONS.map((loc) => {
+                const isSelected = stateLocation === loc;
+                return (
+                  <TouchableOpacity
+                    key={loc}
+                    style={[styles.modalItemRow, isSelected && styles.modalItemRowActive]}
+                    onPress={() => {
+                      setStateLocation(loc);
+                      setLocationModalVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.modalItemText, isSelected && styles.modalItemTextActive]}>
+                      {loc}
+                    </Text>
+                    {isSelected && <Ionicons name="checkmark-circle" size={20} color="#4338CA" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* 🎓 CLEAN COURSE SELECTION MODAL */}
+      <Modal
+        visible={courseModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setCourseModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setCourseModalVisible(false)}
+        >
+          <View style={styles.modalSheet}>
+            <View style={styles.modalSheetHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="school" size={20} color="#1D4ED8" />
+                <Text style={styles.modalSheetTitle}>Select Course & Year</Text>
+              </View>
+              <TouchableOpacity onPress={() => setCourseModalVisible(false)} style={styles.closeBtn}>
+                <Ionicons name="close" size={22} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={true}>
+              {ACADEMIC_COURSES.map((crs) => {
+                const isSelected = academicCourse === crs;
+                return (
+                  <TouchableOpacity
+                    key={crs}
+                    style={[styles.modalItemRow, isSelected && styles.modalItemRowActive]}
+                    onPress={() => {
+                      setAcademicCourse(crs);
+                      setCourseModalVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.modalItemText, isSelected && styles.modalItemTextActive]}>
+                      {crs}
+                    </Text>
+                    {isSelected && <Ionicons name="checkmark-circle" size={20} color="#1D4ED8" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -555,45 +578,45 @@ export const AuthScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F5F9',
   },
   scrollContent: {
     padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: 40,
     alignItems: 'center',
   },
-  brandHero: {
+  brandHeader: {
     alignItems: 'center',
     marginBottom: 20,
   },
-  collegeEmblem: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 10,
+  brandLogo: {
+    width: 64,
+    height: 64,
+    marginBottom: 8,
   },
   brandTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: -0.5,
+    letterSpacing: 0.5,
   },
-  brandSub: {
-    fontSize: 13,
+  brandSubtitle: {
+    fontSize: 12.5,
     color: '#64748B',
-    marginTop: 2,
     fontWeight: '600',
+    marginTop: 2,
+    textAlign: 'center',
   },
   card: {
     width: '100%',
-    maxWidth: 440,
+    maxWidth: 460,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
-    boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -602,23 +625,23 @@ const styles = StyleSheet.create({
     padding: 4,
     marginBottom: 20,
   },
-  tabBtn: {
+  tab: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
     borderRadius: 9,
   },
-  tabBtnActive: {
+  tabActive: {
     backgroundColor: '#FFFFFF',
     boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
   },
-  tabBtnText: {
+  tabText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#64748B',
   },
-  tabBtnTextActive: {
-    color: '#0F172A',
+  tabTextActive: {
+    color: '#4338CA',
   },
   form: {
     width: '100%',
@@ -627,40 +650,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   formSub: {
-    fontSize: 12.5,
+    fontSize: 12,
     color: '#64748B',
     marginBottom: 16,
-  },
-  genderRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  genderBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
-    borderRadius: 12,
-    paddingVertical: 10,
-    gap: 6,
-  },
-  genderBtnActive: {
-    backgroundColor: '#4338CA',
-    borderColor: '#4338CA',
-  },
-  genderBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  genderBtnTextActive: {
-    color: '#FFF',
   },
   inputGroup: {
     marginBottom: 14,
@@ -671,7 +666,7 @@ const styles = StyleSheet.create({
     color: '#475569',
     marginBottom: 6,
   },
-  inputWrap: {
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
@@ -679,13 +674,46 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     borderRadius: 12,
     paddingHorizontal: 12,
-    height: 46,
-    gap: 8,
+  },
+  inputIcon: {
+    marginRight: 8,
   },
   input: {
     flex: 1,
+    paddingVertical: 12,
     fontSize: 13.5,
     color: '#0F172A',
+  },
+  eyeBtn: {
+    padding: 6,
+  },
+  genderRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  genderBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    gap: 6,
+  },
+  genderBtnActive: {
+    backgroundColor: '#4338CA',
+    borderColor: '#4338CA',
+  },
+  genderBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  genderBtnTextActive: {
+    color: '#FFFFFF',
   },
   dropdownBtn: {
     flexDirection: 'row',
@@ -695,8 +723,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 46,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   dropdownLeft: {
     flexDirection: 'row',
@@ -707,34 +735,6 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     fontWeight: '700',
     color: '#0F172A',
-  },
-  dropdownMenu: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    marginTop: 6,
-    paddingVertical: 4,
-    maxHeight: 200,
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  dropdownItemActive: {
-    backgroundColor: '#EEF2FF',
-  },
-  dropdownItemText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  dropdownItemTextActive: {
-    color: '#4338CA',
-    fontWeight: '800',
   },
   slotPreviewCard: {
     borderRadius: 14,
@@ -814,6 +814,59 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '800',
     color: '#4338CA',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalSheet: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+  },
+  modalSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 6,
+  },
+  modalSheetTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  modalItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    marginVertical: 2,
+  },
+  modalItemRowActive: {
+    backgroundColor: '#EEF2FF',
+  },
+  modalItemText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  modalItemTextActive: {
+    color: '#4338CA',
+    fontWeight: '800',
   },
 });
 
