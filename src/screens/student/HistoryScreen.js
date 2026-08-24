@@ -24,19 +24,23 @@ export const HistoryScreen = ({ onSelectBooking }) => {
   const studentRollNo = (profile?.student_id || '').trim();
 
   const studentBookings = bookings.filter((b) => {
-    // 1. Unique User ID match
+    // 1. Unique User ID match (Most precise)
     if (b.user_id && profile?.id && b.user_id === profile.id) return true;
-    // 2. Unique Email match
+    
+    // 2. Unique Student Email match
     if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
-    // 3. Exact Student Name match
+    
+    // 3. Exact Student Name match (STRICT equality, NO substring match)
     const bName = (b.student_name || '').trim().toLowerCase();
-    if (studentName && bName && (bName === studentName || bName.includes(studentName) || studentName.includes(bName))) {
+    if (studentName && bName && bName === studentName) {
       return true;
     }
-    // 4. Roll Number match (if customized)
-    if (studentRollNo && studentRollNo !== 'SVCET-STD' && b.student_id === studentRollNo) {
+    
+    // 4. Roll Number match (if valid and not default placeholder)
+    if (studentRollNo && studentRollNo !== 'SVCET-STD' && studentRollNo !== 'RVS-STD' && b.student_id === studentRollNo) {
       return true;
     }
+    
     return false;
   });
 

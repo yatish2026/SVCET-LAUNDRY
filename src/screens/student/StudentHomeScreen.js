@@ -51,13 +51,13 @@ export const StudentHomeScreen = ({
     if (b.user_id && profile?.id && b.user_id === profile.id) return true;
     // 2. Unique Email match
     if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
-    // 3. Exact Student Name match
+    // 3. Exact Student Name match (STRICT equality, NO substring match)
     const bName = (b.student_name || '').trim().toLowerCase();
-    if (cleanStudentName && bName && (bName === cleanStudentName || bName.includes(cleanStudentName) || cleanStudentName.includes(bName))) {
+    if (cleanStudentName && bName && bName === cleanStudentName) {
       return true;
     }
-    // 4. Roll Number match (if customized)
-    if (studentRollNo && studentRollNo !== 'SVCET-STD' && b.student_id === studentRollNo) {
+    // 4. Roll Number match (if valid and not default placeholder)
+    if (studentRollNo && studentRollNo !== 'SVCET-STD' && studentRollNo !== 'RVS-STD' && b.student_id === studentRollNo) {
       return true;
     }
     return false;

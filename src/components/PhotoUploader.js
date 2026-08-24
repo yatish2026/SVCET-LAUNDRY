@@ -90,24 +90,37 @@ export const PhotoUploader = ({
   const pickImagesFromGallery = async () => {
     try {
       if (Platform.OS !== 'web') {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert(
-            'Permission Needed',
-            'Please allow access to your photo gallery to upload clothes photos.'
-          );
-          return;
+        try {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            console.log('Media library permission status:', status);
+          }
+        } catch (permErr) {
+          console.log('Permission request warning:', permErr);
         }
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        quality: 0.3,
-        base64: false,
-      });
+      let result;
+      try {
+        // Attempt launch with multiple selection support
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsMultipleSelection: true,
+          quality: 0.35,
+          base64: false,
+        });
+      } catch (multiErr) {
+        console.log('Multi-selection fallback triggered:', multiErr);
+        // Fallback for custom Android OEM ROMs (MIUI, ColorOS, FunTouch)
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsMultipleSelection: false,
+          quality: 0.35,
+          base64: false,
+        });
+      }
 
-      if (!result.canceled && result.assets) {
+      if (!result.canceled && result.assets && result.assets.length > 0) {
         const processedList = await Promise.all(
           result.assets.map(async (asset) => {
             const compressedDataUri = await compressImage(asset.uri);
@@ -122,26 +135,33 @@ export const PhotoUploader = ({
       }
     } catch (error) {
       console.log('Error picking images:', error);
-      Alert.alert('Image Picker', 'Unable to open gallery.');
+      Alert.alert(
+        'Gallery Permission',
+        'Please allow Photo & Storage permissions for DobiX in Phone Settings -> Apps -> DobiX -> Permissions.'
+      );
     }
   };
 
   const takePhotoWithCamera = async () => {
     try {
       if (Platform.OS !== 'web') {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert(
-            'Permission Needed',
-            'Please allow access to your camera to take clothes photos.'
-          );
-          return;
+        try {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert(
+              'Camera Permission Needed',
+              'Please allow Camera permission for DobiX in Phone Settings -> Apps -> DobiX -> Permissions to take clothes photos.'
+            );
+            return;
+          }
+        } catch (permErr) {
+          console.log('Camera permission warning:', permErr);
         }
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        quality: 0.3,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.35,
         base64: false,
       });
 
@@ -157,6 +177,10 @@ export const PhotoUploader = ({
       }
     } catch (error) {
       console.log('Error taking photo:', error);
+      Alert.alert(
+        'Camera Permission',
+        'Please allow Camera permission for DobiX in Phone Settings -> Apps -> DobiX -> Permissions.'
+      );
     }
   };
 
