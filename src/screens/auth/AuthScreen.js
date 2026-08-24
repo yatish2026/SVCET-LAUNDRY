@@ -229,8 +229,9 @@ export const AuthScreen = () => {
         contentInsetAdjustmentBehavior="always"
         showsVerticalScrollIndicator={true}
       >
-        {/* 🌟 Side-by-Side University & Colorful DobiX Brand Header */}
-        <View style={styles.brandHeaderSideBySide}>
+        {/* 🌟 Centered 3D Logo & Tri-Color RVS University Brand Header */}
+        <View style={styles.brandHeaderCentered}>
+          {/* Big 3D Logo Emblem */}
           <View style={styles.brandLogoHalo}>
             <View style={styles.brandLogoContainer3D}>
               <Image
@@ -241,22 +242,24 @@ export const AuthScreen = () => {
             </View>
           </View>
 
-          <View style={styles.brandTextGroup}>
-            <View style={styles.brandUnivHeader}>
-              <Ionicons name="school" size={16} color="#4338CA" />
-              <Text style={styles.brandUnivMainTitle}>RVS UNIVERSITY</Text>
-            </View>
-
-            <View style={styles.dobiXColorRow}>
-              <Text style={styles.dobiXTextPart1}>Dobi</Text>
-              <Text style={styles.dobiXTextPart2}>X</Text>
-              <View style={styles.sparkleBadge}>
-                <Text style={styles.sparkleBadgeText}>✨ Smart</Text>
-              </View>
-            </View>
-
-            <Text style={styles.brandSubtitle}>Smart Hostel Laundry Portal</Text>
+          {/* Tri-Color RVS UNIVERSITY Name */}
+          <View style={styles.rvsUnivRow}>
+            <Text style={styles.rvsLetterR}>R</Text>
+            <Text style={styles.rvsLetterV}>V</Text>
+            <Text style={styles.rvsLetterS}>S</Text>
+            <Text style={styles.rvsUnivWord}>UNIVERSITY</Text>
           </View>
+
+          {/* Colorful DobiX App Title */}
+          <View style={styles.dobiXColorRowCentered}>
+            <Text style={styles.dobiXTextPart1}>Dobi</Text>
+            <Text style={styles.dobiXTextPart2}>X</Text>
+            <View style={styles.sparkleBadge}>
+              <Text style={styles.sparkleBadgeText}>✨ Smart Portal</Text>
+            </View>
+          </View>
+
+          <Text style={styles.brandSubtitle}>🧺 Smart Hostel Laundry Management ✨</Text>
         </View>
 
         {/* 🌟 Main Authentication Card */}
@@ -1052,28 +1055,25 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     alignItems: 'center',
   },
-  brandHeaderSideBySide: {
-    flexDirection: 'row',
+  brandHeaderCentered: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
     marginBottom: 20,
     marginTop: 6,
     width: '100%',
-    maxWidth: 460,
-    paddingHorizontal: 6,
   },
   brandLogoHalo: {
     padding: 4,
-    borderRadius: 66,
+    borderRadius: 70,
     backgroundColor: '#EEF2FF',
-    boxShadow: '0 12px 30px rgba(67, 56, 202, 0.25)',
-    elevation: 10,
+    boxShadow: '0 14px 34px rgba(67, 56, 202, 0.28)',
+    elevation: 12,
+    marginBottom: 10,
   },
   brandLogoContainer3D: {
-    width: 114,
-    height: 114,
-    borderRadius: 57,
+    width: 124,
+    height: 124,
+    borderRadius: 62,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1085,65 +1085,80 @@ const styles = StyleSheet.create({
   brandLogo: {
     width: '100%',
     height: '100%',
-    borderRadius: 57,
+    borderRadius: 62,
     transform: [{ scale: 1.16 }],
   },
-  brandTextGroup: {
-    flex: 1,
-    alignItems: 'flex-start',
+  rvsUnivRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: 3,
+    marginBottom: 4,
   },
-  brandUnivHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
-  },
-  brandUnivMainTitle: {
-    fontSize: 16.5,
+  rvsLetterR: {
+    fontSize: 26,
     fontWeight: '900',
-    color: '#1E1B4B',
-    letterSpacing: 1,
+    color: '#DC2626', // Vibrant Red matching emblem
+    letterSpacing: 0.5,
   },
-  dobiXColorRow: {
+  rvsLetterV: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#D97706', // Vibrant Amber Gold matching emblem
+    letterSpacing: 0.5,
+  },
+  rvsLetterS: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#2563EB', // Vibrant Royal Blue matching emblem
+    letterSpacing: 0.5,
+    marginRight: 6,
+  },
+  rvsUnivWord: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: 2,
+  },
+  dobiXColorRowCentered: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 1,
-    marginVertical: 1,
+    justifyContent: 'center',
+    gap: 2,
+    marginBottom: 4,
   },
   dobiXTextPart1: {
     fontSize: 38,
     fontWeight: '900',
     color: '#4338CA',
     letterSpacing: 0.5,
-    lineHeight: 42,
   },
   dobiXTextPart2: {
     fontSize: 42,
     fontWeight: '900',
     color: '#EA580C',
     letterSpacing: 0.5,
-    lineHeight: 44,
   },
   sparkleBadge: {
     backgroundColor: '#FEF3C7',
-    paddingVertical: 2,
-    paddingHorizontal: 7,
-    borderRadius: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#FDE68A',
     marginLeft: 6,
   },
   sparkleBadgeText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '800',
     color: '#D97706',
   },
   brandSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
+    fontSize: 13,
+    color: '#475569',
     fontWeight: '700',
-    marginTop: 2,
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
   card: {
     width: '100%',
