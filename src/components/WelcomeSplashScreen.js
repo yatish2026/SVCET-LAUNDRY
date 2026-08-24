@@ -100,7 +100,7 @@ export const WelcomeSplashScreen = ({ onFinish }) => {
         </View>
 
         {/* 3D App Name */}
-        <Text style={styles.appName}>LaundryGo</Text>
+        <Text style={styles.appName}>VASTRA</Text>
         <Text style={styles.appSub}>Smart Hostel Laundry Portal</Text>
 
         {/* 🌟 3D Feature Badges */}
@@ -119,7 +119,7 @@ export const WelcomeSplashScreen = ({ onFinish }) => {
         <View style={styles.progressBarBg}>
           <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
         </View>
-        <Text style={styles.loadingStatusText}>Welcome to RVS University LaundryGo Portal...</Text>
+        <Text style={styles.loadingStatusText}>Welcome to RVS University VASTRA Portal...</Text>
 
         {/* Quick Skip Button */}
         <TouchableOpacity

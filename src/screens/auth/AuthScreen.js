@@ -77,7 +77,7 @@ export const AuthScreen = () => {
 
   const isSlotReady = !!(stateLocation && academicCourse);
 
-  // 🎯 Dynamic LaundryGo Slot Prediction based on Gender, Location & Course
+  // 🎯 Dynamic VASTRA Slot Prediction based on Gender, Location & Course
   const computedSchedule = useMemo(() => {
     if (!stateLocation || !academicCourse) return null;
     return getStudentSchedule({
@@ -233,7 +233,7 @@ export const AuthScreen = () => {
         contentInsetAdjustmentBehavior="always"
         showsVerticalScrollIndicator={true}
       >
-        {/* 🌟 Brand Header: Logo + Big RVS University Beside It, LaundryGo Below */}
+        {/* 🌟 Brand Header: Logo + Big RVS University Beside It, VASTRA Below */}
         <View style={styles.brandContainer}>
           {/* Top Row: Logo Beside Big RVS UNIVERSITY Name */}
           <View style={styles.topLogoUnivRow}>
@@ -258,8 +258,19 @@ export const AuthScreen = () => {
             </View>
           </View>
 
-          {/* Bottom: Clean Subtitle */}
-          <View style={styles.subtitleSection}>
+          {/* Bottom: Colorful VASTRA Brand Name & Subtitle */}
+          <View style={styles.vastraSection}>
+            <View style={styles.vastraLettersRow}>
+              <Text style={[styles.vastraLetter, { color: '#4338CA' }]}>V</Text>
+              <Text style={[styles.vastraLetter, { color: '#DC2626' }]}>A</Text>
+              <Text style={[styles.vastraLetter, { color: '#D97706' }]}>S</Text>
+              <Text style={[styles.vastraLetter, { color: '#059669' }]}>T</Text>
+              <Text style={[styles.vastraLetter, { color: '#2563EB' }]}>R</Text>
+              <Text style={[styles.vastraLetter, { color: '#7C3AED' }]}>A</Text>
+              <View style={styles.vastraSparkleBadge}>
+                <Text style={styles.vastraSparkleText}>✨ Smart Portal</Text>
+              </View>
+            </View>
             <Text style={styles.brandSubtitle}>🧺 Smart Hostel Laundry Management ✨</Text>
           </View>
         </View>
@@ -1167,10 +1178,39 @@ const styles = StyleSheet.create({
     letterSpacing: 1.8,
     marginTop: 2,
   },
-  subtitleSection: {
+  vastraSection: {
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
     marginBottom: 4,
+  },
+  vastraLettersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    marginBottom: 4,
+  },
+  vastraLetter: {
+    fontSize: 34,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.08)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  vastraSparkleBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    marginLeft: 6,
+  },
+  vastraSparkleText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#D97706',
   },
   brandSubtitle: {
     fontSize: 12.5,

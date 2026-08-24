@@ -168,7 +168,7 @@ export const apiService = {
   async getTickets() {
     let localTickets = [];
     try {
-      const stored = await AsyncStorage.getItem('@laundrygo_support_tickets');
+      const stored = await AsyncStorage.getItem('@vastra_support_tickets');
       if (stored) localTickets = JSON.parse(stored);
     } catch (e) {}
 
@@ -184,7 +184,7 @@ export const apiService = {
           const serverIds = new Set(data.tickets.map((t) => t.id));
           const unsynced = localTickets.filter((t) => !serverIds.has(t.id));
           const merged = [...unsynced, ...data.tickets];
-          await AsyncStorage.setItem('@laundrygo_support_tickets', JSON.stringify(merged)).catch(() => {});
+          await AsyncStorage.setItem('@vastra_support_tickets', JSON.stringify(merged)).catch(() => {});
           return merged;
         }
       }
@@ -207,10 +207,10 @@ export const apiService = {
     // Save locally first for instant offline/server-down resilience
     let localTickets = [];
     try {
-      const stored = await AsyncStorage.getItem('@laundrygo_support_tickets');
+      const stored = await AsyncStorage.getItem('@vastra_support_tickets');
       if (stored) localTickets = JSON.parse(stored);
       localTickets = [newTicket, ...localTickets];
-      await AsyncStorage.setItem('@laundrygo_support_tickets', JSON.stringify(localTickets));
+      await AsyncStorage.setItem('@vastra_support_tickets', JSON.stringify(localTickets));
     } catch (e) {}
 
     // Send to server in background
@@ -238,11 +238,11 @@ export const apiService = {
   async updateTicketStatus(ticketId, newStatus) {
     // Update local storage
     try {
-      const stored = await AsyncStorage.getItem('@laundrygo_support_tickets');
+      const stored = await AsyncStorage.getItem('@vastra_support_tickets');
       if (stored) {
         const list = JSON.parse(stored);
         const updated = list.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t));
-        await AsyncStorage.setItem('@laundrygo_support_tickets', JSON.stringify(updated));
+        await AsyncStorage.setItem('@vastra_support_tickets', JSON.stringify(updated));
       }
     } catch (e) {}
 
@@ -288,7 +288,7 @@ export const apiService = {
       if (response.ok && data.success) {
         // Also update local cache for instant offline login
         try {
-          const stored = await AsyncStorage.getItem('@laundrygo_registered_users');
+          const stored = await AsyncStorage.getItem('@vastra_registered_users');
           if (stored) {
             const users = JSON.parse(stored);
             const idx = users.findIndex(
@@ -299,7 +299,7 @@ export const apiService = {
             );
             if (idx !== -1) {
               users[idx].password = new_password;
-              await AsyncStorage.setItem('@laundrygo_registered_users', JSON.stringify(users));
+              await AsyncStorage.setItem('@vastra_registered_users', JSON.stringify(users));
             }
           }
         } catch (e) {}
@@ -323,7 +323,7 @@ export const apiService = {
 
     // Local AsyncStorage fallback (if GoDaddy PHP file has not been re-uploaded yet)
     try {
-      const stored = await AsyncStorage.getItem('@laundrygo_registered_users');
+      const stored = await AsyncStorage.getItem('@vastra_registered_users');
       if (stored) {
         const users = JSON.parse(stored);
         const idx = users.findIndex(
@@ -334,7 +334,7 @@ export const apiService = {
         );
         if (idx !== -1) {
           users[idx].password = new_password;
-          await AsyncStorage.setItem('@laundrygo_registered_users', JSON.stringify(users));
+          await AsyncStorage.setItem('@vastra_registered_users', JSON.stringify(users));
           return { success: true, message: 'Password updated successfully.' };
         }
       }

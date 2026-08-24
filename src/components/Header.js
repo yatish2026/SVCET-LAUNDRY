@@ -31,7 +31,7 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
     } else {
       Alert.alert(
         'Sign Out',
-        'Are you sure you want to sign out from LaundryGo?',
+        'Are you sure you want to sign out from VASTRA?',
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -64,7 +64,7 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
               style={styles.collegeLogo}
               resizeMode="contain"
             />
-            <Text style={styles.headerAppName}>LaundryGo</Text>
+            <Text style={styles.headerAppName}>VASTRA</Text>
           </View>
 
           {/* Right Actions: Notifications & Logout */}

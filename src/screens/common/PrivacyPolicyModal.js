@@ -36,11 +36,11 @@ export const PrivacyPolicyModal = ({ visible, onClose }) => {
 
           {/* Policy Content Scroll */}
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.lastUpdated}>Last Updated: August 2026 • LaundryGo</Text>
+            <Text style={styles.lastUpdated}>Last Updated: August 2026 • VASTRA</Text>
 
             <Text style={styles.sectionHeading}>1. Overview & Commitment</Text>
             <Text style={styles.bodyText}>
-              LaundryGo is committed to protecting student privacy. This application is dedicated strictly to managing hostel laundry requests, schedule slots, and pickup tokens for students and campus staff of RVS University.
+              VASTRA is committed to protecting student privacy. This application is dedicated strictly to managing hostel laundry requests, schedule slots, and pickup tokens for students and campus staff of RVS University.
             </Text>
 
             <Text style={styles.sectionHeading}>2. Information We Collect</Text>

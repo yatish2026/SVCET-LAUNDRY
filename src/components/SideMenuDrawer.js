@@ -222,7 +222,7 @@ export const SideMenuDrawer = ({
               resizeMode="contain"
             />
             <View style={{ marginLeft: 8 }}>
-              <Text style={styles.footerAppTitle}>LaundryGo</Text>
+              <Text style={styles.footerAppTitle}>VASTRA</Text>
               <Text style={styles.footerAppSub}>RVS University • Smart Laundry Portal</Text>
             </View>
           </View>
