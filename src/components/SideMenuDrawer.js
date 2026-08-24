@@ -154,6 +154,16 @@ export const SideMenuDrawer = ({
                   </View>
                   <Text style={styles.menuItemText}>Export Reports (.CSV)</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleItemPress(() => onNavigate('tickets'))}
+                >
+                  <View style={[styles.menuIconBox, { backgroundColor: '#FEF2F2' }]}>
+                    <Ionicons name="chatbubbles-outline" size={18} color="#EF4444" />
+                  </View>
+                  <Text style={styles.menuItemText}>Student Support & Grievances</Text>
+                </TouchableOpacity>
               </>
             ) : (
               /* Student Menu Options */
@@ -197,6 +207,16 @@ export const SideMenuDrawer = ({
                   </View>
                   <Text style={styles.menuItemText}>My Profile & Hostel Info</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleItemPress(() => onNavigate('profile'))}
+                >
+                  <View style={[styles.menuIconBox, { backgroundColor: '#FDF2F8' }]}>
+                    <Ionicons name="chatbox-ellipses-outline" size={18} color="#DB2777" />
+                  </View>
+                  <Text style={styles.menuItemText}>Help & Support / Complaints</Text>
+                </TouchableOpacity>
               </>
             )}
 
@@ -211,7 +231,7 @@ export const SideMenuDrawer = ({
             />
             <View style={{ marginLeft: 8 }}>
               <Text style={styles.footerAppTitle}>DobiX</Text>
-              <Text style={styles.footerAppSub}>RVS University • MySQL Live</Text>
+              <Text style={styles.footerAppSub}>RVS University • Smart Hostel Portal</Text>
             </View>
           </View>
         </View>

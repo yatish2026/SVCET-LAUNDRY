@@ -28,10 +28,13 @@ import { useLaundry } from '../../context/LaundryContext';
 import { apiService } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PrivacyPolicyModal from '../common/PrivacyPolicyModal';
+import SupportModal from '../../components/SupportModal';
 
 export const ProfileScreen = () => {
   const { profile, updateProfile, signOut } = useAuth();
   const { bookings } = useLaundry();
+
+  const [showSupportModal, setShowSupportModal] = useState(false);
 
   // Profile fields
   const [name, setName] = useState(profile?.full_name || '');
@@ -705,6 +708,29 @@ export const ProfileScreen = () => {
             })}
           </View>
         )}
+      </View>
+
+      {/* 🎫 Help & Support / Grievance Redressal Card */}
+      <View style={styles.supportCard}>
+        <View style={styles.supportCardLeft}>
+          <View style={styles.supportIconBox}>
+            <Ionicons name="chatbubbles" size={22} color="#4338CA" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.supportCardTitle}>Need Help or Have a Complaint?</Text>
+            <Text style={styles.supportCardSub}>
+              Report missing/damaged clothes, software bugs, or delays directly to laundry staff.
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={styles.supportActionBtn}
+          onPress={() => setShowSupportModal(true)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="add-circle-outline" size={16} color="#FFF" style={{ marginRight: 4 }} />
+          <Text style={styles.supportActionBtnText}>Submit / View Tickets</Text>
+        </TouchableOpacity>
       </View>
 
       {/* 🔒 Privacy, Security & Account Management */}
@@ -1401,128 +1427,23 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
   },
-  calendarLogBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  calendarLogBadgeText: {
-    fontSize: 9.5,
-    fontWeight: '800',
-  },
-  settingsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 14,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-  },
-  actionRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  actionRowText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-  actionDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 4,
-  },
-  signOutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0F172A',
-    paddingVertical: 14,
-    borderRadius: 14,
-    gap: 8,
-    marginTop: 4,
-  },
-  signOutBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  footerVersion: {
-    alignItems: 'center',
-    marginTop: 18,
-  },
-  footerVersionText: {
-    fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '600',
-  },
-  editModalContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
   editModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 48 : 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  editModalBackBtn: {
-    padding: 4,
-  },
-  editModalTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  modalSaveBtn: {
-    backgroundColor: '#4338CA',
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-  },
-  modalSaveBtnText: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  editModalBody: {
-    flex: 1,
   },
   modalAvatarCenter: {
     alignItems: 'center',
     marginBottom: 20,
+  },
+  avatarWrap: {
+    position: 'relative',
   },
   avatarImgLarge: {
     width: 80,
     height: 80,
     borderRadius: 40,
     borderWidth: 2.5,
-    borderColor: '#4338CA',
-  },
-  avatarFallbackLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#4338CA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarFallbackTextLarge: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#FFFFFF',
   },
   cameraIconBadgeLarge: {
     position: 'absolute',
@@ -1538,10 +1459,9 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   avatarHintText: {
-    fontSize: 12,
-    color: '#4338CA',
-    fontWeight: '700',
-    marginTop: 8,
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 6,
   },
   modalField: {
     marginBottom: 14,
@@ -1550,7 +1470,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#475569',
-    marginBottom: 5,
+    marginBottom: 6,
   },
   modalInput: {
     backgroundColor: '#F8FAFC',
@@ -1559,7 +1479,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 13.5,
+    fontSize: 13,
     color: '#0F172A',
   },
   genderModalBtn: {
@@ -1567,9 +1487,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     gap: 6,
@@ -1579,39 +1499,9 @@ const styles = StyleSheet.create({
     borderColor: '#4338CA',
   },
   genderModalBtnText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#475569',
-  },
-  chipModalBtn: {
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-  },
-  chipModalBtnActive: {
-    backgroundColor: '#4338CA',
-    borderColor: '#4338CA',
-  },
-  chipModalBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  saveActionBtn: {
-    backgroundColor: '#4338CA',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  saveActionBtnText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '800',
   },
   dropdownPickerBtn: {
     flexDirection: 'row',
@@ -1621,8 +1511,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
   },
   dropdownPickerLeft: {
     flexDirection: 'row',
@@ -1630,7 +1520,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dropdownPickerText: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '700',
     color: '#0F172A',
   },

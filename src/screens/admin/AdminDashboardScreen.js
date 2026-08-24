@@ -18,10 +18,12 @@ export const AdminDashboardScreen = ({
   onNavigateToApprovals,
   onNavigateToSubmissions,
   onNavigateToReports,
+  onNavigateToTickets,
 }) => {
   const { profile } = useAuth();
   const {
     bookings,
+    tickets,
     grandTotalClothes,
     yearWiseStats,
     refreshData,
@@ -205,6 +207,35 @@ export const AdminDashboardScreen = ({
           <Text style={styles.cardFooterSub}>{readyCount} Bags Ready Pickup</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 🎫 Student Support & Complaints Hub */}
+      <TouchableOpacity
+        style={styles.complaintsBanner}
+        onPress={onNavigateToTickets}
+        activeOpacity={0.85}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+          <View style={styles.complaintsIconWrap}>
+            <Ionicons name="chatbubbles" size={22} color="#FFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.complaintsTitle}>Student Support & Grievances</Text>
+              {(tickets?.filter((t) => t.status === 'open').length || 0) > 0 && (
+                <View style={styles.openTicketsBadge}>
+                  <Text style={styles.openTicketsBadgeText}>
+                    {tickets.filter((t) => t.status === 'open').length} New
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.complaintsSub}>
+              View missing clothes reports, software bugs, & reply to students
+            </Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color="#4338CA" />
+      </TouchableOpacity>
 
       {/* 📊 Year-Wise Breakdown Section */}
       <Text style={styles.sectionHeader}>COLLEGE YEAR BREAKDOWN</Text>
@@ -530,6 +561,47 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: '#F1F5F9',
+  },
+  complaintsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    marginBottom: 20,
+    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.08)',
+  },
+  complaintsIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#4338CA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  complaintsTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  complaintsSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  openTicketsBadge: {
+    backgroundColor: '#EF4444',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+  },
+  openTicketsBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '900',
   },
 });
 

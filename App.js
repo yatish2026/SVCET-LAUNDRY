@@ -33,6 +33,7 @@ import ApprovalsScreen from './src/screens/admin/ApprovalsScreen';
 import StudentSubmissionsScreen from './src/screens/admin/StudentSubmissionsScreen';
 import ReportsExportScreen from './src/screens/admin/ReportsExportScreen';
 import RequestDetailScreen from './src/screens/admin/RequestDetailScreen';
+import SupportTicketsScreen from './src/screens/admin/SupportTicketsScreen';
 
 const MainApp = () => {
   const { isAuthenticated, isLoading: authLoading, isStudent, isStaff } = useAuth();
@@ -169,6 +170,7 @@ const MainApp = () => {
                   onNavigateToApprovals={() => setAdminTab('approvals')}
                   onNavigateToSubmissions={() => setAdminTab('submissions')}
                   onNavigateToReports={() => setAdminTab('reports')}
+                  onNavigateToTickets={() => setAdminTab('tickets')}
                 />
               )}
               {adminTab === 'approvals' && (
@@ -181,6 +183,9 @@ const MainApp = () => {
               )}
               {adminTab === 'reports' && (
                 <ReportsExportScreen />
+              )}
+              {adminTab === 'tickets' && (
+                <SupportTicketsScreen onBack={() => setAdminTab('overview')} />
               )}
             </>
           )}
