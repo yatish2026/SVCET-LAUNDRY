@@ -126,11 +126,11 @@ function validatePhone($phone) {
 }
 
 function validateAcademicYear($year) {
-    $allowed = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
-    if (!in_array($year, $allowed, true)) {
-        throw new InvalidArgumentException("Invalid academic year. Must be one of: " . implode(', ', $allowed));
+    if (empty($year)) {
+        return '1st Year';
     }
-    return $year;
+    // Allow standard years and courses (B.Tech 1-4, Diploma 1-2, Nursing, Pharmacy, MBA, MCA, BBT, etc.)
+    return htmlspecialchars(trim($year), ENT_QUOTES, 'UTF-8');
 }
 
 function validateStatus($status) {

@@ -3,20 +3,61 @@ import { API_ENDPOINTS } from '../config/api';
 export const apiService = {
   // 1. User Registration
   async register(userData) {
-    const response = await fetch(API_ENDPOINTS.REGISTER, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
+    try {
+      const response = await fetch(API_ENDPOINTS.REGISTER, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
 
-    const data = await response.json();
-    if (!response.ok || data.error) {
-      throw new Error(data.error || 'Registration failed.');
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        // If legacy backend strictly requires ['1st Year', '2nd Year', '3rd Year', '4th Year']
+        if (data.error && (data.error.includes('academic year') || data.error.includes('Academic year'))) {
+          let legacyYear = '1st Year';
+          const courseStr = (userData.academic_year || '').toLowerCase();
+          if (courseStr.includes('2nd') || courseStr.includes('diploma 2')) legacyYear = '2nd Year';
+          else if (courseStr.includes('3rd')) legacyYear = '3rd Year';
+          else if (courseStr.includes('4th') || courseStr.includes('mba') || courseStr.includes('mca')) legacyYear = '4th Year';
+
+          const retryRes = await fetch(API_ENDPOINTS.REGISTER, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ ...userData, academic_year: legacyYear }),
+          });
+          const retryData = await retryRes.json();
+          if (retryRes.ok && !retryData.error) {
+            return {
+              ...retryData,
+              user: {
+                ...retryData.user,
+                academic_year: userData.academic_year,
+                course: userData.academic_year,
+                location: userData.location,
+                gender: userData.gender,
+              },
+            };
+          }
+        }
+        throw new Error(data.error || 'Registration failed.');
+      }
+
+      return {
+        ...data,
+        user: {
+          ...data.user,
+          academic_year: userData.academic_year,
+          course: userData.academic_year,
+          location: userData.location,
+          gender: userData.gender,
+        },
+      };
+    } catch (err) {
+      throw err;
     }
-    return data;
   },
 
   // 2. User Login
