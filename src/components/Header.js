@@ -3,55 +3,35 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Image,
   StyleSheet,
   Alert,
   Platform,
-  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import THEME from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 import { useLaundry } from '../context/LaundryContext';
 import NotificationModal from './NotificationModal';
 
 export const Header = ({ onSelectBooking, onOpenMenu }) => {
-  const { role, profile, signOut, isStaff } = useAuth();
-  const { notifications, bookings } = useLaundry();
+  const { user, profile, signOut } = useAuth();
+  const { notifications } = useLaundry();
   const [notifVisible, setNotifVisible] = useState(false);
 
-  const studentName = profile?.full_name || profile?.email?.split('@')[0] || '';
-  const studentPhone = profile?.phone_number || '';
-  const myBookingIds = bookings
-    .filter(
-      (b) =>
-        (studentPhone && b.phone_number === studentPhone) ||
-        (studentName && b.student_name && b.student_name.toLowerCase() === studentName.toLowerCase()) ||
-        b.student_id === profile?.student_id
-    )
-    .map((b) => b.id);
+  const isStaff = profile?.role === 'staff' || profile?.role === 'admin';
 
-  const myNotifs = notifications.filter((n) => {
-    if (isStaff) {
-      return n.recipient_role === 'staff' || n.recipient_role === 'all';
-    }
-    if (n.booking_id) {
-      return myBookingIds.includes(n.booking_id);
-    }
-    return n.recipient_role === 'student' && (!n.target_user_phone || n.target_user_phone === studentPhone);
-  });
-
-  const unreadCount = myNotifs.filter((n) => !n.is_read).length;
+  // Count unread notifications
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {
-      const confirmLogout = window.confirm('Are you sure you want to sign out?');
-      if (confirmLogout) {
+      if (window.confirm('Are you sure you want to sign out?')) {
         signOut();
       }
     } else {
       Alert.alert(
         'Sign Out',
-        'Are you sure you want to sign out from your account?',
+        'Are you sure you want to sign out from DobiX?',
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -119,7 +99,7 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
             <Text style={styles.staffPillText}>Laundry Staff & Admin Portal</Text>
           </View>
         )}
-      </SafeAreaView>
+      </View>
 
       {/* Notifications Drawer */}
       <NotificationModal
@@ -132,8 +112,11 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'ios' ? 4 : 8,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
     ...Platform.select({
@@ -155,8 +138,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 54,
-    paddingHorizontal: 16,
+    height: 48,
   },
   sideBtn: {
     width: 38,
@@ -172,9 +154,9 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   collegeLogo: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   headerAppName: {
     fontSize: 19,
