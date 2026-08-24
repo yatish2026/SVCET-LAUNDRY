@@ -120,11 +120,13 @@ export const AuthScreen = () => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="interactive"
+        showsVerticalScrollIndicator={true}
       >
         {/* 🌟 Top University Brand Header */}
         <View style={styles.brandHeader}>
@@ -609,7 +611,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingBottom: 40,
+    paddingBottom: Platform.OS === 'web' ? 40 : 180,
     alignItems: 'center',
   },
   brandHeader: {

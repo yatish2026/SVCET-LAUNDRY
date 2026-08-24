@@ -762,7 +762,13 @@ export const ProfileScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.editModalBody} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+          <ScrollView
+            style={styles.editModalBody}
+            contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === 'web' ? 40 : 160 }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={true}
+          >
             {/* Avatar picker preview */}
             <View style={styles.modalAvatarCenter}>
               <TouchableOpacity onPress={showPhotoOptions} style={styles.avatarWrap} activeOpacity={0.85}>
