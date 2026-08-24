@@ -258,15 +258,8 @@ export const AuthScreen = () => {
             </View>
           </View>
 
-          {/* Bottom: Colorful LaundryGo Title & Subtitle */}
-          <View style={styles.laundryGoSection}>
-            <View style={styles.laundryGoColorRowCentered}>
-              <Text style={styles.laundryGoTextPart1}>Laundry</Text>
-              <Text style={styles.laundryGoTextPart2}>Go</Text>
-              <View style={styles.sparkleBadge}>
-                <Text style={styles.sparkleBadgeText}>✨ Smart Portal</Text>
-              </View>
-            </View>
+          {/* Bottom: Clean Subtitle */}
+          <View style={styles.subtitleSection}>
             <Text style={styles.brandSubtitle}>🧺 Smart Hostel Laundry Management ✨</Text>
           </View>
         </View>
@@ -1174,42 +1167,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1.8,
     marginTop: 2,
   },
-  laundryGoSection: {
+  subtitleSection: {
     alignItems: 'center',
-    marginTop: 4,
-  },
-  laundryGoColorRowCentered: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    marginBottom: 2,
-  },
-  laundryGoTextPart1: {
-    fontSize: 34,
-    fontWeight: '900',
-    color: '#4338CA',
-    letterSpacing: 0.5,
-  },
-  laundryGoTextPart2: {
-    fontSize: 38,
-    fontWeight: '900',
-    color: '#EA580C',
-    letterSpacing: 0.5,
-  },
-  sparkleBadge: {
-    backgroundColor: '#FEF3C7',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    marginLeft: 6,
-  },
-  sparkleBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#D97706',
+    marginTop: 10,
+    marginBottom: 4,
   },
   brandSubtitle: {
     fontSize: 12.5,
