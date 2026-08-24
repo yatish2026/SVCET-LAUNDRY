@@ -475,7 +475,7 @@ export const ProfileScreen = () => {
               <Ionicons name="checkmark-circle" size={16} color="#059669" />
             </View>
             <Text style={styles.idCardRoll}>
-              Roll No: <Text style={{ fontWeight: '800', color: '#0F172A' }}>{studentId || profile?.student_id || 'N/A'}</Text>
+              Roll No: <Text style={{ fontWeight: '800', color: '#0F172A' }}>{studentId || profile?.student_id || 'N/A'}</Text> • <Text style={{ fontWeight: '700', color: '#4338CA' }}>{academicYear}</Text>
             </Text>
             <Text style={styles.idCardRoom}>
               {hostelBlock || 'Hostel'} • Rm {roomNumber || 'N/A'}

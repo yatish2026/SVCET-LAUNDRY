@@ -17,14 +17,17 @@ export const STUDENT_LOCATIONS = [
 ];
 
 export const ACADEMIC_COURSES = [
-  '1st Year B.Tech',
-  '2nd Year B.Tech',
-  '3rd Year B.Tech',
-  '4th Year B.Tech',
-  '1st Year Diploma',
-  '2nd Year Diploma',
-  'BBT / Bio-Tech',
+  'B.Tech 1st Year',
+  'B.Tech 2nd Year',
+  'B.Tech 3rd Year',
+  'B.Tech 4th Year',
+  'Diploma 1st Year',
+  'Diploma 2nd Year',
+  'Pharmacy',
   'Nursing',
+  'MBA',
+  'MCA',
+  'BBT / Bio-Tech',
   'Other Courses',
 ];
 
@@ -32,12 +35,12 @@ export const ACADEMIC_YEARS = ACADEMIC_COURSES;
 
 /**
  * Official RVS University Schedule Matrix:
- * 1. 1st Year B.Tech: Drop Friday -> Pickup Monday
- * 2. 2nd Year B.Tech & 1st Year Diploma: Drop Saturday -> Pickup Tuesday
- * 3. 3rd & 4th Year B.Tech: Drop Monday -> Pickup Wednesday
- * 4. Nepal, 2nd Year Diploma, BBT, Nursing: Drop Tuesday -> Pickup Thursday
- * 5. Bihar: Drop Wednesday -> Pickup Friday
- * 6. Girls Hostel: Drop Tuesday -> Pickup Friday
+ * 1. Girls Hostel (All Branches): Drop Tuesday -> Return Friday
+ * 2. Nursing, Pharmacy, BBT, Diploma 2nd Year, Nepal: Drop Tuesday -> Return Thursday
+ * 3. Bihar Batch: Drop Wednesday -> Return Friday
+ * 4. B.Tech 3rd & 4th Year, MBA, MCA: Drop Monday -> Return Wednesday
+ * 5. B.Tech 2nd Year & Diploma 1st Year: Drop Saturday -> Return Tuesday
+ * 6. B.Tech 1st Year: Drop Friday -> Return Monday
  */
 export const getStudentSchedule = (studentProfile) => {
   const gender = (studentProfile?.gender || '').toLowerCase().trim();
@@ -60,18 +63,20 @@ export const getStudentSchedule = (studentProfile) => {
     };
   }
 
-  // 2. Nepal, 2nd Year Diploma, BBT, Nursing: Drop-off Tuesday -> Return Thursday
+  // 2. Nepal, Diploma 2nd Year, BBT, Nursing, Pharmacy: Drop Tuesday -> Return Thursday
   if (
     category.includes('nursing') ||
+    category.includes('pharmacy') ||
     category.includes('bbt') ||
     category.includes('bio') ||
     category.includes('2nd year diploma') ||
     category.includes('diploma 2') ||
     category.includes('2nd dip') ||
+    category.includes('diploma 2nd') ||
     location.includes('nepal')
   ) {
     return {
-      category: 'Nepal / 2nd Dip / BBT / Nursing',
+      category: 'Nepal / Dip 2 / Nursing / Pharmacy / BBT',
       dropoffDay: 'Tuesday',
       pickupDay: 'Thursday',
       dropoffSlot: '08:00 AM - 11:30 AM',
@@ -83,7 +88,7 @@ export const getStudentSchedule = (studentProfile) => {
     };
   }
 
-  // 3. Bihar Batch: Drop-off Wednesday -> Return Friday
+  // 3. Bihar Batch: Drop Wednesday -> Return Friday
   if (location.includes('bihar')) {
     return {
       category: 'Bihar Batch',
@@ -98,16 +103,18 @@ export const getStudentSchedule = (studentProfile) => {
     };
   }
 
-  // 4. 3rd and 4th Year B.Tech: Drop-off Monday -> Pickup Wednesday
+  // 4. B.Tech 3rd & 4th Year, MBA, MCA: Drop Monday -> Pickup Wednesday
   if (
     category.includes('3rd') ||
     category.includes('4th') ||
     category.includes('third') ||
     category.includes('fourth') ||
-    category.includes('final')
+    category.includes('final') ||
+    category.includes('mba') ||
+    category.includes('mca')
   ) {
     return {
-      category: '3rd & 4th Year B.Tech',
+      category: 'B.Tech 3rd/4th / MBA / MCA',
       dropoffDay: 'Monday',
       pickupDay: 'Wednesday',
       dropoffSlot: '08:00 AM - 11:30 AM',
@@ -115,20 +122,22 @@ export const getStudentSchedule = (studentProfile) => {
       badgeColor: '#7C3AED', // Violet
       badgeBg: '#F5F3FF',
       badgeBorder: '#DDD6FE',
-      description: '3rd & 4th Year B.Tech: Drop-off on Monday • Return on Wednesday',
+      description: 'Senior Batch: Drop-off on Monday • Return on Wednesday',
     };
   }
 
-  // 5. 2nd Year B.Tech & 1st Year Diploma: Drop-off Saturday -> Pickup Tuesday
+  // 5. B.Tech 2nd Year & Diploma 1st Year: Drop Saturday -> Pickup Tuesday
   if (
     category.includes('2nd year b') ||
+    category.includes('b.tech 2') ||
     category.includes('2nd b') ||
     category.includes('1st year diploma') ||
     category.includes('diploma 1') ||
-    category.includes('1st dip')
+    category.includes('1st dip') ||
+    category.includes('diploma 1st')
   ) {
     return {
-      category: '2nd B.Tech & 1st Diploma',
+      category: 'B.Tech 2nd / Diploma 1st',
       dropoffDay: 'Saturday',
       pickupDay: 'Tuesday',
       dropoffSlot: '08:00 AM - 11:30 AM',
@@ -140,9 +149,9 @@ export const getStudentSchedule = (studentProfile) => {
     };
   }
 
-  // 6. 1st Year B.Tech (Default): Drop-off Friday -> Pickup Monday
+  // 6. B.Tech 1st Year (Default): Drop Friday -> Pickup Monday
   return {
-    category: '1st Year B.Tech',
+    category: 'B.Tech 1st Year',
     dropoffDay: 'Friday',
     pickupDay: 'Monday',
     dropoffSlot: '08:00 AM - 11:30 AM',
@@ -150,7 +159,7 @@ export const getStudentSchedule = (studentProfile) => {
     badgeColor: '#2563EB', // Blue
     badgeBg: '#EFF6FF',
     badgeBorder: '#BFDBFE',
-    description: '1st Year B.Tech: Drop-off on Friday • Return on Monday',
+    description: 'B.Tech 1st Year: Drop-off on Friday • Return on Monday',
   };
 };
 
