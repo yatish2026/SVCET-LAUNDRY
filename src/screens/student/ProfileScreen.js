@@ -493,16 +493,37 @@ export const ProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 📅 CALENDAR / TIMEFRAME LAUNDRY USAGE ANALYZER */}
+      {/* 📊 UNIFIED LAUNDRY ANALYTICS & USAGE CALENDAR */}
       <View style={styles.calendarCard}>
         <View style={styles.calendarCardHeader}>
           <View>
-            <Text style={styles.cardSectionTitle}>📅 Laundry Usage Calendar & Stats</Text>
-            <Text style={styles.cardSectionSub}>Track clothes given for wash by day, month, or year</Text>
+            <Text style={styles.cardSectionTitle}>📊 Laundry Analytics & Usage Activity</Text>
+            <Text style={styles.cardSectionSub}>Lifetime wash metrics and date-wise drop analyzer</Text>
           </View>
         </View>
 
-        {/* Timeframe Mode Tabs */}
+        {/* 1. Lifetime Overview Grid */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statBox}>
+            <Text style={[styles.statNum, { color: '#4338CA' }]}>{totalClothesCleaned}</Text>
+            <Text style={styles.statLabel}>Total Clothes</Text>
+          </View>
+
+          <View style={styles.statBox}>
+            <Text style={[styles.statNum, { color: '#15803D' }]}>{completedOrders}</Text>
+            <Text style={styles.statLabel}>Completed</Text>
+          </View>
+
+          <View style={styles.statBox}>
+            <Text style={[styles.statNum, { color: '#D97706' }]}>{activeOrders}</Text>
+            <Text style={styles.statLabel}>Active Bags</Text>
+          </View>
+        </View>
+
+        <View style={styles.analyticsDivider} />
+
+        {/* 2. Interactive Timeframe Filter Tabs */}
+        <Text style={styles.filterSectionTitle}>🗓️ Filter By Date or Timeframe</Text>
         <View style={styles.timeframeTabs}>
           {[
             { id: 'DAY', label: 'Day-Wise', icon: 'today-outline' },
@@ -612,14 +633,14 @@ export const ProfileScreen = () => {
         <View style={styles.periodSummaryCard}>
           <View style={styles.periodSummaryItem}>
             <Text style={styles.periodSummaryNum}>{timeframeClothesCount}</Text>
-            <Text style={styles.periodSummaryLabel}>Clothes Given</Text>
+            <Text style={styles.periodSummaryLabel}>Clothes in Selection</Text>
           </View>
           <View style={styles.periodSummaryDivider} />
           <View style={styles.periodSummaryItem}>
             <Text style={[styles.periodSummaryNum, { color: '#059669' }]}>
               {calendarFilteredBookings.length}
             </Text>
-            <Text style={styles.periodSummaryLabel}>Wash Drop-offs</Text>
+            <Text style={styles.periodSummaryLabel}>Drop-offs</Text>
           </View>
           <View style={styles.periodSummaryDivider} />
           <View style={styles.periodSummaryItem}>
@@ -665,28 +686,6 @@ export const ProfileScreen = () => {
             })}
           </View>
         )}
-      </View>
-
-      {/* 📊 Lifetime Laundry Statistics Card */}
-      <View style={styles.statsCard}>
-        <Text style={styles.cardSectionTitle}>📈 Lifetime Total Laundry Stats</Text>
-
-        <View style={styles.statsGrid}>
-          <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: '#4338CA' }]}>{totalClothesCleaned}</Text>
-            <Text style={styles.statLabel}>Total Clothes Washed</Text>
-          </View>
-
-          <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: '#15803D' }]}>{completedOrders}</Text>
-            <Text style={styles.statLabel}>Completed Washes</Text>
-          </View>
-
-          <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: '#D97706' }]}>{activeOrders}</Text>
-            <Text style={styles.statLabel}>Active Bags</Text>
-          </View>
-        </View>
       </View>
 
       {/* 🔒 Privacy, Security & Account Management */}
@@ -1123,6 +1122,17 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#64748B',
     marginTop: 2,
+  },
+  analyticsDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 14,
+  },
+  filterSectionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#475569',
+    marginBottom: 8,
   },
   timeframeTabs: {
     flexDirection: 'row',
