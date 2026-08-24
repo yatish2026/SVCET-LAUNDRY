@@ -197,6 +197,18 @@ export const SideMenuDrawer = ({
                   </View>
                   <Text style={styles.menuItemText}>My Profile & Hostel Info</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleItemPress(() => onNavigate('profile'))}
+                >
+                  <View style={[styles.menuIconBox, { backgroundColor: '#FEE2E2' }]}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={18} color="#DC2626" />
+                  </View>
+                  <Text style={[styles.menuItemText, { color: '#DC2626', fontWeight: '700' }]}>
+                    Raise Ticket & Complaint Desk
+                  </Text>
+                </TouchableOpacity>
               </>
             )}
 

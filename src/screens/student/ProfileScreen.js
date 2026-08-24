@@ -769,6 +769,22 @@ export const ProfileScreen = () => {
 
         <TouchableOpacity
           style={styles.actionRow}
+          onPress={() => setTicketModalVisible(true)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.actionRowLeft}>
+            <Ionicons name="warning-outline" size={20} color="#EA580C" />
+            <Text style={[styles.actionRowText, { color: '#C2410C', fontWeight: '700' }]}>
+              Raise a Complaint / Report Server Issue
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+        </TouchableOpacity>
+
+        <View style={styles.actionDivider} />
+
+        <TouchableOpacity
+          style={styles.actionRow}
           onPress={handleDeleteAccount}
           activeOpacity={0.7}
         >

@@ -116,7 +116,7 @@ export const AuthScreen = () => {
       return;
     }
     if (!email.trim()) {
-      Alert.alert('Missing Email', 'Please enter your university email address.');
+      Alert.alert('Missing Email', 'Please enter your email address (Gmail / Email ID).');
       return;
     }
     if (!password || password.length < 6) {
@@ -224,12 +224,12 @@ export const AuthScreen = () => {
               <Text style={styles.formSub}>Sign in to track your laundry orders & pickup tokens</Text>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>University Email / Username</Text>
+                <Text style={styles.inputLabel}>Email ID / Gmail</Text>
                 <View style={styles.inputWrapper}>
                   <Ionicons name="mail-outline" size={18} color="#64748B" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="student@rvs.edu.in"
+                    placeholder="e.g. name@gmail.com"
                     placeholderTextColor="#94A3B8"
                     value={email}
                     onChangeText={setEmail}
@@ -418,12 +418,12 @@ export const AuthScreen = () => {
 
                   {/* Email */}
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>University Email *</Text>
+                    <Text style={styles.inputLabel}>Email ID / Gmail *</Text>
                     <View style={styles.inputWrapper}>
                       <Ionicons name="mail-outline" size={18} color="#64748B" style={styles.inputIcon} />
                       <TextInput
                         style={styles.input}
-                        placeholder="student@rvs.edu.in"
+                        placeholder="e.g. yourname@gmail.com"
                         placeholderTextColor="#94A3B8"
                         value={email}
                         onChangeText={setEmail}
