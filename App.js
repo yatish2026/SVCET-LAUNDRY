@@ -80,10 +80,6 @@ const MainApp = () => {
     (b) => b.status === 'pending_approval' || b.status === 'dropoff_scheduled'
   ).length;
 
-  const activeOrdersCount = bookings.filter(
-    (b) => b.status !== 'completed' && b.status !== 'cancelled'
-  ).length;
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <ExpoStatusBar style="dark" />
@@ -176,181 +172,213 @@ const MainApp = () => {
           )}
         </View>
 
-        {/* Bottom Tab Bar (Visible when not in detail view) */}
+        {/* 🌟 ULTRA-PREMIUM GLASS CAPSULE FLOATING DOCK */}
         {!selectedBookingId && (
-          <View style={styles.bottomTabBar}>
-            {isStudent ? (
-              /* Student Navigation Tabs */
-              <>
-                <TouchableOpacity
-                  style={styles.tabItem}
-                  onPress={() => setStudentTab('home')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={studentTab === 'home' ? 'home' : 'home-outline'}
-                    size={22}
-                    color={studentTab === 'home' ? '#1D4ED8' : THEME.colors.textMuted}
-                  />
-                  <Text
+          <View style={styles.floatingDockContainer} pointerEvents="box-none">
+            <View style={styles.glassCapsuleDock}>
+              {isStudent ? (
+                /* 🎓 Student Navigation Capsule */
+                <>
+                  {/* Home Tab */}
+                  <TouchableOpacity
                     style={[
-                      styles.tabLabel,
-                      studentTab === 'home' && styles.tabLabelActive,
+                      styles.dockItem,
+                      studentTab === 'home' && styles.dockItemActive,
                     ]}
+                    onPress={() => setStudentTab('home')}
+                    activeOpacity={0.7}
                   >
-                    Home
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.tabItem}
-                  onPress={() => setStudentTab('new_booking')}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.newBookingIconWrap}>
-                    <Ionicons name="add" size={24} color="#FFF" />
-                  </View>
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      studentTab === 'new_booking' && styles.tabLabelActive,
-                    ]}
-                  >
-                    Book Slot
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.tabItem}
-                  onPress={() => setStudentTab('history')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={studentTab === 'history' ? 'time' : 'time-outline'}
-                    size={22}
-                    color={studentTab === 'history' ? '#1D4ED8' : THEME.colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      studentTab === 'history' && styles.tabLabelActive,
-                    ]}
-                  >
-                    History
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.tabItem}
-                  onPress={() => setStudentTab('profile')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={studentTab === 'profile' ? 'person' : 'person-outline'}
-                    size={22}
-                    color={studentTab === 'profile' ? '#1D4ED8' : THEME.colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      studentTab === 'profile' && styles.tabLabelActive,
-                    ]}
-                  >
-                    Profile
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              /* Staff Navigation Tabs */
-              <>
-                <TouchableOpacity
-                  style={styles.tabItem}
-                  onPress={() => setAdminTab('overview')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={adminTab === 'overview' ? 'stats-chart' : 'stats-chart-outline'}
-                    size={22}
-                    color={adminTab === 'overview' ? '#1E40AF' : THEME.colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      adminTab === 'overview' && styles.tabLabelActive,
-                    ]}
-                  >
-                    Overview
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.tabItem}
-                  onPress={() => setAdminTab('approvals')}
-                  activeOpacity={0.7}
-                >
-                  <View>
                     <Ionicons
-                      name={adminTab === 'approvals' ? 'checkmark-done-circle' : 'checkmark-done-circle-outline'}
-                      size={22}
-                      color={adminTab === 'approvals' ? '#7C3AED' : THEME.colors.textMuted}
+                      name={studentTab === 'home' ? 'home' : 'home-outline'}
+                      size={21}
+                      color={studentTab === 'home' ? '#2563EB' : '#64748B'}
                     />
-                    {pendingApprovalsCount > 0 && (
-                      <View style={styles.tabBadge}>
-                        <Text style={styles.tabBadgeText}>{pendingApprovalsCount}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      adminTab === 'approvals' && { color: '#7C3AED', fontWeight: '800' },
-                    ]}
-                  >
-                    Approvals
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.dockLabel,
+                        studentTab === 'home' && styles.dockLabelActive,
+                      ]}
+                    >
+                      Home
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.tabItem}
-                  onPress={() => setAdminTab('submissions')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={adminTab === 'submissions' ? 'list' : 'list-outline'}
-                    size={22}
-                    color={adminTab === 'submissions' ? '#1E40AF' : THEME.colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      adminTab === 'submissions' && styles.tabLabelActive,
-                    ]}
+                  {/* Central Floating Action: Book Slot */}
+                  <TouchableOpacity
+                    style={styles.heroDockItem}
+                    onPress={() => setStudentTab('new_booking')}
+                    activeOpacity={0.8}
                   >
-                    Submissions
-                  </Text>
-                </TouchableOpacity>
+                    <View
+                      style={[
+                        styles.heroOrb,
+                        studentTab === 'new_booking' && styles.heroOrbActive,
+                      ]}
+                    >
+                      <Ionicons name="add" size={26} color="#FFFFFF" />
+                    </View>
+                    <Text
+                      style={[
+                        styles.dockLabel,
+                        studentTab === 'new_booking' && styles.dockLabelActive,
+                      ]}
+                    >
+                      Book Slot
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.tabItem}
-                  onPress={() => setAdminTab('reports')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={adminTab === 'reports' ? 'download' : 'download-outline'}
-                    size={22}
-                    color={adminTab === 'reports' ? '#065F46' : THEME.colors.textMuted}
-                  />
-                  <Text
+                  {/* History Tab */}
+                  <TouchableOpacity
                     style={[
-                      styles.tabLabel,
-                      adminTab === 'reports' && { color: '#065F46', fontWeight: '800' },
+                      styles.dockItem,
+                      studentTab === 'history' && styles.dockItemActive,
                     ]}
+                    onPress={() => setStudentTab('history')}
+                    activeOpacity={0.7}
                   >
-                    Reports (.CSV)
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
+                    <Ionicons
+                      name={studentTab === 'history' ? 'time' : 'time-outline'}
+                      size={21}
+                      color={studentTab === 'history' ? '#2563EB' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.dockLabel,
+                        studentTab === 'history' && styles.dockLabelActive,
+                      ]}
+                    >
+                      History
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Profile Tab */}
+                  <TouchableOpacity
+                    style={[
+                      styles.dockItem,
+                      studentTab === 'profile' && styles.dockItemActive,
+                    ]}
+                    onPress={() => setStudentTab('profile')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={studentTab === 'profile' ? 'person' : 'person-outline'}
+                      size={21}
+                      color={studentTab === 'profile' ? '#2563EB' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.dockLabel,
+                        studentTab === 'profile' && styles.dockLabelActive,
+                      ]}
+                    >
+                      Profile
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                /* 🛡️ Staff Navigation Capsule */
+                <>
+                  <TouchableOpacity
+                    style={[
+                      styles.dockItem,
+                      adminTab === 'overview' && styles.dockItemActive,
+                    ]}
+                    onPress={() => setAdminTab('overview')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={adminTab === 'overview' ? 'stats-chart' : 'stats-chart-outline'}
+                      size={20}
+                      color={adminTab === 'overview' ? '#2563EB' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.dockLabel,
+                        adminTab === 'overview' && styles.dockLabelActive,
+                      ]}
+                    >
+                      Overview
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.dockItem,
+                      adminTab === 'approvals' && styles.dockItemActive,
+                    ]}
+                    onPress={() => setAdminTab('approvals')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ position: 'relative' }}>
+                      <Ionicons
+                        name={adminTab === 'approvals' ? 'checkmark-done-circle' : 'checkmark-done-circle-outline'}
+                        size={20}
+                        color={adminTab === 'approvals' ? '#7C3AED' : '#64748B'}
+                      />
+                      {pendingApprovalsCount > 0 && (
+                        <View style={styles.dockBadge}>
+                          <Text style={styles.dockBadgeText}>{pendingApprovalsCount}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.dockLabel,
+                        adminTab === 'approvals' && { color: '#7C3AED', fontWeight: '800' },
+                      ]}
+                    >
+                      Approvals
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.dockItem,
+                      adminTab === 'submissions' && styles.dockItemActive,
+                    ]}
+                    onPress={() => setAdminTab('submissions')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={adminTab === 'submissions' ? 'list' : 'list-outline'}
+                      size={20}
+                      color={adminTab === 'submissions' ? '#2563EB' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.dockLabel,
+                        adminTab === 'submissions' && styles.dockLabelActive,
+                      ]}
+                    >
+                      Orders
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.dockItem,
+                      adminTab === 'reports' && styles.dockItemActive,
+                    ]}
+                    onPress={() => setAdminTab('reports')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={adminTab === 'reports' ? 'download' : 'download-outline'}
+                      size={20}
+                      color={adminTab === 'reports' ? '#059669' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.dockLabel,
+                        adminTab === 'reports' && { color: '#059669', fontWeight: '800' },
+                      ]}
+                    >
+                      Reports
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           </View>
         )}
       </View>
@@ -371,7 +399,7 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? '#0F172A' : '#FFFFFF',
+    backgroundColor: Platform.OS === 'web' ? '#0F172A' : '#F1F5F9',
     paddingTop: Platform.OS === 'android' ? 25 : 0,
     alignItems: 'center',
     justifyContent: 'center',
@@ -382,6 +410,7 @@ const styles = StyleSheet.create({
     maxWidth: 440,
     backgroundColor: '#F8FAFC',
     overflow: 'hidden',
+    position: 'relative',
     ...(Platform.OS === 'web'
       ? {
           shadowColor: '#000',
@@ -397,6 +426,7 @@ const styles = StyleSheet.create({
   },
   screenBody: {
     flex: 1,
+    paddingBottom: 85, // Clearance for the floating glass capsule dock
   },
   loadingContainer: {
     flex: 1,
@@ -410,46 +440,85 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '600',
   },
-  bottomTabBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    ...THEME.shadows.md,
-  },
-  tabItem: {
+
+  // 🌟 GLASS CAPSULE FLOATING DOCK STYLES
+  floatingDockContainer: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 22 : 12,
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 2,
-    paddingHorizontal: 12,
-    flex: 1,
+    paddingHorizontal: 16,
+    zIndex: 999,
   },
-  tabLabel: {
+  glassCapsuleDock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    backdropFilter: 'blur(20px)',
+    borderRadius: 36,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    boxShadow: '0 12px 32px rgba(15, 23, 42, 0.15), 0 2px 10px rgba(37, 99, 235, 0.08)',
+    elevation: 12,
+  },
+  dockItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 22,
+    marginHorizontal: 2,
+  },
+  dockItemActive: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  dockLabel: {
     fontSize: 10,
     fontWeight: '600',
     color: '#64748B',
-    marginTop: 3,
+    marginTop: 2,
   },
-  tabLabelActive: {
-    color: '#1D4ED8',
+  dockLabelActive: {
+    color: '#2563EB',
     fontWeight: '800',
   },
-  newBookingIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1E40AF',
+  heroDockItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -4,
+    paddingHorizontal: 6,
+    marginHorizontal: 2,
   },
-  tabBadge: {
+  heroOrb: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -16,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    boxShadow: '0 8px 18px rgba(37, 99, 235, 0.45)',
+    elevation: 8,
+  },
+  heroOrbActive: {
+    backgroundColor: '#1D4ED8',
+    borderColor: '#DBEAFE',
+    transform: [{ scale: 1.05 }],
+  },
+  dockBadge: {
     position: 'absolute',
-    top: -4,
+    top: -5,
     right: -10,
     backgroundColor: '#EF4444',
     minWidth: 16,
@@ -457,9 +526,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
-  tabBadgeText: {
+  dockBadgeText: {
     color: '#FFF',
     fontSize: 9,
     fontWeight: '900',
