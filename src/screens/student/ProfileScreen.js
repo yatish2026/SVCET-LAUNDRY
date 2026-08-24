@@ -120,7 +120,6 @@ export const ProfileScreen = () => {
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
   const [coursePickerVisible, setCoursePickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   // 📅 Single Unified Timeframe State ('ALL' | 'MONTH' | 'DAY' | 'YEAR')
   const [calendarMode, setCalendarMode] = useState('ALL');
