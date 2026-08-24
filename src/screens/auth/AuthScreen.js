@@ -37,8 +37,8 @@ export const AuthScreen = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [gender, setGender] = useState('male'); // 'male' | 'female'
-  const [stateLocation, setStateLocation] = useState(STUDENT_LOCATIONS[0]);
-  const [academicCourse, setAcademicCourse] = useState(ACADEMIC_COURSES[0]);
+  const [stateLocation, setStateLocation] = useState(''); // Explicit user selection required
+  const [academicCourse, setAcademicCourse] = useState(''); // Explicit user selection required
   const [studentId, setStudentId] = useState('');
   const [hostelBlock, setHostelBlock] = useState('Block A (Boys Hostel)');
   const [roomNumber, setRoomNumber] = useState('');
@@ -58,8 +58,11 @@ export const AuthScreen = () => {
     }
   };
 
+  const isSlotReady = !!(stateLocation && academicCourse);
+
   // 🎯 Dynamic Dobi Slot Prediction based on Gender, Location & Course
   const computedSchedule = useMemo(() => {
+    if (!stateLocation || !academicCourse) return null;
     return getStudentSchedule({
       gender,
       location: stateLocation,
@@ -109,6 +112,15 @@ export const AuthScreen = () => {
   };
 
   const handleRegister = async () => {
+    if (!stateLocation) {
+      Alert.alert('State Required', 'Please tap and select your Home State / Region.');
+      return;
+    }
+    if (!academicCourse) {
+      Alert.alert('Course Required', 'Please tap and select your Course & Year of Study.');
+      return;
+    }
+
     try {
       setLoading(true);
       await signUp({
@@ -474,7 +486,9 @@ export const AuthScreen = () => {
                     >
                       <View style={styles.dropdownLeft}>
                         <Ionicons name="location-outline" size={18} color="#4338CA" />
-                        <Text style={styles.dropdownSelectedText}>{stateLocation}</Text>
+                        <Text style={[styles.dropdownSelectedText, !stateLocation && { color: '#94A3B8', fontWeight: '500' }]}>
+                          {stateLocation || 'Tap to select your State / Region...'}
+                        </Text>
                       </View>
                       <Ionicons name="chevron-down" size={18} color="#64748B" />
                     </TouchableOpacity>
@@ -490,40 +504,54 @@ export const AuthScreen = () => {
                     >
                       <View style={styles.dropdownLeft}>
                         <Ionicons name="school-outline" size={18} color="#1D4ED8" />
-                        <Text style={styles.dropdownSelectedText}>{academicCourse}</Text>
+                        <Text style={[styles.dropdownSelectedText, !academicCourse && { color: '#94A3B8', fontWeight: '500' }]}>
+                          {academicCourse || 'Tap to select Course & Year...'}
+                        </Text>
                       </View>
                       <Ionicons name="chevron-down" size={18} color="#64748B" />
                     </TouchableOpacity>
                   </View>
 
                   {/* 🌟 Dynamic Laundry Slot Calculation Card */}
-                  <View style={[styles.slotPreviewCard, { backgroundColor: computedSchedule.badgeBg, borderColor: computedSchedule.badgeBorder }]}>
-                    <View style={styles.slotPreviewHeader}>
-                      <Ionicons name="calendar" size={16} color={computedSchedule.badgeColor} />
-                      <Text style={[styles.slotPreviewTitle, { color: computedSchedule.badgeColor }]}>
-                        Assigned Slot: {computedSchedule.category}
+                  {computedSchedule ? (
+                    <View style={[styles.slotPreviewCard, { backgroundColor: computedSchedule.badgeBg, borderColor: computedSchedule.badgeBorder }]}>
+                      <View style={styles.slotPreviewHeader}>
+                        <Ionicons name="calendar" size={16} color={computedSchedule.badgeColor} />
+                        <Text style={[styles.slotPreviewTitle, { color: computedSchedule.badgeColor }]}>
+                          Assigned Slot: {computedSchedule.category}
+                        </Text>
+                      </View>
+
+                      <View style={styles.slotPreviewBody}>
+                        <View style={styles.slotPreviewItem}>
+                          <Text style={styles.slotPreviewLabel}>DROP-OFF DAY</Text>
+                          <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
+                            {computedSchedule.dropoffDay}
+                          </Text>
+                        </View>
+
+                        <Ionicons name="arrow-forward" size={18} color={computedSchedule.badgeColor} />
+
+                        <View style={styles.slotPreviewItem}>
+                          <Text style={styles.slotPreviewLabel}>RETURN / PICKUP</Text>
+                          <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
+                            {computedSchedule.pickupDay}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.slotPreviewNotice}>{computedSchedule.description}</Text>
+                    </View>
+                  ) : (
+                    <View style={[styles.slotPreviewCard, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', alignItems: 'center', paddingVertical: 18 }]}>
+                      <Ionicons name="calendar-outline" size={26} color="#64748B" style={{ marginBottom: 6 }} />
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155', textAlign: 'center' }}>
+                        Select your State & Course above
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#94A3B8', textAlign: 'center', marginTop: 3 }}>
+                        Your official laundry drop-off and pickup days will appear here automatically.
                       </Text>
                     </View>
-
-                    <View style={styles.slotPreviewBody}>
-                      <View style={styles.slotPreviewItem}>
-                        <Text style={styles.slotPreviewLabel}>DROP-OFF DAY</Text>
-                        <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
-                          {computedSchedule.dropoffDay}
-                        </Text>
-                      </View>
-
-                      <Ionicons name="arrow-forward" size={18} color={computedSchedule.badgeColor} />
-
-                      <View style={styles.slotPreviewItem}>
-                        <Text style={styles.slotPreviewLabel}>RETURN / PICKUP</Text>
-                        <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
-                          {computedSchedule.pickupDay}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.slotPreviewNotice}>{computedSchedule.description}</Text>
-                  </View>
+                  )}
 
                   {/* Complete Registration Button */}
                   <TouchableOpacity
