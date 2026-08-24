@@ -560,6 +560,56 @@ try {
             echo json_encode(["success" => true, "message" => "Ticket updated successfully."]);
             break;
 
+        case 'reset_password':
+            if ($method !== 'POST') {
+                http_response_code(405);
+                echo json_encode(["success" => false, "error" => "Method not allowed"]);
+                exit();
+            }
+
+            $email = validateEmail($body['email'] ?? '');
+            $studentId = trim($body['student_id'] ?? '');
+            $newPassword = $body['new_password'] ?? '';
+
+            if (strlen($newPassword) < 6) {
+                http_response_code(422);
+                echo json_encode(["success" => false, "error" => "New password must be at least 6 characters."]);
+                exit();
+            }
+
+            // Verify user by email and student_id
+            $chk = $conn->prepare("SELECT id FROM laundry_users WHERE email = ? AND (student_id = ? OR phone_number = ?)");
+            $chk->execute([$email, $studentId, $studentId]);
+            $user = $chk->fetch();
+
+            if (!$user) {
+                // Check if email alone exists to give helpful feedback
+                $chkEmail = $conn->prepare("SELECT id FROM laundry_users WHERE email = ?");
+                $chkEmail->execute([$email]);
+                $userByEmail = $chkEmail->fetch();
+
+                if (!$userByEmail) {
+                    http_response_code(404);
+                    echo json_encode(["success" => false, "error" => "No account found with this email address."]);
+                    exit();
+                }
+
+                http_response_code(400);
+                echo json_encode(["success" => false, "error" => "Student Roll ID / Phone does not match your registered account."]);
+                exit();
+            }
+
+            // Update password hash
+            $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
+            $upd = $conn->prepare("UPDATE laundry_users SET password_hash = ? WHERE id = ?");
+            $upd->execute([$newHash, $user['id']]);
+
+            echo json_encode([
+                "success" => true,
+                "message" => "Your password has been reset successfully. You can now sign in with your new password."
+            ]);
+            break;
+
         default:
             http_response_code(404);
             echo json_encode(["success" => false, "error" => "Endpoint not found."]);

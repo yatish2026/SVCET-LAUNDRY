@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
   GET_TICKETS: `${API_BASE_URL}?action=get_tickets`,
   CREATE_TICKET: `${API_BASE_URL}?action=create_ticket`,
   UPDATE_TICKET_STATUS: `${API_BASE_URL}?action=update_ticket_status`,
+  RESET_PASSWORD: `${API_BASE_URL}?action=reset_password`,
 };
 
 export default API_BASE_URL;

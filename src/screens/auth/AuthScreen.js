@@ -24,6 +24,7 @@ import {
   getStudentSchedule,
 } from '../../constants/schedule';
 import { useAuth } from '../../context/AuthContext';
+import { apiService } from '../../services/apiService';
 
 export const AuthScreen = () => {
   const { signIn, signUp } = useAuth();
@@ -50,6 +51,15 @@ export const AuthScreen = () => {
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [courseModalVisible, setCourseModalVisible] = useState(false);
   const [countryModalVisible, setCountryModalVisible] = useState(false);
+
+  // Forgot Password States
+  const [forgotModalVisible, setForgotModalVisible] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetStudentId, setResetStudentId] = useState('');
+  const [newResetPassword, setNewResetPassword] = useState('');
+  const [confirmResetPassword, setConfirmResetPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   // Auto-switch default hostel block when gender changes
   const handleGenderChange = (selectedGender) => {
@@ -87,6 +97,51 @@ export const AuthScreen = () => {
       Alert.alert('Sign In Failed', err.message || 'Invalid credentials. Please check your email and password.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetEmail.trim()) {
+      Alert.alert('Missing Email', 'Please enter your registered Email ID / Gmail.');
+      return;
+    }
+    if (!resetStudentId.trim()) {
+      Alert.alert('Missing Roll ID', 'Please enter your Student Roll Number or Phone.');
+      return;
+    }
+    if (!newResetPassword || newResetPassword.length < 6) {
+      Alert.alert('Password Requirement', 'New password must be at least 6 characters.');
+      return;
+    }
+    if (newResetPassword !== confirmResetPassword) {
+      Alert.alert('Password Mismatch', 'New passwords do not match. Please retype carefully.');
+      return;
+    }
+
+    try {
+      setResetting(true);
+      await apiService.resetPassword({
+        email: resetEmail.trim(),
+        student_id: resetStudentId.trim(),
+        new_password: newResetPassword,
+      });
+
+      setResetting(false);
+      setForgotModalVisible(false);
+      setPassword(newResetPassword);
+      setEmail(resetEmail.trim());
+
+      if (Platform.OS === 'web') {
+        window.alert('✅ Password Reset Successfully!\nYou can now sign in with your new password.');
+      } else {
+        Alert.alert(
+          'Password Reset Success',
+          'Your password has been reset successfully! You can now sign in with your new password.'
+        );
+      }
+    } catch (err) {
+      setResetting(false);
+      Alert.alert('Reset Failed', err.message || 'Unable to reset password. Please verify your Email and Roll Number.');
     }
   };
 
@@ -262,6 +317,18 @@ export const AuthScreen = () => {
                     />
                   </TouchableOpacity>
                 </View>
+              </View>
+
+              <View style={styles.forgotPasswordRow}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setResetEmail(email);
+                    setForgotModalVisible(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.forgotPasswordLink}>Forgot Password?</Text>
+                </TouchableOpacity>
               </View>
 
               <TouchableOpacity
@@ -819,6 +886,140 @@ export const AuthScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* 🔑 FORGOT / RESET PASSWORD MODAL */}
+      <Modal
+        visible={forgotModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setForgotModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setForgotModalVisible(false)}
+          />
+
+          <View style={[styles.modalSheet, { maxHeight: '90%' }]}>
+            <View style={styles.modalSheetHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="key-outline" size={22} color="#4338CA" />
+                <Text style={styles.modalSheetTitle}>Reset Password</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setForgotModalVisible(false)}
+                style={styles.closeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Ionicons name="close-circle" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.modalScrollView}
+              contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+            >
+              <Text style={{ fontSize: 13, color: '#64748B', lineHeight: 18, marginBottom: 16 }}>
+                Enter your registered Email ID and Student Roll Number / Phone to verify your identity and set a new password.
+              </Text>
+
+              {/* Email */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Registered Email ID / Gmail *</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="mail-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. yourname@gmail.com"
+                    placeholderTextColor="#94A3B8"
+                    value={resetEmail}
+                    onChangeText={setResetEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                </View>
+              </View>
+
+              {/* Roll ID / Phone */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Student Roll ID or Phone *</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="card-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. 21RVS045"
+                    placeholderTextColor="#94A3B8"
+                    value={resetStudentId}
+                    onChangeText={setResetStudentId}
+                  />
+                </View>
+              </View>
+
+              {/* New Password */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>New Password *</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="lock-closed-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Minimum 6 characters"
+                    placeholderTextColor="#94A3B8"
+                    value={newResetPassword}
+                    onChangeText={setNewResetPassword}
+                    secureTextEntry={!showResetPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowResetPassword(!showResetPassword)}
+                    style={styles.eyeBtn}
+                  >
+                    <Ionicons
+                      name={showResetPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={18}
+                      color="#64748B"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Confirm Password */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Confirm New Password *</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="shield-checkmark-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Re-enter new password"
+                    placeholderTextColor="#94A3B8"
+                    value={confirmResetPassword}
+                    onChangeText={setConfirmResetPassword}
+                    secureTextEntry={!showResetPassword}
+                  />
+                </View>
+              </View>
+
+              {/* Action Button */}
+              <TouchableOpacity
+                style={[styles.primaryBtn, resetting && styles.btnDisabled, { marginTop: 8 }]}
+                onPress={handleResetPassword}
+                disabled={resetting}
+                activeOpacity={0.85}
+              >
+                {resetting ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.primaryBtnText}>Reset Password & Save</Text>
+                    <Ionicons name="checkmark-done" size={18} color="#FFF" style={{ marginLeft: 6 }} />
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -1148,6 +1349,16 @@ const styles = StyleSheet.create({
   },
   rowInputs: {
     flexDirection: 'row',
+  },
+  forgotPasswordRow: {
+    alignItems: 'flex-end',
+    marginBottom: 12,
+    marginTop: -4,
+  },
+  forgotPasswordLink: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#4338CA',
   },
   primaryBtn: {
     flexDirection: 'row',

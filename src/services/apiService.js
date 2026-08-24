@@ -260,6 +260,41 @@ export const apiService = {
       console.log('Error updating ticket on server:', err);
     }
   },
+
+  // 10. Student Password Reset / Account Recovery
+  async resetPassword({ email, student_id, new_password }) {
+    try {
+      const response = await fetch(API_ENDPOINTS.RESET_PASSWORD, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          student_id: student_id.trim(),
+          new_password,
+        }),
+      });
+
+      const text = await response.text();
+      let data = {};
+      try {
+        data = JSON.parse(text);
+      } catch (jsonErr) {
+        throw new Error('Server temporarily unreachable. Please try again.');
+      }
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Failed to reset password. Please check your details.');
+      }
+
+      return data;
+    } catch (err) {
+      console.log('Password reset error:', err);
+      throw err;
+    }
+  },
 };
 
 export default apiService;
