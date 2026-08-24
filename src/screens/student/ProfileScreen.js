@@ -84,6 +84,8 @@ export const ProfileScreen = () => {
 
   // Edit Modal & UI State
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [locationPickerVisible, setLocationPickerVisible] = useState(false);
+  const [coursePickerVisible, setCoursePickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
@@ -825,21 +827,20 @@ export const ProfileScreen = () => {
               </View>
             </View>
 
-            {/* State Location */}
+            {/* 📍 State Location Dropdown Picker */}
             <View style={styles.modalField}>
-              <Text style={styles.modalFieldLabel}>Home State / Region</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingTop: 4 }}>
-                {STUDENT_LOCATIONS.map((loc) => (
-                  <TouchableOpacity
-                    key={loc}
-                    style={[styles.chipModalBtn, stateLocation === loc && styles.chipModalBtnActive]}
-                    onPress={() => setStateLocation(loc)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.chipModalBtnText, stateLocation === loc && { color: '#FFF' }]}>{loc}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <Text style={styles.modalFieldLabel}>Home State / Region *</Text>
+              <TouchableOpacity
+                style={styles.dropdownPickerBtn}
+                onPress={() => setLocationPickerVisible(true)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.dropdownPickerLeft}>
+                  <Ionicons name="location-outline" size={18} color="#4338CA" />
+                  <Text style={styles.dropdownPickerText}>{stateLocation}</Text>
+                </View>
+                <Ionicons name="chevron-down" size={18} color="#64748B" />
+              </TouchableOpacity>
             </View>
 
             {/* Form Fields */}
@@ -865,22 +866,20 @@ export const ProfileScreen = () => {
               />
             </View>
 
+            {/* 🎓 Academic Course / Branch Dropdown Picker */}
             <View style={styles.modalField}>
-              <Text style={styles.modalFieldLabel}>Academic Course / Branch</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingTop: 4 }}>
-                {ACADEMIC_COURSES.map((crs) => (
-                  <TouchableOpacity
-                    key={crs}
-                    style={[styles.chipModalBtn, academicYear === crs && styles.chipModalBtnActive]}
-                    onPress={() => setAcademicYear(crs)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.chipModalBtnText, academicYear === crs && { color: '#FFF' }]}>
-                      {crs}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <Text style={styles.modalFieldLabel}>Course & Year of Study *</Text>
+              <TouchableOpacity
+                style={styles.dropdownPickerBtn}
+                onPress={() => setCoursePickerVisible(true)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.dropdownPickerLeft}>
+                  <Ionicons name="school-outline" size={18} color="#1D4ED8" />
+                  <Text style={styles.dropdownPickerText}>{academicYear}</Text>
+                </View>
+                <Ionicons name="chevron-down" size={18} color="#64748B" />
+              </TouchableOpacity>
             </View>
 
             <View style={styles.modalField}>
@@ -930,6 +929,122 @@ export const ProfileScreen = () => {
               )}
             </TouchableOpacity>
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* 📍 EDIT MODAL: SEPARATE LOCATION SELECTION LIST SHEET */}
+      <Modal
+        visible={locationPickerVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setLocationPickerVisible(false)}
+      >
+        <View style={styles.pickerModalOverlay}>
+          <TouchableOpacity
+            style={styles.pickerModalBackdrop}
+            activeOpacity={1}
+            onPress={() => setLocationPickerVisible(false)}
+          />
+          <View style={styles.pickerModalSheet}>
+            <View style={styles.pickerModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="location" size={20} color="#4338CA" />
+                <Text style={styles.pickerModalTitle}>Select Home State / Region</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setLocationPickerVisible(false)}
+                style={{ padding: 4 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close-circle" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={{ maxHeight: 380 }}
+              contentContainerStyle={{ paddingVertical: 6 }}
+              showsVerticalScrollIndicator={true}
+              keyboardShouldPersistTaps="handled"
+            >
+              {STUDENT_LOCATIONS.map((loc) => {
+                const isSelected = stateLocation === loc;
+                return (
+                  <TouchableOpacity
+                    key={loc}
+                    style={[styles.pickerItemRow, isSelected && styles.pickerItemRowActive]}
+                    onPress={() => {
+                      setStateLocation(loc);
+                      setLocationPickerVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextActive]}>
+                      {loc}
+                    </Text>
+                    {isSelected && <Ionicons name="checkmark-circle" size={20} color="#4338CA" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 🎓 EDIT MODAL: SEPARATE COURSE SELECTION LIST SHEET */}
+      <Modal
+        visible={coursePickerVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setCoursePickerVisible(false)}
+      >
+        <View style={styles.pickerModalOverlay}>
+          <TouchableOpacity
+            style={styles.pickerModalBackdrop}
+            activeOpacity={1}
+            onPress={() => setCoursePickerVisible(false)}
+          />
+          <View style={styles.pickerModalSheet}>
+            <View style={styles.pickerModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="school" size={20} color="#1D4ED8" />
+                <Text style={styles.pickerModalTitle}>Select Course & Year</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setCoursePickerVisible(false)}
+                style={{ padding: 4 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close-circle" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={{ maxHeight: 380 }}
+              contentContainerStyle={{ paddingVertical: 6 }}
+              showsVerticalScrollIndicator={true}
+              keyboardShouldPersistTaps="handled"
+            >
+              {ACADEMIC_COURSES.map((crs) => {
+                const isSelected = academicYear === crs;
+                return (
+                  <TouchableOpacity
+                    key={crs}
+                    style={[styles.pickerItemRow, isSelected && styles.pickerItemRowActive]}
+                    onPress={() => {
+                      setAcademicYear(crs);
+                      setCoursePickerVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextActive]}>
+                      {crs}
+                    </Text>
+                    {isSelected && <Ionicons name="checkmark-circle" size={20} color="#1D4ED8" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         </View>
       </Modal>
 
@@ -1497,6 +1612,89 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 14,
     fontWeight: '800',
+  },
+  dropdownPickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  dropdownPickerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dropdownPickerText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  pickerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  pickerModalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  pickerModalSheet: {
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 18,
+    boxShadow: '0 16px 36px rgba(0,0,0,0.25)',
+    elevation: 12,
+  },
+  pickerModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 6,
+  },
+  pickerModalTitle: {
+    fontSize: 15.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  pickerItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    marginVertical: 3,
+    backgroundColor: '#F8FAFC',
+  },
+  pickerItemRowActive: {
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  pickerItemText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  pickerItemTextActive: {
+    color: '#4338CA',
+    fontWeight: '900',
   },
 });
 
