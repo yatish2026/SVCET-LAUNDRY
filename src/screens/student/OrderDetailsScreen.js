@@ -46,25 +46,44 @@ export const OrderDetailsScreen = ({ bookingId, onBack }) => {
     return itemId.replace('_', ' ');
   };
 
+  const canCancel =
+    booking.status === 'pending_approval' || booking.status === 'dropoff_scheduled';
+
   const handleCancel = () => {
-    Alert.alert(
-      'Cancel Laundry Request?',
-      'Are you sure you want to cancel this laundry booking request?',
-      [
-        { text: 'No, Keep It', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            await cancelBooking(booking.id);
-            Alert.alert('Cancelled', 'Your laundry booking has been cancelled.');
+    const executeCancel = async () => {
+      try {
+        await cancelBooking(booking.id);
+        if (Platform.OS === 'web') {
+          window.alert('Your laundry booking request has been cancelled.');
+        } else {
+          Alert.alert('Request Cancelled', 'Your laundry booking request has been cancelled.');
+        }
+        if (onBack) onBack();
+      } catch (err) {
+        console.error('Cancel booking error:', err);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to cancel this laundry booking request?')) {
+        executeCancel();
+      }
+    } else {
+      Alert.alert(
+        'Cancel Laundry Request?',
+        'Are you sure you want to cancel this laundry booking request?',
+        [
+          { text: 'No, Keep It', style: 'cancel' },
+          {
+            text: 'Yes, Cancel',
+            style: 'destructive',
+            onPress: executeCancel,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
-  const isPending = booking.status === 'pending_approval';
   const isReady = booking.status === 'ready_for_pickup';
 
   const qrPayload = {
@@ -328,7 +347,7 @@ export const OrderDetailsScreen = ({ bookingId, onBack }) => {
             <Text style={styles.tokenActionBtnText}>View Digital Pickup Token</Text>
           </TouchableOpacity>
 
-          {isPending && (
+          {canCancel && (
             <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
               <Ionicons name="trash-outline" size={16} color={THEME.colors.accent} />
               <Text style={styles.cancelBtnText}>Cancel Laundry Request</Text>

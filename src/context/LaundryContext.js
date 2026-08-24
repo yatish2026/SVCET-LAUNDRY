@@ -95,6 +95,11 @@ export const LaundryProvider = ({ children }) => {
     }
   };
 
+  // Cancel booking
+  const cancelBooking = async (bookingId) => {
+    return advanceBookingStatus(bookingId, 'cancelled');
+  };
+
   const markNotificationRead = (notifId) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notifId ? { ...n, is_read: 1 } : n))
@@ -143,6 +148,7 @@ export const LaundryProvider = ({ children }) => {
         refreshData,
         createBooking,
         advanceBookingStatus,
+        cancelBooking,
         markNotificationRead,
         clearAllNotifications,
       }}
