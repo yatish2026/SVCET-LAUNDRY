@@ -164,6 +164,7 @@ function validatePhotosArray($photos) {
 // 🚀 MAIN ROUTER
 // ==========================================
 $action = $_GET['action'] ?? '';
+$method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $rawBody = file_get_contents('php://input');
 $body = json_decode($rawBody, true) ?? [];
 
