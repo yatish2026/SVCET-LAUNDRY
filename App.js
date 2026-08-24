@@ -15,6 +15,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LaundryProvider, useLaundry } from './src/context/LaundryContext';
 import Header from './src/components/Header';
 import SideMenuDrawer from './src/components/SideMenuDrawer';
+import WelcomeSplashScreen from './src/components/WelcomeSplashScreen';
 
 // Auth Screen
 import AuthScreen from './src/screens/auth/AuthScreen';
@@ -38,6 +39,7 @@ const MainApp = () => {
   const { bookings } = useLaundry();
 
   // Navigation states
+  const [showSplash, setShowSplash] = useState(true);
   const [studentTab, setStudentTab] = useState('home'); // 'home' | 'new_booking' | 'history' | 'profile'
   const [adminTab, setAdminTab] = useState('overview'); // 'overview' | 'approvals' | 'submissions' | 'reports'
   const [selectedBookingId, setSelectedBookingId] = useState(null);
@@ -54,6 +56,18 @@ const MainApp = () => {
       setSelectedBookingId(bookingId);
     }
   };
+
+  // 🌟 Render 3D Welcome Splash Screen on Initial App Launch
+  if (showSplash) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ExpoStatusBar style="light" />
+        <View style={styles.appContainer}>
+          <WelcomeSplashScreen onFinish={() => setShowSplash(false)} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (authLoading) {
     return (

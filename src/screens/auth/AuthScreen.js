@@ -141,15 +141,21 @@ export const AuthScreen = () => {
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={true}
       >
-        {/* 🌟 Top University Brand Header */}
+        {/* 🌟 3D Radiant University Brand Header */}
         <View style={styles.brandHeader}>
-          <Image
-            source={require('../../assets/rvs_logo.png')}
-            style={styles.brandLogo}
-            resizeMode="contain"
-          />
+          <View style={styles.brandLogoContainer3D}>
+            <Image
+              source={require('../../assets/rvs_logo.png')}
+              style={styles.brandLogo}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.brandUnivPill}>
+            <Ionicons name="school" size={13} color="#4338CA" />
+            <Text style={styles.brandUnivPillText}>RVS UNIVERSITY</Text>
+          </View>
           <Text style={styles.brandTitle}>DobiX</Text>
-          <Text style={styles.brandSubtitle}>RVS University Smart Hostel Laundry Portal</Text>
+          <Text style={styles.brandSubtitle}>Smart Hostel Laundry Portal</Text>
         </View>
 
         {/* 🌟 Main Authentication Card */}
@@ -700,22 +706,54 @@ const styles = StyleSheet.create({
   brandHeader: {
     alignItems: 'center',
     marginBottom: 20,
+    marginTop: 6,
+  },
+  brandLogoContainer3D: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    borderWidth: 2.5,
+    borderColor: '#EEF2FF',
+    boxShadow: '0 12px 28px rgba(67, 56, 202, 0.22), 0 4px 10px rgba(0,0,0,0.06)',
+    elevation: 8,
+    marginBottom: 10,
   },
   brandLogo: {
-    width: 64,
-    height: 64,
-    marginBottom: 8,
+    width: '100%',
+    height: '100%',
+  },
+  brandUnivPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    marginBottom: 6,
+  },
+  brandUnivPillText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#4338CA',
+    letterSpacing: 0.8,
   },
   brandTitle: {
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: '900',
     color: '#0F172A',
     letterSpacing: 0.5,
   },
   brandSubtitle: {
-    fontSize: 12.5,
+    fontSize: 13,
     color: '#64748B',
-    fontWeight: '600',
+    fontWeight: '700',
     marginTop: 2,
     textAlign: 'center',
   },
