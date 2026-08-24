@@ -483,23 +483,36 @@ export const AuthScreen = () => {
         animationType="fade"
         onRequestClose={() => setLocationModalVisible(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setLocationModalVisible(false)}
-        >
+        <View style={styles.modalOverlay}>
+          {/* Tap outside to close */}
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setLocationModalVisible(false)}
+          />
+
           <View style={styles.modalSheet}>
             <View style={styles.modalSheetHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="location" size={20} color="#4338CA" />
                 <Text style={styles.modalSheetTitle}>Select Home State / Region</Text>
               </View>
-              <TouchableOpacity onPress={() => setLocationModalVisible(false)} style={styles.closeBtn}>
-                <Ionicons name="close" size={22} color="#64748B" />
+              <TouchableOpacity
+                onPress={() => setLocationModalVisible(false)}
+                style={styles.closeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Ionicons name="close-circle" size={24} color="#64748B" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 350 }} showsVerticalScrollIndicator={true}>
+            <ScrollView
+              style={styles.modalScrollView}
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+            >
               {STUDENT_LOCATIONS.map((loc) => {
                 const isSelected = stateLocation === loc;
                 return (
@@ -521,7 +534,7 @@ export const AuthScreen = () => {
               })}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       {/* 🎓 CLEAN COURSE SELECTION MODAL */}
@@ -531,23 +544,36 @@ export const AuthScreen = () => {
         animationType="fade"
         onRequestClose={() => setCourseModalVisible(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setCourseModalVisible(false)}
-        >
+        <View style={styles.modalOverlay}>
+          {/* Tap outside to close */}
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setCourseModalVisible(false)}
+          />
+
           <View style={styles.modalSheet}>
             <View style={styles.modalSheetHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="school" size={20} color="#1D4ED8" />
                 <Text style={styles.modalSheetTitle}>Select Course & Year</Text>
               </View>
-              <TouchableOpacity onPress={() => setCourseModalVisible(false)} style={styles.closeBtn}>
-                <Ionicons name="close" size={22} color="#64748B" />
+              <TouchableOpacity
+                onPress={() => setCourseModalVisible(false)}
+                style={styles.closeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Ionicons name="close-circle" size={24} color="#64748B" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={true}>
+            <ScrollView
+              style={styles.modalScrollView}
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+            >
               {ACADEMIC_COURSES.map((crs) => {
                 const isSelected = academicCourse === crs;
                 return (
@@ -569,7 +595,7 @@ export const AuthScreen = () => {
               })}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -817,18 +843,27 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   modalSheet: {
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 440,
+    maxHeight: '80%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 18,
-    boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+    boxShadow: '0 12px 32px rgba(0,0,0,0.25)',
+    elevation: 12,
   },
   modalSheetHeader: {
     flexDirection: 'row',
@@ -840,33 +875,43 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   modalSheetTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
   },
   closeBtn: {
     padding: 4,
   },
+  modalScrollView: {
+    flexGrow: 1,
+  },
+  modalScrollContent: {
+    paddingVertical: 4,
+    paddingBottom: 12,
+  },
   modalItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    marginVertical: 2,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginVertical: 3,
+    backgroundColor: '#F8FAFC',
   },
   modalItemRowActive: {
     backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
   },
   modalItemText: {
-    fontSize: 13.5,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#334155',
   },
   modalItemTextActive: {
     color: '#4338CA',
-    fontWeight: '800',
+    fontWeight: '900',
   },
 });
 
