@@ -229,8 +229,8 @@ export const AuthScreen = () => {
         contentInsetAdjustmentBehavior="always"
         showsVerticalScrollIndicator={true}
       >
-        {/* 🌟 3D Radiant University Brand Header */}
-        <View style={styles.brandHeader}>
+        {/* 🌟 Side-by-Side University & DobiX Brand Header */}
+        <View style={styles.brandHeaderSideBySide}>
           <View style={styles.brandLogoHalo}>
             <View style={styles.brandLogoContainer3D}>
               <Image
@@ -241,13 +241,14 @@ export const AuthScreen = () => {
             </View>
           </View>
 
-          <View style={styles.brandUnivPill}>
-            <Ionicons name="school" size={14} color="#4338CA" />
-            <Text style={styles.brandUnivPillText}>RVS UNIVERSITY</Text>
+          <View style={styles.brandTextGroup}>
+            <View style={styles.brandUnivPill}>
+              <Ionicons name="school" size={13} color="#4338CA" />
+              <Text style={styles.brandUnivPillText}>RVS UNIVERSITY</Text>
+            </View>
+            <Text style={styles.brandTitle}>DobiX</Text>
+            <Text style={styles.brandSubtitle}>Smart Hostel Laundry Portal</Text>
           </View>
-
-          <Text style={styles.brandTitle}>DobiX</Text>
-          <Text style={styles.brandSubtitle}>🧺 Smart Hostel Laundry Portal ✨</Text>
         </View>
 
         {/* 🌟 Main Authentication Card */}
@@ -1043,69 +1044,77 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     alignItems: 'center',
   },
-  brandHeader: {
+  brandHeaderSideBySide: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 22,
+    justifyContent: 'center',
+    gap: 16,
+    marginBottom: 20,
     marginTop: 8,
+    width: '100%',
+    maxWidth: 460,
+    paddingHorizontal: 8,
   },
   brandLogoHalo: {
-    padding: 4,
-    borderRadius: 66,
+    padding: 3,
+    borderRadius: 56,
     backgroundColor: '#EEF2FF',
-    boxShadow: '0 14px 34px rgba(67, 56, 202, 0.25)',
-    elevation: 12,
-    marginBottom: 12,
+    boxShadow: '0 10px 24px rgba(67, 56, 202, 0.22)',
+    elevation: 8,
   },
   brandLogoContainer3D: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 98,
+    height: 98,
+    borderRadius: 49,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 0,
     overflow: 'hidden',
-    borderWidth: 3.5,
+    borderWidth: 3,
     borderColor: '#4338CA',
   },
   brandLogo: {
     width: '100%',
     height: '100%',
-    borderRadius: 60,
+    borderRadius: 49,
     transform: [{ scale: 1.16 }],
+  },
+  brandTextGroup: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   brandUnivPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 5,
     backgroundColor: '#EEF2FF',
-    paddingVertical: 5,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#A5B4FC',
-    marginBottom: 6,
-    boxShadow: '0 2px 8px rgba(67, 56, 202, 0.1)',
+    marginBottom: 4,
   },
   brandUnivPillText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '900',
     color: '#3730A3',
-    letterSpacing: 1.2,
+    letterSpacing: 1,
   },
   brandTitle: {
-    fontSize: 38,
+    fontSize: 34,
     fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
+    lineHeight: 38,
   },
   brandSubtitle: {
-    fontSize: 13.5,
-    color: '#475569',
+    fontSize: 12,
+    color: '#64748B',
     fontWeight: '700',
     marginTop: 2,
-    textAlign: 'center',
-    letterSpacing: 0.2,
   },
   card: {
     width: '100%',
