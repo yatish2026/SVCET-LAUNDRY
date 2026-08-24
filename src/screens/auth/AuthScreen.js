@@ -233,18 +233,16 @@ export const AuthScreen = () => {
         <View style={styles.brandContainer}>
           {/* Top Row: Logo Beside Big RVS UNIVERSITY Name */}
           <View style={styles.topLogoUnivRow}>
-            {/* Left: Big 3D Logo Emblem */}
-            <View style={styles.brandLogoHalo}>
-              <View style={styles.brandLogoContainer3D}>
-                <Image
-                  source={require('../../assets/rvs_logo.png')}
-                  style={styles.brandLogo}
-                  resizeMode="cover"
-                />
-              </View>
+            {/* Left: Extra Large 3D Logo Emblem */}
+            <View style={styles.brandLogoContainer3D}>
+              <Image
+                source={require('../../assets/rvs_logo.png')}
+                style={styles.brandLogo}
+                resizeMode="cover"
+              />
             </View>
 
-            {/* Right: Big RVS UNIVERSITY Title */}
+            {/* Right: Extra Large RVS UNIVERSITY Title */}
             <View style={styles.univTextContainer}>
               <View style={styles.rvsLettersRow}>
                 <Text style={styles.rvsLetterR}>R</Text>
@@ -1076,19 +1074,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 16,
     marginBottom: 8,
-    paddingHorizontal: 8,
-  },
-  brandLogoHalo: {
-    padding: 3.5,
-    borderRadius: 60,
-    backgroundColor: '#EEF2FF',
-    boxShadow: '0 12px 28px rgba(67, 56, 202, 0.25)',
-    elevation: 10,
+    paddingHorizontal: 6,
   },
   brandLogoContainer3D: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
+    width: 126,
+    height: 126,
+    borderRadius: 63,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1096,12 +1087,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 3.5,
     borderColor: '#4338CA',
+    boxShadow: '0 12px 28px rgba(67, 56, 202, 0.25)',
+    elevation: 10,
   },
   brandLogo: {
     width: '100%',
     height: '100%',
-    borderRadius: 52,
-    transform: [{ scale: 1.16 }],
+    borderRadius: 63,
+    transform: [{ scale: 1.22 }],
   },
   univTextContainer: {
     alignItems: 'flex-start',
@@ -1110,38 +1103,38 @@ const styles = StyleSheet.create({
   rvsLettersRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
   },
   rvsLetterR: {
-    fontSize: 38,
+    fontSize: 46,
     fontWeight: '900',
     color: '#DC2626', // Vibrant Red matching emblem
     letterSpacing: 0.5,
   },
   rvsLetterV: {
-    fontSize: 38,
+    fontSize: 46,
     fontWeight: '900',
     color: '#D97706', // Vibrant Amber Gold matching emblem
     letterSpacing: 0.5,
   },
   rvsLetterS: {
-    fontSize: 38,
+    fontSize: 46,
     fontWeight: '900',
     color: '#2563EB', // Vibrant Royal Blue matching emblem
     letterSpacing: 0.5,
   },
   rvsUnivWord: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '900',
     color: '#0F172A',
     letterSpacing: 2.5,
-    marginTop: -4,
+    marginTop: -8,
   },
   univTagline: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#64748B',
-    letterSpacing: 1.5,
+    letterSpacing: 1.8,
     marginTop: 2,
   },
   dobiXSection: {
