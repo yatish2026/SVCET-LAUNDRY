@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -14,34 +15,97 @@ import { useLaundry } from '../../context/LaundryContext';
 import { ACADEMIC_YEARS } from '../../constants/schedule';
 
 export const ReportsExportScreen = () => {
-  const { bookings, grandTotalClothes, yearWiseStats } = useLaundry();
-  const [selectedYear, setSelectedYear] = useState('ALL');
+  const { bookings } = useLaundry();
+
+  // Filter state
+  const [timeframeMode, setTimeframeMode] = useState('ALL'); // 'ALL' | 'DAY' | 'MONTH'
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10)); // 'YYYY-MM-DD'
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7)); // 'YYYY-MM'
+  const [selectedYear, setSelectedYear] = useState('ALL'); // 'ALL' | '1st Year' ...
+  const [selectedStatus, setSelectedStatus] = useState('ALL'); // 'ALL' | 'completed' | 'in_wash' ...
+  const [searchQuery, setSearchQuery] = useState('');
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
-  const filteredBookings = bookings.filter(
-    (b) => selectedYear === 'ALL' || b.academic_year === selectedYear
-  );
+  // Available months extracted from bookings
+  const availableMonths = useMemo(() => {
+    const set = new Set();
+    const currentM = new Date().toISOString().slice(0, 7);
+    set.add(currentM);
+    bookings.forEach((b) => {
+      if (b.created_at) {
+        set.add(b.created_at.slice(0, 7));
+      }
+    });
+    return Array.from(set).sort().reverse();
+  }, [bookings]);
 
-  const totalClothesInView = filteredBookings.reduce(
-    (sum, b) => sum + (b.total_items || 0),
-    0
-  );
+  // Filtered dataset
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((b) => {
+      const bDate = b.created_at || '';
+
+      // 1. Timeframe Filter
+      if (timeframeMode === 'DAY') {
+        if (!bDate.startsWith(selectedDate)) return false;
+      } else if (timeframeMode === 'MONTH') {
+        if (!bDate.startsWith(selectedMonth)) return false;
+      }
+
+      // 2. Academic Year Filter
+      if (selectedYear !== 'ALL' && b.academic_year !== selectedYear) {
+        return false;
+      }
+
+      // 3. Status Filter
+      if (selectedStatus !== 'ALL' && b.status !== selectedStatus) {
+        return false;
+      }
+
+      // 4. Search Filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchName = b.student_name?.toLowerCase().includes(q);
+        const matchId = b.student_id?.toLowerCase().includes(q);
+        const matchToken = b.pickup_token?.toLowerCase().includes(q);
+        const matchPhone = b.phone_number?.includes(q);
+        const matchRoom = String(b.room_number || '').toLowerCase().includes(q);
+        const matchBlock = b.hostel_block?.toLowerCase().includes(q);
+
+        return matchName || matchId || matchToken || matchPhone || matchRoom || matchBlock;
+      }
+
+      return true;
+    });
+  }, [bookings, timeframeMode, selectedDate, selectedMonth, selectedYear, selectedStatus, searchQuery]);
+
+  // Summary Metrics
+  const totalClothes = filteredBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
+  const completedCount = filteredBookings.filter((b) => b.status === 'completed').length;
+  const activeCount = filteredBookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled').length;
 
   const handleDownloadCSV = () => {
     try {
+      if (filteredBookings.length === 0) {
+        Alert.alert('No Data', 'No records match your selected report filters.');
+        return;
+      }
+
       const headers = [
+        'Booking ID',
         'Token',
+        'Date Created',
         'Student Name',
         'Roll No',
         'Academic Year',
         'Hostel Block',
         'Room No',
-        'Phone',
+        'Phone Number',
         'Total Clothes',
         'Items Breakdown',
-        'Status',
-        'Dropoff Day',
-        'Pickup Day',
+        'Current Status',
+        'Dropoff Slot',
+        'Pickup Slot',
+        'Special Instructions',
       ];
 
       const rows = filteredBookings.map((b) => {
@@ -50,32 +114,39 @@ export const ReportsExportScreen = () => {
           .join('; ');
 
         return [
-          `#${b.pickup_token}`,
+          `"${b.id || ''}"`,
+          `#${b.pickup_token || ''}`,
+          `"${b.created_at || ''}"`,
           `"${b.student_name || ''}"`,
           `"${b.student_id || ''}"`,
           `"${b.academic_year || ''}"`,
           `"${b.hostel_block || ''}"`,
           `"${b.room_number || ''}"`,
           `"${b.phone_number || ''}"`,
-          b.total_items,
+          b.total_items || 1,
           `"${itemsList}"`,
-          b.status,
+          `"${b.status || ''}"`,
           `"${b.dropoff_slot_time || ''}"`,
           `"${b.pickup_slot_time || ''}"`,
+          `"${(b.special_instructions || '').replace(/"/g, '""')}"`,
         ].join(',');
       });
 
       const csvContent = [headers.join(','), ...rows].join('\n');
+
+      let filename = `RVS_DobiX_Master_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+      if (timeframeMode === 'DAY') {
+        filename = `RVS_DobiX_Daily_Report_${selectedDate}.csv`;
+      } else if (timeframeMode === 'MONTH') {
+        filename = `RVS_DobiX_Monthly_Report_${selectedMonth}.csv`;
+      }
 
       if (Platform.OS === 'web') {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute(
-          'download',
-          `RVS_DobiX_Report_${selectedYear.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`
-        );
+        link.setAttribute('download', filename);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -86,157 +157,288 @@ export const ReportsExportScreen = () => {
 
       Alert.alert(
         'Report Exported! 📥',
-        `Successfully exported data for ${filteredBookings.length} students (${totalClothesInView} total clothes).`
+        `Generated ${filename} with ${filteredBookings.length} records (${totalClothes} clothes total).`
       );
     } catch (e) {
-      Alert.alert('Export Error', 'Unable to export report.');
+      console.error('Export error:', e);
+      Alert.alert('Export Error', 'Failed to generate report file.');
+    }
+  };
+
+  const getStatusBadgeColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return { bg: '#DCFCE7', text: '#15803D', label: 'Completed' };
+      case 'ready_for_pickup':
+        return { bg: '#FEF3C7', text: '#B45309', label: 'Ready for Pickup' };
+      case 'in_wash':
+        return { bg: '#DBEAFE', text: '#1E40AF', label: 'In Washing' };
+      case 'drying_ironing':
+        return { bg: '#F3E8FF', text: '#6B21A8', label: 'Drying & Iron' };
+      case 'pending_approval':
+      case 'dropoff_scheduled':
+        return { bg: '#F1F5F9', text: '#475569', label: 'Pending Intake' };
+      case 'cancelled':
+        return { bg: '#FEE2E2', text: '#991B1B', label: 'Cancelled' };
+      default:
+        return { bg: '#F1F5F9', text: '#475569', label: status };
     }
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* 📥 Download Hero Card */}
-      <View style={styles.downloadHero}>
-        <View style={styles.heroTop}>
-          <View style={styles.heroIconWrap}>
-            <Ionicons name="document-text" size={24} color="#FFF" />
-          </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.heroTitle}>Student Clothes Master Report</Text>
-            <Text style={styles.heroSub}>
-              Export complete student register, room numbers, and item totals
-            </Text>
-          </View>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Header Banner */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Reports & Data Export</Text>
+          <Text style={styles.headerSub}>Export day-wise, month-wise, and complete laundry logs</Text>
         </View>
 
         <TouchableOpacity
-          style={styles.downloadBtn}
+          style={[styles.downloadBtn, downloadSuccess && styles.downloadBtnSuccess]}
           onPress={handleDownloadCSV}
           activeOpacity={0.85}
         >
-          <Ionicons name="cloud-download-outline" size={20} color="#1E40AF" />
+          <Ionicons
+            name={downloadSuccess ? 'checkmark-circle' : 'download-outline'}
+            size={18}
+            color="#FFF"
+          />
           <Text style={styles.downloadBtnText}>
-            Download Student Report (.CSV)
+            {downloadSuccess ? 'Exported!' : 'Download CSV'}
           </Text>
         </TouchableOpacity>
+      </View>
 
-        {downloadSuccess && (
-          <View style={styles.successBanner}>
-            <Ionicons name="checkmark-circle" size={16} color="#059669" />
-            <Text style={styles.successBannerText}>
-              Report downloaded successfully!
-            </Text>
+      {/* 1. Timeframe Selection Bar */}
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>📅 1. Select Report Timeframe</Text>
+        <View style={styles.timeframeTabs}>
+          {[
+            { id: 'ALL', label: 'Complete Archive', icon: 'albums-outline' },
+            { id: 'DAY', label: 'Day-Wise', icon: 'today-outline' },
+            { id: 'MONTH', label: 'Month-Wise', icon: 'calendar-outline' },
+          ].map((tab) => (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.timeframeTab, timeframeMode === tab.id && styles.timeframeTabActive]}
+              onPress={() => setTimeframeMode(tab.id)}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={tab.icon}
+                size={16}
+                color={timeframeMode === tab.id ? '#4338CA' : '#64748B'}
+              />
+              <Text style={[styles.timeframeTabText, timeframeMode === tab.id && styles.timeframeTabTextActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Day-Wise Date Chooser */}
+        {timeframeMode === 'DAY' && (
+          <View style={styles.pickerSubRow}>
+            <Text style={styles.pickerLabel}>Pick Date:</Text>
+            <View style={styles.quickDatesRow}>
+              <TouchableOpacity
+                style={[styles.quickDateBtn, selectedDate === new Date().toISOString().slice(0, 10) && styles.quickDateBtnActive]}
+                onPress={() => setSelectedDate(new Date().toISOString().slice(0, 10))}
+              >
+                <Text style={[styles.quickDateText, selectedDate === new Date().toISOString().slice(0, 10) && styles.quickDateTextActive]}>
+                  Today
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.quickDateBtn, selectedDate === new Date(Date.now() - 86400000).toISOString().slice(0, 10) && styles.quickDateBtnActive]}
+                onPress={() => setSelectedDate(new Date(Date.now() - 86400000).toISOString().slice(0, 10))}
+              >
+                <Text style={[styles.quickDateText, selectedDate === new Date(Date.now() - 86400000).toISOString().slice(0, 10) && styles.quickDateTextActive]}>
+                  Yesterday
+                </Text>
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.customDateInput}
+                value={selectedDate}
+                onChangeText={setSelectedDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#94A3B8"
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Month-Wise Month Chooser */}
+        {timeframeMode === 'MONTH' && (
+          <View style={styles.pickerSubRow}>
+            <Text style={styles.pickerLabel}>Select Month:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {availableMonths.map((m) => {
+                const dateObj = new Date(`${m}-01T00:00:00Z`);
+                const monthLabel = dateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+                const isSelected = selectedMonth === m;
+
+                return (
+                  <TouchableOpacity
+                    key={m}
+                    style={[styles.quickDateBtn, isSelected && styles.quickDateBtnActive]}
+                    onPress={() => setSelectedMonth(m)}
+                  >
+                    <Text style={[styles.quickDateText, isSelected && styles.quickDateTextActive]}>
+                      {monthLabel}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         )}
       </View>
 
-      {/* 📊 Summary Counters */}
-      <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <Text style={styles.statNum}>{filteredBookings.length}</Text>
-          <Text style={styles.statLabel}>Students Listed</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={[styles.statNum, { color: '#1D4ED8' }]}>{totalClothesInView}</Text>
-          <Text style={styles.statLabel}>Total Clothes</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={[styles.statNum, { color: '#059669' }]}>{grandTotalClothes}</Text>
-          <Text style={styles.statLabel}>Campus Grand Total</Text>
-        </View>
-      </View>
+      {/* 2. Secondary Filter Chips (Academic Year & Status) */}
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>🎓 2. Filter by Academic Year & Status</Text>
 
-      {/* Year Filter Tabs */}
-      <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Filter by Academic Year:</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
-        >
-          {['ALL', ...ACADEMIC_YEARS].map((yr) => {
-            const isSelected = selectedYear === yr;
-            return (
-              <TouchableOpacity
-                key={yr}
-                style={[styles.filterChip, isSelected && styles.filterChipActive]}
-                onPress={() => setSelectedYear(yr)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    isSelected && styles.filterChipTextActive,
-                  ]}
-                >
-                  {yr}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        {/* Academic Year Chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipsRow}>
+          {['ALL', ...ACADEMIC_YEARS].map((yr) => (
+            <TouchableOpacity
+              key={yr}
+              style={[styles.filterChip, selectedYear === yr && styles.filterChipActive]}
+              onPress={() => setSelectedYear(yr)}
+            >
+              <Text style={[styles.filterChipText, selectedYear === yr && styles.filterChipTextActive]}>
+                {yr === 'ALL' ? 'All Years' : yr}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Status Filter Chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filterChipsRow, { marginTop: 8 }]}>
+          {[
+            { id: 'ALL', label: 'All Statuses' },
+            { id: 'completed', label: 'Completed' },
+            { id: 'ready_for_pickup', label: 'Ready for Pickup' },
+            { id: 'in_wash', label: 'In Washing' },
+            { id: 'pending_approval', label: 'Pending Intake' },
+          ].map((st) => (
+            <TouchableOpacity
+              key={st.id}
+              style={[styles.filterChip, selectedStatus === st.id && styles.filterChipActiveIndigo]}
+              onPress={() => setSelectedStatus(st.id)}
+            >
+              <Text style={[styles.filterChipText, selectedStatus === st.id && styles.filterChipTextActive]}>
+                {st.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       </View>
 
-      {/* 📋 Master Student Table List */}
-      <Text style={styles.tableHeaderTitle}>
-        STUDENT LAUNDRY REGISTER ({filteredBookings.length})
-      </Text>
-
-      {filteredBookings.length === 0 ? (
-        <View style={styles.emptyTable}>
-          <Text style={styles.emptyTableText}>No student records found</Text>
+      {/* 3. Summary Statistics Cards */}
+      <View style={styles.statsGrid}>
+        <View style={styles.statCard}>
+          <Text style={styles.statNum}>{filteredBookings.length}</Text>
+          <Text style={styles.statLabel}>Total Requests</Text>
         </View>
-      ) : (
-        <View style={styles.tableContainer}>
-          {filteredBookings.map((b, index) => {
-            const items = Object.entries(b.items || {});
-            return (
-              <View
-                key={b.id}
-                style={[
-                  styles.tableRow,
-                  index % 2 === 1 && styles.tableRowAlt,
-                ]}
-              >
-                <View style={styles.tableRowHeader}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={styles.tableStudentName}>{b.student_name}</Text>
-                      <View style={styles.tableYearTag}>
-                        <Text style={styles.tableYearTagText}>
-                          {b.academic_year || '1st Year'}
+
+        <View style={styles.statCard}>
+          <Text style={[styles.statNum, { color: '#4338CA' }]}>{totalClothes}</Text>
+          <Text style={styles.statLabel}>Total Clothes</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Text style={[styles.statNum, { color: '#15803D' }]}>{completedCount}</Text>
+          <Text style={styles.statLabel}>Completed</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Text style={[styles.statNum, { color: '#B45309' }]}>{activeCount}</Text>
+          <Text style={styles.statLabel}>In Progress</Text>
+        </View>
+      </View>
+
+      {/* 4. Live Data Table Preview */}
+      <View style={styles.sectionCard}>
+        <View style={styles.previewHeaderRow}>
+          <Text style={styles.sectionTitle}>
+            👁️ Live Report Preview ({filteredBookings.length} Records)
+          </Text>
+        </View>
+
+        {/* In-Report Search Bar */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={16} color="#64748B" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search within report (student name, roll no, token, room)..."
+            placeholderTextColor="#94A3B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={16} color="#94A3B8" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {filteredBookings.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Ionicons name="document-text-outline" size={36} color="#94A3B8" />
+            <Text style={styles.emptyBoxTitle}>No Records Found</Text>
+            <Text style={styles.emptyBoxSub}>No laundry requests match your active filters.</Text>
+          </View>
+        ) : (
+          <View style={styles.tableList}>
+            {filteredBookings.map((b, idx) => {
+              const badge = getStatusBadgeColor(b.status);
+              const itemsList = Object.entries(b.items || {})
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(', ');
+
+              return (
+                <View key={b.id || idx} style={styles.tableRow}>
+                  <View style={styles.rowTop}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={styles.rowName}>{b.student_name || 'Student'}</Text>
+                        <Text style={styles.rowRoll}>({b.student_id || 'ID: N/A'})</Text>
+                      </View>
+                      <Text style={styles.rowMeta}>
+                        {b.academic_year} • {b.hostel_block} (Rm {b.room_number})
+                      </Text>
+                    </View>
+
+                    <View style={styles.rowRight}>
+                      <Text style={styles.rowToken}>#{b.pickup_token}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+                        <Text style={[styles.statusBadgeText, { color: badge.text }]}>
+                          {badge.label}
                         </Text>
                       </View>
                     </View>
-                    <Text style={styles.tableStudentSub}>
-                      ID: {b.student_id || 'N/A'} • {b.hostel_block?.split(' ')[0]} (Rm {b.room_number})
+                  </View>
+
+                  <View style={styles.rowBottom}>
+                    <Text style={styles.rowClothesCount}>
+                      🧺 <Text style={{ fontWeight: '800' }}>{b.total_items}</Text> Clothes: {itemsList || 'Mixed Wash'}
+                    </Text>
+                    <Text style={styles.rowDate}>
+                      {b.created_at ? b.created_at.slice(0, 10) : ''}
                     </Text>
                   </View>
-
-                  <View style={styles.tableClothesCount}>
-                    <Text style={styles.tableClothesNum}>{b.total_items}</Text>
-                    <Text style={styles.tableClothesLabel}>clothes</Text>
-                  </View>
                 </View>
-
-                {/* Items Summary Pill */}
-                <View style={styles.tableItemsPills}>
-                  {items.map(([k, v]) => (
-                    <View key={k} style={styles.itemMiniPill}>
-                      <Text style={styles.itemMiniPillText}>
-                        {k.replace(/_/g, ' ')}: <Text style={{ fontWeight: '800' }}>{v}</Text>
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
+              );
+            })}
+          </View>
+        )}
+      </View>
     </ScrollView>
   );
 };
@@ -248,221 +450,294 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 50,
+    gap: 14,
+    paddingBottom: 40,
   },
-  downloadHero: {
-    backgroundColor: '#065F46',
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 16,
-    ...THEME.shadows.md,
-  },
-  heroTop: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  heroIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroTitle: {
-    fontSize: 15,
+  headerTitle: {
+    fontSize: 18,
     fontWeight: '800',
-    color: '#FFF',
+    color: '#0F172A',
   },
-  heroSub: {
-    fontSize: 11,
-    color: '#A7F3D0',
+  headerSub: {
+    fontSize: 12,
+    color: '#64748B',
     marginTop: 2,
   },
   downloadBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    borderRadius: 14,
-    gap: 8,
-    ...THEME.shadows.sm,
+    backgroundColor: '#059669',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    gap: 6,
+  },
+  downloadBtnSuccess: {
+    backgroundColor: '#15803D',
   },
   downloadBtnText: {
-    color: '#065F46',
+    color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
   },
-  successBanner: {
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 12,
+  },
+  timeframeTabs: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+  },
+  timeframeTab: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ECFDF5',
-    borderRadius: 10,
-    paddingVertical: 6,
-    marginTop: 10,
-    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 5,
   },
-  successBannerText: {
-    fontSize: 11,
+  timeframeTabActive: {
+    backgroundColor: '#FFFFFF',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+  },
+  timeframeTabText: {
+    fontSize: 12,
     fontWeight: '700',
-    color: '#065F46',
+    color: '#64748B',
   },
-  statsRow: {
+  timeframeTabTextActive: {
+    color: '#4338CA',
+  },
+  pickerSubRow: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  pickerLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 8,
+  },
+  quickDatesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  quickDateBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  quickDateBtnActive: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#6366F1',
+  },
+  quickDateText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  quickDateTextActive: {
+    color: '#4338CA',
+  },
+  customDateInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1E293B',
+    minWidth: 110,
+  },
+  filterChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterChip: {
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  filterChipActive: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
+  },
+  filterChipActiveIndigo: {
+    backgroundColor: '#4338CA',
+    borderColor: '#4338CA',
+  },
+  filterChipText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+  },
+  statsGrid: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 16,
   },
-  statBox: {
+  statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    padding: 12,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   statNum: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#0F172A',
   },
   statLabel: {
-    fontSize: 9,
-    fontWeight: '600',
+    fontSize: 10,
     color: '#64748B',
+    fontWeight: '700',
     marginTop: 2,
     textAlign: 'center',
   },
-  filterSection: {
-    marginBottom: 16,
-  },
-  filterLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
-    marginBottom: 6,
-  },
-  filterScroll: {
-    gap: 6,
-  },
-  filterChip: {
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  filterChipActive: {
-    backgroundColor: '#065F46',
-    borderColor: '#065F46',
-  },
-  filterChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  filterChipTextActive: {
-    color: '#FFF',
-    fontWeight: '800',
-  },
-  tableHeaderTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#475569',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
-  tableContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  tableRow: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  tableRowAlt: {
-    backgroundColor: '#F8FAFC',
-  },
-  tableRowHeader: {
+  previewHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
   },
-  tableStudentName: {
-    fontSize: 13,
-    fontWeight: '800',
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    height: 38,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 6,
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 12.5,
     color: '#0F172A',
   },
-  tableYearTag: {
-    backgroundColor: '#EFF6FF',
-    paddingVertical: 1,
-    paddingHorizontal: 5,
-    borderRadius: 4,
+  tableList: {
+    gap: 10,
   },
-  tableYearTagText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#1D4ED8',
-  },
-  tableStudentSub: {
-    fontSize: 10,
-    color: '#64748B',
-    marginTop: 1,
-  },
-  tableClothesCount: {
-    alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-  },
-  tableClothesNum: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#1D4ED8',
-  },
-  tableClothesLabel: {
-    fontSize: 8,
-    color: '#64748B',
-  },
-  tableItemsPills: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 4,
-  },
-  itemMiniPill: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 6,
-    paddingVertical: 2,
-    paddingHorizontal: 6,
+  tableRow: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  itemMiniPillText: {
-    fontSize: 9,
-    color: '#334155',
-    textTransform: 'capitalize',
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  emptyTable: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 20,
-    alignItems: 'center',
+  rowName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
   },
-  emptyTableText: {
+  rowRoll: {
     fontSize: 12,
     color: '#64748B',
+    fontWeight: '600',
+  },
+  rowMeta: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  rowRight: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  rowToken: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  statusBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  rowBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF2FF',
+  },
+  rowClothesCount: {
+    fontSize: 11.5,
+    color: '#334155',
+    flex: 1,
+  },
+  rowDate: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  emptyBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+  },
+  emptyBoxTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginTop: 8,
+  },
+  emptyBoxSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
   },
 });
 
