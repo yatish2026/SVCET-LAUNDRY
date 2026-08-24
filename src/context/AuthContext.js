@@ -98,6 +98,27 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(false);
   };
 
+  // Update Profile across the entire app instantly
+  const updateProfile = async (updatedUserData) => {
+    try {
+      const mergedUser = { ...(profile || user || {}), ...updatedUserData };
+      setUser(mergedUser);
+      setProfile(mergedUser);
+      if (mergedUser.role) setRole(mergedUser.role);
+      if (mergedUser.academic_year) setAcademicYear(mergedUser.academic_year);
+
+      await AsyncStorage.setItem(
+        '@campuswash_user_session',
+        JSON.stringify(mergedUser)
+      );
+
+      return mergedUser;
+    } catch (err) {
+      console.log('Error updating profile in AuthContext:', err);
+      throw err;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -112,6 +133,7 @@ export const AuthProvider = ({ children }) => {
         signIn,
         signUp,
         signOut,
+        updateProfile,
       }}
     >
       {children}

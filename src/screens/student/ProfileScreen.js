@@ -30,7 +30,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import PrivacyPolicyModal from '../common/PrivacyPolicyModal';
 
 export const ProfileScreen = () => {
-  const { profile, signOut } = useAuth();
+  const { profile, updateProfile, signOut } = useAuth();
   const { bookings } = useLaundry();
 
   // Profile fields
@@ -43,6 +43,21 @@ export const ProfileScreen = () => {
   const [hostelBlock, setHostelBlock] = useState(profile?.hostel_block || HOSTEL_BLOCKS[0]);
   const [academicYear, setAcademicYear] = useState(profile?.academic_year || ACADEMIC_COURSES[0]);
   const [avatarUri, setAvatarUri] = useState(profile?.avatar_url || null);
+
+  // Sync state if profile changes globally
+  useEffect(() => {
+    if (profile) {
+      setName(profile.full_name || '');
+      setGender(profile.gender || 'male');
+      setStateLocation(profile.location || STUDENT_LOCATIONS[0]);
+      setStudentId(profile.student_id || '');
+      setRoomNumber(profile.room_number || '');
+      setPhoneNumber(profile.phone_number || '');
+      setHostelBlock(profile.hostel_block || HOSTEL_BLOCKS[0]);
+      setAcademicYear(profile.academic_year || ACADEMIC_COURSES[0]);
+      if (profile.avatar_url) setAvatarUri(profile.avatar_url);
+    }
+  }, [profile]);
 
   // Edit Modal & UI State
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -313,10 +328,7 @@ export const ProfileScreen = () => {
         avatar_url: avatarUri,
       };
 
-      await AsyncStorage.setItem(
-        '@campuswash_user_session',
-        JSON.stringify(updatedProfile)
-      );
+      await updateProfile(updatedProfile);
 
       setEditModalVisible(false);
 
