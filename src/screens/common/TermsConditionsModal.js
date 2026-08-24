@@ -35,11 +35,11 @@ export const TermsConditionsModal = ({ visible, onClose }) => {
 
           {/* Terms Content Scroll */}
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.lastUpdated}>Effective Date: August 2026 • DobiX</Text>
+            <Text style={styles.lastUpdated}>Effective Date: August 2026 • DhobiX</Text>
 
             <Text style={styles.sectionHeading}>1. Acceptance of Terms</Text>
             <Text style={styles.bodyText}>
-              By registering or using the DobiX mobile application, you agree to these Terms and Conditions. This app is provided exclusively for registered hostel students and authorized laundry staff of RVS University.
+              By registering or using the DhobiX mobile application, you agree to these Terms and Conditions. This app is provided exclusively for registered hostel students and authorized laundry staff of RVS University.
             </Text>
 
             <Text style={styles.sectionHeading}>2. Student Account & Security</Text>

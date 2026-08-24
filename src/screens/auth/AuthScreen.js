@@ -77,7 +77,7 @@ export const AuthScreen = () => {
 
   const isSlotReady = !!(stateLocation && academicCourse);
 
-  // 🎯 Dynamic Dobi Slot Prediction based on Gender, Location & Course
+  // 🎯 Dynamic Dhobi Slot Prediction based on Gender, Location & Course
   const computedSchedule = useMemo(() => {
     if (!stateLocation || !academicCourse) return null;
     return getStudentSchedule({
@@ -233,7 +233,7 @@ export const AuthScreen = () => {
         contentInsetAdjustmentBehavior="always"
         showsVerticalScrollIndicator={true}
       >
-        {/* 🌟 Brand Header: Logo + Big RVS University Beside It, DobiX Below */}
+        {/* 🌟 Brand Header: Logo + Big RVS University Beside It, DhobiX Below */}
         <View style={styles.brandContainer}>
           {/* Top Row: Logo Beside Big RVS UNIVERSITY Name */}
           <View style={styles.topLogoUnivRow}>
@@ -258,11 +258,11 @@ export const AuthScreen = () => {
             </View>
           </View>
 
-          {/* Bottom: Colorful DobiX Title & Subtitle */}
-          <View style={styles.dobiXSection}>
-            <View style={styles.dobiXColorRowCentered}>
-              <Text style={styles.dobiXTextPart1}>Dobi</Text>
-              <Text style={styles.dobiXTextPart2}>X</Text>
+          {/* Bottom: Colorful DhobiX Title & Subtitle */}
+          <View style={styles.dhobiXSection}>
+            <View style={styles.dhobiXColorRowCentered}>
+              <Text style={styles.dhobiXTextPart1}>Dhobi</Text>
+              <Text style={styles.dhobiXTextPart2}>X</Text>
               <View style={styles.sparkleBadge}>
                 <Text style={styles.sparkleBadgeText}>✨ Smart Portal</Text>
               </View>
@@ -1174,24 +1174,24 @@ const styles = StyleSheet.create({
     letterSpacing: 1.8,
     marginTop: 2,
   },
-  dobiXSection: {
+  dhobiXSection: {
     alignItems: 'center',
     marginTop: 4,
   },
-  dobiXColorRowCentered: {
+  dhobiXColorRowCentered: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
     marginBottom: 2,
   },
-  dobiXTextPart1: {
+  dhobiXTextPart1: {
     fontSize: 36,
     fontWeight: '900',
     color: '#4338CA',
     letterSpacing: 0.5,
   },
-  dobiXTextPart2: {
+  dhobiXTextPart2: {
     fontSize: 40,
     fontWeight: '900',
     color: '#EA580C',

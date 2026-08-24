@@ -137,7 +137,7 @@ export const PhotoUploader = ({
       console.log('Error picking images:', error);
       Alert.alert(
         'Gallery Permission',
-        'Please allow Photo & Storage permissions for DobiX in Phone Settings -> Apps -> DobiX -> Permissions.'
+        'Please allow Photo & Storage permissions for DhobiX in Phone Settings -> Apps -> DhobiX -> Permissions.'
       );
     }
   };
@@ -150,7 +150,7 @@ export const PhotoUploader = ({
           if (status !== 'granted') {
             Alert.alert(
               'Camera Permission Needed',
-              'Please allow Camera permission for DobiX in Phone Settings -> Apps -> DobiX -> Permissions to take clothes photos.'
+              'Please allow Camera permission for DhobiX in Phone Settings -> Apps -> DhobiX -> Permissions to take clothes photos.'
             );
             return;
           }
@@ -179,7 +179,7 @@ export const PhotoUploader = ({
       console.log('Error taking photo:', error);
       Alert.alert(
         'Camera Permission',
-        'Please allow Camera permission for DobiX in Phone Settings -> Apps -> DobiX -> Permissions.'
+        'Please allow Camera permission for DhobiX in Phone Settings -> Apps -> DhobiX -> Permissions.'
       );
     }
   };

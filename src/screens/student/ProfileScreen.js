@@ -75,8 +75,8 @@ export const ProfileScreen = () => {
   }, [tickets, profile]);
 
   const userAvatarKey = useMemo(() => {
-    if (profile?.id) return `@dobix_user_avatar_${profile.id}`;
-    if (profile?.email) return `@dobix_user_avatar_${profile.email.trim().toLowerCase()}`;
+    if (profile?.id) return `@dhobix_user_avatar_${profile.id}`;
+    if (profile?.email) return `@dhobix_user_avatar_${profile.email.trim().toLowerCase()}`;
     return null;
   }, [profile?.id, profile?.email]);
 
@@ -297,7 +297,7 @@ export const ProfileScreen = () => {
         if (updateProfile) {
           await updateProfile({ avatar_url: compressed });
         }
-        await AsyncStorage.removeItem('@dobix_user_avatar').catch(() => {});
+        await AsyncStorage.removeItem('@dhobix_user_avatar').catch(() => {});
         if (Platform.OS === 'web') {
           window.alert('Profile photo updated successfully!');
         } else {
@@ -338,7 +338,7 @@ export const ProfileScreen = () => {
         if (updateProfile) {
           await updateProfile({ avatar_url: compressed });
         }
-        await AsyncStorage.removeItem('@dobix_user_avatar').catch(() => {});
+        await AsyncStorage.removeItem('@dhobix_user_avatar').catch(() => {});
         if (Platform.OS === 'web') {
           window.alert('Profile photo captured and updated!');
         } else {
@@ -454,14 +454,14 @@ export const ProfileScreen = () => {
 
   const handleSignOut = () => {
     if (Platform.OS === 'web') {
-      const confirmSignout = window.confirm('Are you sure you want to sign out from DobiX?');
+      const confirmSignout = window.confirm('Are you sure you want to sign out from DhobiX?');
       if (confirmSignout) {
         signOut();
       }
     } else {
       Alert.alert(
         'Sign Out',
-        'Are you sure you want to sign out from DobiX?',
+        'Are you sure you want to sign out from DhobiX?',
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -880,13 +880,13 @@ export const ProfileScreen = () => {
         activeOpacity={0.85}
       >
         <Ionicons name="log-out-outline" size={20} color="#FFF" />
-        <Text style={styles.signOutBtnText}>Sign Out from DobiX</Text>
+        <Text style={styles.signOutBtnText}>Sign Out from DhobiX</Text>
       </TouchableOpacity>
 
       {/* App Version Info */}
       <View style={styles.footerVersion}>
         <Text style={styles.footerVersionText}>
-          DobiX v1.0.0 • RVS University Hostel Laundry Portal
+          DhobiX v1.0.0 • RVS University Hostel Laundry Portal
         </Text>
       </View>
 

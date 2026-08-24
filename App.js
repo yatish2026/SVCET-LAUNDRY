@@ -73,7 +73,7 @@ const MainApp = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={THEME.colors.primary} />
-        <Text style={styles.loadingText}>Connecting to DobiX...</Text>
+        <Text style={styles.loadingText}>Connecting to DhobiX...</Text>
       </View>
     );
   }
