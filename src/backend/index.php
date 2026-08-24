@@ -298,6 +298,8 @@ try {
         case 'create_booking':
             checkRateLimit($conn, 'booking');
 
+            $userId = htmlspecialchars(substr($body['user_id'] ?? '', 0, 64), ENT_QUOTES, 'UTF-8');
+            $studentEmail = htmlspecialchars(substr($body['student_email'] ?? '', 0, 100), ENT_QUOTES, 'UTF-8');
             $studentName = !empty($body['student_name']) ? htmlspecialchars(substr($body['student_name'], 0, 100), ENT_QUOTES, 'UTF-8') : 'Student';
             $studentId = htmlspecialchars(substr($body['student_id'] ?? 'SVCET-STD', 0, 30), ENT_QUOTES, 'UTF-8');
             $academicYear = in_array($body['academic_year'] ?? '', ['1st Year', '2nd Year', '3rd Year', '4th Year']) ? $body['academic_year'] : '1st Year';
@@ -316,11 +318,11 @@ try {
             $tokenNumber = 'LND-' . str_pad(rand(1000, 9999), 4, '0', STR_PAD_LEFT);
 
             $ins = $conn->prepare("INSERT INTO laundry_bookings 
-                (id, pickup_token, student_name, student_id, academic_year, hostel_block, room_number, phone_number, items, total_items, status, dropoff_slot_time, pickup_slot_time, counter_number, special_instructions, photos, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_approval', ?, ?, 'Counter 1', ?, ?, NOW(), NOW())");
+                (id, user_id, pickup_token, student_name, student_email, student_id, academic_year, hostel_block, room_number, phone_number, items, total_items, status, dropoff_slot_time, pickup_slot_time, counter_number, special_instructions, photos, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_approval', ?, ?, 'Counter 1', ?, ?, NOW(), NOW())");
             
             $ins->execute([
-                $bookingId, $tokenNumber, $studentName, $studentId, $academicYear,
+                $bookingId, $userId, $tokenNumber, $studentName, $studentEmail, $studentId, $academicYear,
                 $hostelBlock, $roomNumber, $phone, $itemsJson, $totalItems,
                 $dropoffSlot, $pickupSlot, $instructions, $photosJson
             ]);
@@ -329,8 +331,10 @@ try {
                 "success" => true,
                 "booking" => [
                     "id" => $bookingId,
+                    "user_id" => $userId,
                     "pickup_token" => $tokenNumber,
                     "student_name" => $studentName,
+                    "student_email" => $studentEmail,
                     "student_id" => $studentId,
                     "academic_year" => $academicYear,
                     "hostel_block" => $hostelBlock,

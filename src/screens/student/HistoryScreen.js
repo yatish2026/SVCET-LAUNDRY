@@ -19,15 +19,26 @@ export const HistoryScreen = ({ onSelectBooking }) => {
   const [filter, setFilter] = useState('all'); // 'all' | 'completed' | 'active'
   const [searchQuery, setSearchQuery] = useState('');
 
-  const studentName = profile?.full_name || profile?.email?.split('@')[0] || '';
-  const studentPhone = profile?.phone_number || '';
+  const studentName = (profile?.full_name || profile?.email?.split('@')[0] || '').trim().toLowerCase();
+  const studentEmail = (profile?.email || '').trim().toLowerCase();
+  const studentRollNo = (profile?.student_id || '').trim();
 
-  const studentBookings = bookings.filter(
-    (b) =>
-      (studentPhone && b.phone_number === studentPhone) ||
-      (studentName && b.student_name && b.student_name.toLowerCase() === studentName.toLowerCase()) ||
-      b.student_id === profile?.student_id
-  );
+  const studentBookings = bookings.filter((b) => {
+    // 1. Unique User ID match
+    if (b.user_id && profile?.id && b.user_id === profile.id) return true;
+    // 2. Unique Email match
+    if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
+    // 3. Exact Student Name match
+    const bName = (b.student_name || '').trim().toLowerCase();
+    if (studentName && bName && (bName === studentName || bName.includes(studentName) || studentName.includes(bName))) {
+      return true;
+    }
+    // 4. Roll Number match (if customized)
+    if (studentRollNo && studentRollNo !== 'SVCET-STD' && b.student_id === studentRollNo) {
+      return true;
+    }
+    return false;
+  });
 
   const filteredBookings = studentBookings.filter((b) => {
     // Filter status

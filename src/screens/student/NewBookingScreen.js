@@ -89,6 +89,8 @@ export const NewBookingScreen = ({ onBack, onBookingCreated }) => {
 
     try {
       const newBooking = await createBooking({
+        user_id: profile?.id || '',
+        student_email: profile?.email || '',
         student_name: studentName,
         student_id: studentRollNo || 'SVCET-STD',
         academic_year: studentYear,

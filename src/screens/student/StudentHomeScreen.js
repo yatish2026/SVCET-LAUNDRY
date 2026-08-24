@@ -42,12 +42,26 @@ export const StudentHomeScreen = ({
     month: 'long',
   });
 
-  const studentBookings = bookings.filter(
-    (b) =>
-      (studentPhone && b.phone_number === studentPhone) ||
-      (b.student_name && b.student_name.toLowerCase() === studentName.toLowerCase()) ||
-      b.student_id === profile?.student_id
-  );
+  const studentEmail = (profile?.email || '').trim().toLowerCase();
+  const studentRollNo = (profile?.student_id || '').trim();
+  const cleanStudentName = studentName.trim().toLowerCase();
+
+  const studentBookings = bookings.filter((b) => {
+    // 1. Unique User ID match
+    if (b.user_id && profile?.id && b.user_id === profile.id) return true;
+    // 2. Unique Email match
+    if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
+    // 3. Exact Student Name match
+    const bName = (b.student_name || '').trim().toLowerCase();
+    if (cleanStudentName && bName && (bName === cleanStudentName || bName.includes(cleanStudentName) || cleanStudentName.includes(bName))) {
+      return true;
+    }
+    // 4. Roll Number match (if customized)
+    if (studentRollNo && studentRollNo !== 'SVCET-STD' && b.student_id === studentRollNo) {
+      return true;
+    }
+    return false;
+  });
 
   const activeBookings = studentBookings.filter(
     (b) => b.status !== 'completed' && b.status !== 'cancelled'

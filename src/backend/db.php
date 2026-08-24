@@ -86,8 +86,10 @@ try {
     // 2. Bookings Table
     $conn->exec("CREATE TABLE IF NOT EXISTS laundry_bookings (
         id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) DEFAULT '',
         pickup_token VARCHAR(20) NOT NULL,
         student_name VARCHAR(100) NOT NULL,
+        student_email VARCHAR(100) DEFAULT '',
         student_id VARCHAR(50) DEFAULT '',
         academic_year VARCHAR(30) DEFAULT '1st Year',
         hostel_block VARCHAR(100) DEFAULT '',
@@ -106,8 +108,14 @@ try {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_token (pickup_token),
         INDEX idx_status (status),
-        INDEX idx_phone (phone_number)
+        INDEX idx_phone (phone_number),
+        INDEX idx_user_id (user_id),
+        INDEX idx_email (student_email)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // Dynamic Column Migrations for Backward Compatibility
+    try { $conn->exec("ALTER TABLE laundry_bookings ADD COLUMN user_id VARCHAR(64) DEFAULT '' AFTER id"); } catch (Exception $e) {}
+    try { $conn->exec("ALTER TABLE laundry_bookings ADD COLUMN student_email VARCHAR(100) DEFAULT '' AFTER student_name"); } catch (Exception $e) {}
 
     // 3. Notifications Table
     $conn->exec("CREATE TABLE IF NOT EXISTS laundry_notifications (
