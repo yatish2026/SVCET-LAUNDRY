@@ -33,7 +33,7 @@ export const StudentHomeScreen = ({
   const studentName = profile?.full_name || profile?.email?.split('@')[0] || 'Student';
   const studentPhone = profile?.phone_number || '';
   const studentYear = profile?.academic_year || '1st Year';
-  const yearConfig = getYearConfig(studentYear);
+  const yearConfig = getYearConfig(profile);
 
   // Current Date formatting
   const today = new Date();
@@ -465,35 +465,41 @@ export const StudentHomeScreen = ({
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
-              {ACADEMIC_YEARS.map((yr) => {
-                const cfg = getYearConfig(yr);
-                const isStudentYear = studentYear === yr;
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              {[
+                { title: '1st Year B.Tech', drop: 'Friday', pick: 'Monday', color: '#2563EB', key: '1st' },
+                { title: '2nd B.Tech & 1st Year Diploma', drop: 'Saturday', pick: 'Tuesday', color: '#0284C7', key: '2nd' },
+                { title: '3rd & 4th Year B.Tech', drop: 'Monday', pick: 'Wednesday', color: '#7C3AED', key: '3rd' },
+                { title: 'Nepal, 2nd Diploma, BBT, Nursing', drop: 'Tuesday', pick: 'Thursday', color: '#059669', key: 'nepal' },
+                { title: 'Bihar Students', drop: 'Wednesday', pick: 'Friday', color: '#D97706', key: 'bihar' },
+                { title: 'Girls Hostel (All Branches)', drop: 'Tuesday', pick: 'Friday', color: '#DB2777', key: 'girls' },
+              ].map((item, idx) => {
+                const isCurrent = yearConfig.dropoffDay === item.drop && yearConfig.pickupDay === item.pick;
                 return (
                   <View
-                    key={yr}
+                    key={idx}
                     style={[
                       styles.scheduleRosterCard,
-                      isStudentYear && styles.scheduleRosterCardActive,
+                      isCurrent && styles.scheduleRosterCardActive,
                     ]}
                   >
                     <View style={styles.scheduleRosterHeader}>
                       <Text
                         style={[
                           styles.scheduleRosterYear,
-                          isStudentYear && { color: THEME.colors.primaryDark, fontWeight: '800' },
+                          isCurrent && { color: item.color, fontWeight: '800' },
                         ]}
                       >
-                        {yr}
+                        {item.title}
                       </Text>
-                      {isStudentYear && (
-                        <View style={styles.yourScheduleBadge}>
-                          <Text style={styles.yourScheduleBadgeText}>Your Year</Text>
+                      {isCurrent && (
+                        <View style={[styles.yourScheduleBadge, { backgroundColor: item.color }]}>
+                          <Text style={[styles.yourScheduleBadgeText, { color: '#FFF' }]}>Your Batch</Text>
                         </View>
                       )}
                     </View>
                     <Text style={styles.scheduleRosterDays}>
-                      Drop: <Text style={{ fontWeight: '700' }}>{cfg.dropoffDay}</Text> • Collect: <Text style={{ fontWeight: '700' }}>{cfg.pickupDay}</Text>
+                      Drop: <Text style={{ fontWeight: '800', color: '#0F172A' }}>{item.drop}</Text> • Collect: <Text style={{ fontWeight: '800', color: '#0F172A' }}>{item.pick}</Text>
                     </Text>
                   </View>
                 );

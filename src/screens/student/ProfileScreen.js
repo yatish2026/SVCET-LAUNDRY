@@ -17,7 +17,12 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import THEME from '../../constants/theme';
 import { HOSTEL_BLOCKS } from '../../constants/categories';
-import { ACADEMIC_YEARS } from '../../constants/schedule';
+import {
+  STUDENT_GENDERS,
+  STUDENT_LOCATIONS,
+  ACADEMIC_COURSES,
+  getStudentSchedule,
+} from '../../constants/schedule';
 import { useAuth } from '../../context/AuthContext';
 import { useLaundry } from '../../context/LaundryContext';
 import { apiService } from '../../services/apiService';
@@ -30,11 +35,13 @@ export const ProfileScreen = () => {
 
   // Profile fields
   const [name, setName] = useState(profile?.full_name || '');
+  const [gender, setGender] = useState(profile?.gender || 'male');
+  const [stateLocation, setStateLocation] = useState(profile?.location || STUDENT_LOCATIONS[0]);
   const [studentId, setStudentId] = useState(profile?.student_id || '');
   const [roomNumber, setRoomNumber] = useState(profile?.room_number || '');
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
   const [hostelBlock, setHostelBlock] = useState(profile?.hostel_block || HOSTEL_BLOCKS[0]);
-  const [academicYear, setAcademicYear] = useState(profile?.academic_year || '1st Year');
+  const [academicYear, setAcademicYear] = useState(profile?.academic_year || ACADEMIC_COURSES[0]);
   const [avatarUri, setAvatarUri] = useState(profile?.avatar_url || null);
 
   // Edit Modal & UI State
@@ -63,6 +70,16 @@ export const ProfileScreen = () => {
     loadAvatar();
   }, []);
 
+  // Compute student-specific schedule based on official RVS rules
+  const userSchedule = useMemo(() => {
+    return getStudentSchedule({
+      gender,
+      location: stateLocation,
+      academic_year: academicYear,
+      hostel_block: hostelBlock,
+    });
+  }, [gender, stateLocation, academicYear, hostelBlock]);
+
   // Compute student-specific laundry bookings
   const studentEmail = (profile?.email || '').trim().toLowerCase();
   const studentRollNo = (profile?.student_id || '').trim();
@@ -79,7 +96,7 @@ export const ProfileScreen = () => {
     });
   }, [bookings, profile, studentEmail, cleanStudentName, studentRollNo]);
 
-  // Extract available months from student's history
+  // Extract available months
   const availableMonths = useMemo(() => {
     const set = new Set();
     const currentM = new Date().toISOString().slice(0, 7);
@@ -105,7 +122,7 @@ export const ProfileScreen = () => {
     return Array.from(set).sort().reverse();
   }, [studentBookings]);
 
-  // Filtered laundry activity based on Calendar / Timeframe selection
+  // Filtered laundry activity based on Calendar selection
   const calendarFilteredBookings = useMemo(() => {
     return studentBookings.filter((b) => {
       const bDate = b.created_at || '';
@@ -120,7 +137,7 @@ export const ProfileScreen = () => {
     });
   }, [studentBookings, calendarMode, selectedDate, selectedMonth, selectedYear]);
 
-  // Summary Metrics for selected timeframe
+  // Summary Metrics
   const timeframeClothesCount = useMemo(() => {
     return calendarFilteredBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
   }, [calendarFilteredBookings]);
@@ -282,6 +299,8 @@ export const ProfileScreen = () => {
       const updatedProfile = {
         ...profile,
         full_name: name.trim(),
+        gender,
+        location: stateLocation,
         student_id: studentId.trim(),
         room_number: roomNumber.trim(),
         phone_number: phoneNumber.trim(),
@@ -406,8 +425,8 @@ export const ProfileScreen = () => {
             <Text style={styles.idCardUniversity}>RVS UNIVERSITY</Text>
             <Text style={styles.idCardSub}>Hostel Laundry Digital Identity</Text>
           </View>
-          <View style={styles.yearPill}>
-            <Text style={styles.yearPillText}>{academicYear}</Text>
+          <View style={[styles.yearPill, { backgroundColor: userSchedule.badgeBg, borderColor: userSchedule.badgeBorder }]}>
+            <Text style={[styles.yearPillText, { color: userSchedule.badgeColor }]}>{userSchedule.dropoffDay} Drop</Text>
           </View>
         </View>
 
@@ -445,6 +464,10 @@ export const ProfileScreen = () => {
             <Text style={styles.idCardRoom}>
               {hostelBlock || 'Hostel'} • Rm {roomNumber || 'N/A'}
             </Text>
+            <View style={styles.regionBadge}>
+              <Ionicons name="location-sharp" size={12} color="#4338CA" />
+              <Text style={styles.regionBadgeText}>{stateLocation} • {gender === 'female' ? 'Female' : 'Male'}</Text>
+            </View>
           </View>
         </View>
 
@@ -458,7 +481,7 @@ export const ProfileScreen = () => {
       <View style={styles.editActionCard}>
         <View style={{ flex: 1 }}>
           <Text style={styles.editCardTitle}>Student Profile & Room</Text>
-          <Text style={styles.editCardSub}>Update room number, phone, and name details</Text>
+          <Text style={styles.editCardSub}>Update gender, state, course, room & phone details</Text>
         </View>
         <TouchableOpacity
           style={styles.openEditBtn}
@@ -479,7 +502,7 @@ export const ProfileScreen = () => {
           </View>
         </View>
 
-        {/* 1. Timeframe Mode Tabs (Day / Month / Year) */}
+        {/* Timeframe Mode Tabs */}
         <View style={styles.timeframeTabs}>
           {[
             { id: 'DAY', label: 'Day-Wise', icon: 'today-outline' },
@@ -504,7 +527,7 @@ export const ProfileScreen = () => {
           ))}
         </View>
 
-        {/* 2. Date / Month / Year Selector Row */}
+        {/* Selector Row */}
         {calendarMode === 'DAY' && (
           <View style={styles.pickerRow}>
             <Text style={styles.pickerLabel}>Choose Date:</Text>
@@ -585,7 +608,7 @@ export const ProfileScreen = () => {
           </View>
         )}
 
-        {/* 3. Selected Period Summary Metric Card */}
+        {/* Selected Period Summary Metric Card */}
         <View style={styles.periodSummaryCard}>
           <View style={styles.periodSummaryItem}>
             <Text style={styles.periodSummaryNum}>{timeframeClothesCount}</Text>
@@ -607,7 +630,7 @@ export const ProfileScreen = () => {
           </View>
         </View>
 
-        {/* 4. Drop-off Log in this Period */}
+        {/* Drop-off Log in this Period */}
         {calendarFilteredBookings.length === 0 ? (
           <View style={styles.emptyLogBox}>
             <Ionicons name="calendar-outline" size={28} color="#94A3B8" />
@@ -763,6 +786,39 @@ export const ProfileScreen = () => {
               <Text style={styles.avatarHintText}>Tap to change profile picture</Text>
             </View>
 
+            {/* Gender Selection */}
+            <View style={styles.modalField}>
+              <Text style={styles.modalFieldLabel}>Gender / Hostel Type</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {STUDENT_GENDERS.map((g) => (
+                  <TouchableOpacity
+                    key={g.id}
+                    style={[styles.genderModalBtn, gender === g.id && styles.genderModalBtnActive]}
+                    onPress={() => setGender(g.id)}
+                  >
+                    <Ionicons name={g.icon} size={16} color={gender === g.id ? '#FFF' : '#475569'} />
+                    <Text style={[styles.genderModalBtnText, gender === g.id && { color: '#FFF' }]}>{g.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* State Location */}
+            <View style={styles.modalField}>
+              <Text style={styles.modalFieldLabel}>Home State / Region</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                {STUDENT_LOCATIONS.map((loc) => (
+                  <TouchableOpacity
+                    key={loc}
+                    style={[styles.chipModalBtn, stateLocation === loc && styles.chipModalBtnActive]}
+                    onPress={() => setStateLocation(loc)}
+                  >
+                    <Text style={[styles.chipModalBtnText, stateLocation === loc && { color: '#FFF' }]}>{loc}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
             {/* Form Fields */}
             <View style={styles.modalField}>
               <Text style={styles.modalFieldLabel}>Full Name</Text>
@@ -787,16 +843,16 @@ export const ProfileScreen = () => {
             </View>
 
             <View style={styles.modalField}>
-              <Text style={styles.modalFieldLabel}>Academic Year</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.yearChoices}>
-                {ACADEMIC_YEARS.map((yr) => (
+              <Text style={styles.modalFieldLabel}>Academic Course / Branch</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                {ACADEMIC_COURSES.map((crs) => (
                   <TouchableOpacity
-                    key={yr}
-                    style={[styles.yearChoiceBtn, academicYear === yr && styles.yearChoiceBtnActive]}
-                    onPress={() => setAcademicYear(yr)}
+                    key={crs}
+                    style={[styles.chipModalBtn, academicYear === crs && styles.chipModalBtnActive]}
+                    onPress={() => setAcademicYear(crs)}
                   >
-                    <Text style={[styles.yearChoiceText, academicYear === yr && styles.yearChoiceTextActive]}>
-                      {yr}
+                    <Text style={[styles.chipModalBtnText, academicYear === crs && { color: '#FFF' }]}>
+                      {crs}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -809,7 +865,7 @@ export const ProfileScreen = () => {
                 style={styles.modalInput}
                 value={hostelBlock}
                 onChangeText={setHostelBlock}
-                placeholder="e.g. Block A (Boys Hostel)"
+                placeholder="e.g. Block A (Boys Hostel) or Kaveri"
                 placeholderTextColor="#94A3B8"
               />
             </View>
@@ -902,17 +958,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   yearPill: {
-    backgroundColor: '#EEF2FF',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
   },
   yearPillText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#4338CA',
   },
   idCardDivider: {
     height: 1,
@@ -979,6 +1032,22 @@ const styles = StyleSheet.create({
     color: '#475569',
     fontWeight: '600',
     marginTop: 2,
+  },
+  regionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    gap: 4,
+  },
+  regionBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#4338CA',
   },
   idCardFooter: {
     flexDirection: 'row',
@@ -1396,12 +1465,28 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: '#0F172A',
   },
-  yearChoices: {
+  genderModalBtn: {
+    flex: 1,
     flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    gap: 6,
   },
-  yearChoiceBtn: {
+  genderModalBtnActive: {
+    backgroundColor: '#4338CA',
+    borderColor: '#4338CA',
+  },
+  genderModalBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  chipModalBtn: {
     paddingVertical: 7,
     paddingHorizontal: 14,
     borderRadius: 8,
@@ -1409,17 +1494,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CBD5E1',
   },
-  yearChoiceBtnActive: {
+  chipModalBtnActive: {
     backgroundColor: '#4338CA',
     borderColor: '#4338CA',
   },
-  yearChoiceText: {
+  chipModalBtnText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#64748B',
-  },
-  yearChoiceTextActive: {
-    color: '#FFF',
   },
   saveActionBtn: {
     backgroundColor: '#4338CA',

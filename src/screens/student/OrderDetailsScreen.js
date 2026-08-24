@@ -8,6 +8,7 @@ import {
   Alert,
   Image,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';

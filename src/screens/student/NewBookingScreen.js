@@ -30,8 +30,7 @@ export const NewBookingScreen = ({ onBack, onBookingCreated }) => {
   const studentRoom = profile?.room_number || 'TBD';
   const studentRollNo = profile?.student_id || '';
   const studentYear = profile?.academic_year || '1st Year';
-
-  const yearConfig = getYearConfig(studentYear);
+  const yearConfig = getYearConfig(profile);
 
   const [activeCategory, setActiveCategory] = useState(CLOTHES_CATEGORIES[0].id);
   const [selectedItems, setSelectedItems] = useState({});
