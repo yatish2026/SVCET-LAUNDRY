@@ -25,6 +25,8 @@ import {
 } from '../../constants/schedule';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/apiService';
+import PrivacyPolicyModal from '../common/PrivacyPolicyModal';
+import TermsConditionsModal from '../common/TermsConditionsModal';
 
 export const AuthScreen = () => {
   const { signIn, signUp } = useAuth();
@@ -51,6 +53,8 @@ export const AuthScreen = () => {
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [courseModalVisible, setCourseModalVisible] = useState(false);
   const [countryModalVisible, setCountryModalVisible] = useState(false);
+  const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
+  const [termsModalVisible, setTermsModalVisible] = useState(false);
 
   // Forgot Password States
   const [forgotModalVisible, setForgotModalVisible] = useState(false);
@@ -669,6 +673,27 @@ export const AuthScreen = () => {
                     </View>
                   )}
 
+                  {/* Google Play Store Compliance: Terms & Privacy Agreement */}
+                  <View style={styles.complianceNoteWrap}>
+                    <Text style={styles.complianceNoteText}>
+                      By registering, you agree to the{' '}
+                      <Text
+                        style={styles.complianceLink}
+                        onPress={() => setTermsModalVisible(true)}
+                      >
+                        Terms of Service
+                      </Text>{' '}
+                      and{' '}
+                      <Text
+                        style={styles.complianceLink}
+                        onPress={() => setPrivacyModalVisible(true)}
+                      >
+                        Privacy Policy
+                      </Text>
+                      .
+                    </Text>
+                  </View>
+
                   {/* Complete Registration Button */}
                   <TouchableOpacity
                     style={[styles.primaryBtn, loading && styles.btnDisabled]}
@@ -1041,6 +1066,18 @@ export const AuthScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* 🔒 PRIVACY POLICY MODAL */}
+      <PrivacyPolicyModal
+        visible={privacyModalVisible}
+        onClose={() => setPrivacyModalVisible(false)}
+      />
+
+      {/* 📜 TERMS OF SERVICE MODAL */}
+      <TermsConditionsModal
+        visible={termsModalVisible}
+        onClose={() => setTermsModalVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -1444,6 +1481,22 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '700',
     color: '#4338CA',
+  },
+  complianceNoteWrap: {
+    marginTop: 4,
+    marginBottom: 6,
+    paddingHorizontal: 4,
+  },
+  complianceNoteText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    lineHeight: 16,
+    textAlign: 'center',
+  },
+  complianceLink: {
+    color: '#4338CA',
+    fontWeight: '800',
+    textDecorationLine: 'underline',
   },
   primaryBtn: {
     flexDirection: 'row',

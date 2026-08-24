@@ -8,6 +8,9 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Content-Type: application/json; charset=UTF-8");
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: SAMEORIGIN");
+header("X-XSS-Protection: 1; mode=block");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -142,6 +145,29 @@ try {
         blocked_until DATETIME NULL,
         INDEX idx_ip_endpoint (ip_address, endpoint_type),
         INDEX idx_account (account_key)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // 5. Help Desk & Issue Tickets Table
+    $conn->exec("CREATE TABLE IF NOT EXISTS laundry_tickets (
+        id VARCHAR(64) PRIMARY KEY,
+        student_name VARCHAR(100) NOT NULL,
+        student_email VARCHAR(100) DEFAULT '',
+        student_id VARCHAR(50) DEFAULT '',
+        room_number VARCHAR(50) DEFAULT '',
+        hostel_block VARCHAR(100) DEFAULT '',
+        phone_number VARCHAR(30) DEFAULT '',
+        category VARCHAR(50) DEFAULT 'technical',
+        category_id VARCHAR(50) DEFAULT 'technical_app',
+        title VARCHAR(200) NOT NULL,
+        description TEXT NOT NULL,
+        photo_uri LONGTEXT,
+        status VARCHAR(40) DEFAULT 'open',
+        admin_response TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        resolved_at DATETIME NULL,
+        INDEX idx_ticket_status (status),
+        INDEX idx_ticket_email (student_email),
+        INDEX idx_ticket_created (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
 } catch (Exception $e) {

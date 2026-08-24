@@ -29,6 +29,7 @@ import { useLaundry } from '../../context/LaundryContext';
 import { apiService } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PrivacyPolicyModal from '../common/PrivacyPolicyModal';
+import TermsConditionsModal from '../common/TermsConditionsModal';
 import RaiseTicketModal from '../../components/RaiseTicketModal';
 
 export const ProfileScreen = () => {
@@ -60,6 +61,8 @@ export const ProfileScreen = () => {
   const [avatarUri, setAvatarUri] = useState(profile?.avatar_url || null);
   const [ticketModalVisible, setTicketModalVisible] = useState(false);
   const [countryPickerVisible, setCountryPickerVisible] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Filter student tickets
   const myTickets = useMemo(() => {
@@ -769,6 +772,20 @@ export const ProfileScreen = () => {
 
         <TouchableOpacity
           style={styles.actionRow}
+          onPress={() => setShowTermsModal(true)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.actionRowLeft}>
+            <Ionicons name="document-text-outline" size={20} color="#4338CA" />
+            <Text style={styles.actionRowText}>Terms of Service & Hostel Rules</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+        </TouchableOpacity>
+
+        <View style={styles.actionDivider} />
+
+        <TouchableOpacity
+          style={styles.actionRow}
           onPress={() => setTicketModalVisible(true)}
           activeOpacity={0.7}
         >
@@ -1254,6 +1271,12 @@ export const ProfileScreen = () => {
       <PrivacyPolicyModal
         visible={showPrivacyModal}
         onClose={() => setShowPrivacyModal(false)}
+      />
+
+      {/* Terms of Service Modal */}
+      <TermsConditionsModal
+        visible={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
       />
 
       {/* 🎫 Raise Support Ticket / Complaint Modal */}
