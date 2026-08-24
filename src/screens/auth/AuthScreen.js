@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
 import { HOSTEL_BLOCKS } from '../../constants/categories';
 import {
+  COUNTRY_CODES,
   STUDENT_GENDERS,
   STUDENT_LOCATIONS,
   ACADEMIC_COURSES,
@@ -42,11 +43,13 @@ export const AuthScreen = () => {
   const [studentId, setStudentId] = useState('');
   const [hostelBlock, setHostelBlock] = useState('Block A (Boys Hostel)');
   const [roomNumber, setRoomNumber] = useState('');
+  const [countryCode, setCountryCode] = useState(COUNTRY_CODES[0]); // Default India +91
   const [phoneNumber, setPhoneNumber] = useState('');
 
   // Clean Modal Selectors
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [courseModalVisible, setCourseModalVisible] = useState(false);
+  const [countryModalVisible, setCountryModalVisible] = useState(false);
 
   // Auto-switch default hostel block when gender changes
   const handleGenderChange = (selectedGender) => {
@@ -100,6 +103,18 @@ export const AuthScreen = () => {
       Alert.alert('Missing Room', 'Please enter your room number.');
       return;
     }
+    const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+    if (!cleanPhone) {
+      Alert.alert('Phone Required', 'Please enter your mobile phone number for order updates.');
+      return;
+    }
+    if (countryCode.length && cleanPhone.length !== countryCode.length) {
+      Alert.alert(
+        'Invalid Mobile Number',
+        `Please enter a valid ${countryCode.length}-digit mobile number for ${countryCode.flag} ${countryCode.country} (currently ${cleanPhone.length} digits).`
+      );
+      return;
+    }
     if (!email.trim()) {
       Alert.alert('Missing Email', 'Please enter your university email address.');
       return;
@@ -123,6 +138,7 @@ export const AuthScreen = () => {
 
     try {
       setLoading(true);
+      const fullFormattedPhone = `${countryCode.code} ${phoneNumber.trim()}`;
       await signUp({
         email: email.trim(),
         password,
@@ -132,7 +148,7 @@ export const AuthScreen = () => {
         student_id: studentId.trim(),
         hostel_block: hostelBlock,
         room_number: roomNumber.trim(),
-        phone_number: phoneNumber.trim(),
+        phone_number: fullFormattedPhone,
         academic_year: academicCourse,
         role: 'student',
       });
@@ -372,19 +388,31 @@ export const AuthScreen = () => {
                     </View>
                   </View>
 
-                  {/* Mobile Number */}
+                  {/* Mobile Number with Country Code */}
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Mobile Number (for SMS & WhatsApp)</Text>
-                    <View style={styles.inputWrapper}>
-                      <Ionicons name="call-outline" size={18} color="#64748B" style={styles.inputIcon} />
-                      <TextInput
-                        style={styles.input}
-                        placeholder="10-digit mobile number"
-                        placeholderTextColor="#94A3B8"
-                        value={phoneNumber}
-                        onChangeText={setPhoneNumber}
-                        keyboardType="phone-pad"
-                      />
+                    <Text style={styles.inputLabel}>Mobile Number (for SMS & WhatsApp) *</Text>
+                    <View style={styles.phoneInputRow}>
+                      <TouchableOpacity
+                        style={styles.countryCodeBtn}
+                        onPress={() => setCountryModalVisible(true)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.countryFlagText}>{countryCode.flag}</Text>
+                        <Text style={styles.countryCodeVal}>{countryCode.code}</Text>
+                        <Ionicons name="chevron-down" size={14} color="#64748B" />
+                      </TouchableOpacity>
+
+                      <View style={[styles.inputWrapper, { flex: 1 }]}>
+                        <TextInput
+                          style={styles.input}
+                          placeholder={countryCode.placeholder || `${countryCode.length || 10} digits`}
+                          placeholderTextColor="#94A3B8"
+                          value={phoneNumber}
+                          onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9]/g, ''))}
+                          keyboardType="phone-pad"
+                          maxLength={countryCode.length || 15}
+                        />
+                      </View>
                     </View>
                   </View>
 
@@ -717,6 +745,80 @@ export const AuthScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* 🌍 CLEAN COUNTRY CODE SELECTION MODAL */}
+      <Modal
+        visible={countryModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setCountryModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setCountryModalVisible(false)}
+          />
+
+          <View style={styles.modalSheet}>
+            <View style={styles.modalSheetHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="globe-outline" size={20} color="#4338CA" />
+                <Text style={styles.modalSheetTitle}>Select Country Code</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setCountryModalVisible(false)}
+                style={styles.closeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Ionicons name="close-circle" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.modalScrollView}
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+            >
+              {COUNTRY_CODES.map((item) => {
+                const isSelected = countryCode.code === item.code && countryCode.country === item.country;
+                return (
+                  <TouchableOpacity
+                    key={`${item.country}-${item.code}`}
+                    style={[styles.modalItemRow, isSelected && styles.modalItemRowActive]}
+                    onPress={() => {
+                      setCountryCode(item);
+                      setPhoneNumber(''); // Clear old digits to match new length format
+                      setCountryModalVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Text style={{ fontSize: 22 }}>{item.flag}</Text>
+                      <View>
+                        <Text style={[styles.modalItemText, isSelected && styles.modalItemTextActive]}>
+                          {item.country}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#64748B' }}>
+                          {item.length} digits • e.g. {item.placeholder}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '800', color: isSelected ? '#4338CA' : '#475569' }}>
+                        {item.code}
+                      </Text>
+                      {isSelected && <Ionicons name="checkmark-circle" size={18} color="#4338CA" />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -923,6 +1025,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 13.5,
     color: '#0F172A',
+  },
+  phoneInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  countryCodeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    gap: 4,
+  },
+  countryFlagText: {
+    fontSize: 16,
+  },
+  countryCodeVal: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#1E293B',
   },
   eyeBtn: {
     padding: 6,

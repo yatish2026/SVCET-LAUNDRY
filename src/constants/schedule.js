@@ -1,4 +1,17 @@
-// RVS University Official Hostel Laundry Schedule Mapping
+export const COUNTRY_CODES = [
+  { code: '+91', country: 'India', flag: '🇮🇳', length: 10, placeholder: '98765 43210' },
+  { code: '+977', country: 'Nepal', flag: '🇳🇵', length: 10, placeholder: '98123 45678' },
+  { code: '+27', country: 'South Africa', flag: '🇿🇦', length: 9, placeholder: '71 234 5678' },
+  { code: '+1', country: 'USA / Canada', flag: '🇺🇸', length: 10, placeholder: '202 555 0123' },
+  { code: '+44', country: 'United Kingdom', flag: '🇬🇧', length: 10, placeholder: '7911 123456' },
+  { code: '+971', country: 'UAE', flag: '🇦🇪', length: 9, placeholder: '50 123 4567' },
+  { code: '+880', country: 'Bangladesh', flag: '🇧🇩', length: 10, placeholder: '1712 345678' },
+  { code: '+94', country: 'Sri Lanka', flag: '🇱🇰', length: 9, placeholder: '71 234 5678' },
+  { code: '+254', country: 'Kenya', flag: '🇰🇪', length: 9, placeholder: '712 345678' },
+  { code: '+234', country: 'Nigeria', flag: '🇳🇬', length: 10, placeholder: '802 123 4567' },
+  { code: '+60', country: 'Malaysia', flag: '🇲🇾', length: 9, placeholder: '12 345 6789' },
+  { code: '+65', country: 'Singapore', flag: '🇸🇬', length: 8, placeholder: '8123 4567' },
+];
 
 export const STUDENT_GENDERS = [
   { id: 'male', label: 'Male (Boys Hostel)', icon: 'man-outline' },

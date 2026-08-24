@@ -18,6 +18,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import THEME from '../../constants/theme';
 import { HOSTEL_BLOCKS } from '../../constants/categories';
 import {
+  COUNTRY_CODES,
   STUDENT_GENDERS,
   STUDENT_LOCATIONS,
   ACADEMIC_COURSES,
@@ -34,17 +35,31 @@ export const ProfileScreen = () => {
   const { profile, updateProfile, signOut } = useAuth();
   const { bookings, tickets } = useLaundry();
 
+  // Helper to parse country code and digits
+  const parsePhoneAndCountry = (rawPhone) => {
+    if (!rawPhone) return { codeObj: COUNTRY_CODES[0], number: '' };
+    const matched = COUNTRY_CODES.find((c) => rawPhone.startsWith(c.code));
+    if (matched) {
+      return { codeObj: matched, number: rawPhone.replace(matched.code, '').trim().replace(/[^0-9]/g, '') };
+    }
+    return { codeObj: COUNTRY_CODES[0], number: rawPhone.replace(/[^0-9]/g, '') };
+  };
+
+  const initialParsedPhone = parsePhoneAndCountry(profile?.phone_number);
+
   // Profile fields
   const [name, setName] = useState(profile?.full_name || '');
   const [gender, setGender] = useState(profile?.gender || 'male');
   const [stateLocation, setStateLocation] = useState(profile?.location || STUDENT_LOCATIONS[0]);
   const [studentId, setStudentId] = useState(profile?.student_id || '');
   const [roomNumber, setRoomNumber] = useState(profile?.room_number || '');
-  const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
+  const [countryCode, setCountryCode] = useState(initialParsedPhone.codeObj);
+  const [phoneNumber, setPhoneNumber] = useState(initialParsedPhone.number);
   const [hostelBlock, setHostelBlock] = useState(profile?.hostel_block || HOSTEL_BLOCKS[0]);
   const [academicYear, setAcademicYear] = useState(profile?.academic_year || ACADEMIC_COURSES[0]);
   const [avatarUri, setAvatarUri] = useState(profile?.avatar_url || null);
   const [ticketModalVisible, setTicketModalVisible] = useState(false);
+  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
 
   // Filter student tickets
   const myTickets = useMemo(() => {
@@ -70,7 +85,9 @@ export const ProfileScreen = () => {
       setStateLocation(profile.location || STUDENT_LOCATIONS[0]);
       setStudentId(profile.student_id || '');
       setRoomNumber(profile.room_number || '');
-      setPhoneNumber(profile.phone_number || '');
+      const parsed = parsePhoneAndCountry(profile.phone_number);
+      setCountryCode(parsed.codeObj);
+      setPhoneNumber(parsed.number);
       setHostelBlock(profile.hostel_block || HOSTEL_BLOCKS[0]);
       setAcademicYear(profile.academic_year || ACADEMIC_COURSES[0]);
 
@@ -350,6 +367,18 @@ export const ProfileScreen = () => {
   const handleSaveProfileModal = async () => {
     try {
       setSaving(true);
+      const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+      if (countryCode.length && cleanPhone && cleanPhone.length !== countryCode.length) {
+        Alert.alert(
+          'Invalid Mobile Number',
+          `Please enter a valid ${countryCode.length}-digit mobile number for ${countryCode.flag} ${countryCode.country} (currently ${cleanPhone.length} digits).`
+        );
+        setSaving(false);
+        return;
+      }
+
+      const fullFormattedPhone = cleanPhone ? `${countryCode.code} ${cleanPhone}` : '';
+
       const updatedProfile = {
         ...profile,
         full_name: name.trim(),
@@ -357,7 +386,7 @@ export const ProfileScreen = () => {
         location: stateLocation,
         student_id: studentId.trim(),
         room_number: roomNumber.trim(),
-        phone_number: phoneNumber.trim(),
+        phone_number: fullFormattedPhone,
         hostel_block: hostelBlock,
         academic_year: academicYear,
         avatar_url: avatarUri,
@@ -978,14 +1007,27 @@ export const ProfileScreen = () => {
 
             <View style={styles.modalField}>
               <Text style={styles.modalFieldLabel}>Mobile Number (for SMS & WhatsApp)</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="10-digit phone number"
-                placeholderTextColor="#94A3B8"
-                keyboardType="phone-pad"
-              />
+              <View style={styles.phoneInputRow}>
+                <TouchableOpacity
+                  style={styles.countryCodeBtn}
+                  onPress={() => setCountryPickerVisible(true)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.countryFlagText}>{countryCode.flag}</Text>
+                  <Text style={styles.countryCodeVal}>{countryCode.code}</Text>
+                  <Ionicons name="chevron-down" size={14} color="#64748B" />
+                </TouchableOpacity>
+
+                <TextInput
+                  style={[styles.modalInput, { flex: 1, marginBottom: 0 }]}
+                  value={phoneNumber}
+                  onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9]/g, ''))}
+                  placeholder={countryCode.placeholder || `${countryCode.length || 10} digits`}
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="phone-pad"
+                  maxLength={countryCode.length || 15}
+                />
+              </View>
             </View>
 
             {/* Bottom Save Action */}
@@ -1112,6 +1154,78 @@ export const ProfileScreen = () => {
                       {crs}
                     </Text>
                     {isSelected && <Ionicons name="checkmark-circle" size={20} color="#1D4ED8" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 🌍 EDIT MODAL: COUNTRY CODE SELECTION LIST SHEET */}
+      <Modal
+        visible={countryPickerVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setCountryPickerVisible(false)}
+      >
+        <View style={styles.pickerModalOverlay}>
+          <TouchableOpacity
+            style={styles.pickerModalBackdrop}
+            activeOpacity={1}
+            onPress={() => setCountryPickerVisible(false)}
+          />
+          <View style={styles.pickerModalSheet}>
+            <View style={styles.pickerModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="globe-outline" size={20} color="#4338CA" />
+                <Text style={styles.pickerModalTitle}>Select Country Code</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setCountryPickerVisible(false)}
+                style={{ padding: 4 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close-circle" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={{ maxHeight: 380 }}
+              contentContainerStyle={{ paddingVertical: 6 }}
+              showsVerticalScrollIndicator={true}
+              keyboardShouldPersistTaps="handled"
+            >
+              {COUNTRY_CODES.map((item) => {
+                const isSelected = countryCode.code === item.code && countryCode.country === item.country;
+                return (
+                  <TouchableOpacity
+                    key={`${item.country}-${item.code}`}
+                    style={[styles.pickerItemRow, isSelected && styles.pickerItemRowActive]}
+                    onPress={() => {
+                      setCountryCode(item);
+                      setPhoneNumber(''); // Reset digits for new country length
+                      setCountryPickerVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Text style={{ fontSize: 22 }}>{item.flag}</Text>
+                      <View>
+                        <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextActive]}>
+                          {item.country}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#64748B' }}>
+                          {item.length} digits • e.g. {item.placeholder}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '800', color: isSelected ? '#4338CA' : '#475569' }}>
+                        {item.code}
+                      </Text>
+                      {isSelected && <Ionicons name="checkmark-circle" size={18} color="#4338CA" />}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -1739,6 +1853,30 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 13.5,
     color: '#0F172A',
+  },
+  phoneInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  countryCodeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  countryFlagText: {
+    fontSize: 16,
+  },
+  countryCodeVal: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#1E293B',
   },
   genderModalBtn: {
     flex: 1,
