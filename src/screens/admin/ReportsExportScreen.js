@@ -134,11 +134,11 @@ export const ReportsExportScreen = () => {
 
       const csvContent = [headers.join(','), ...rows].join('\n');
 
-      let filename = `RVS_DhobiX_Master_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+      let filename = `RVS_LaundryGo_Master_Report_${new Date().toISOString().slice(0, 10)}.csv`;
       if (timeframeMode === 'DAY') {
-        filename = `RVS_DhobiX_Daily_Report_${selectedDate}.csv`;
+        filename = `RVS_LaundryGo_Daily_Report_${selectedDate}.csv`;
       } else if (timeframeMode === 'MONTH') {
-        filename = `RVS_DhobiX_Monthly_Report_${selectedMonth}.csv`;
+        filename = `RVS_LaundryGo_Monthly_Report_${selectedMonth}.csv`;
       }
 
       if (Platform.OS === 'web') {

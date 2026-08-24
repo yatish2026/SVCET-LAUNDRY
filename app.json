@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "DhobiX",
+    "name": "LaundryGo",
     "slug": "rvsu-svcet",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,10 +13,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rvsu.dhobix"
+      "bundleIdentifier": "com.rvsu.laundrygo"
     },
     "android": {
-      "package": "com.rvsu.dhobix",
+      "package": "com.rvsu.laundrygo",
       "versionCode": 1,
       "permissions": [
         "CAMERA",

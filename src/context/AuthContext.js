@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }) => {
     setAcademicYear('1st Year');
     try {
       await AsyncStorage.removeItem('@campuswash_user_session');
-      await AsyncStorage.removeItem('@dhobix_user_avatar');
+      await AsyncStorage.removeItem('@laundrygo_user_avatar');
     } catch (e) {
       console.log('Error clearing session:', e);
     }

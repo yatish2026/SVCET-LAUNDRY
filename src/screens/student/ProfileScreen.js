@@ -75,8 +75,8 @@ export const ProfileScreen = () => {
   }, [tickets, profile]);
 
   const userAvatarKey = useMemo(() => {
-    if (profile?.id) return `@dhobix_user_avatar_${profile.id}`;
-    if (profile?.email) return `@dhobix_user_avatar_${profile.email.trim().toLowerCase()}`;
+    if (profile?.id) return `@laundrygo_user_avatar_${profile.id}`;
+    if (profile?.email) return `@laundrygo_user_avatar_${profile.email.trim().toLowerCase()}`;
     return null;
   }, [profile?.id, profile?.email]);
 
@@ -297,7 +297,7 @@ export const ProfileScreen = () => {
         if (updateProfile) {
           await updateProfile({ avatar_url: compressed });
         }
-        await AsyncStorage.removeItem('@dhobix_user_avatar').catch(() => {});
+        await AsyncStorage.removeItem('@laundrygo_user_avatar').catch(() => {});
         if (Platform.OS === 'web') {
           window.alert('Profile photo updated successfully!');
         } else {
@@ -338,7 +338,7 @@ export const ProfileScreen = () => {
         if (updateProfile) {
           await updateProfile({ avatar_url: compressed });
         }
-        await AsyncStorage.removeItem('@dhobix_user_avatar').catch(() => {});
+        await AsyncStorage.removeItem('@laundrygo_user_avatar').catch(() => {});
         if (Platform.OS === 'web') {
           window.alert('Profile photo captured and updated!');
         } else {
@@ -454,14 +454,14 @@ export const ProfileScreen = () => {
 
   const handleSignOut = () => {
     if (Platform.OS === 'web') {
-      const confirmSignout = window.confirm('Are you sure you want to sign out from DhobiX?');
+      const confirmSignout = window.confirm('Are you sure you want to sign out from LaundryGo?');
       if (confirmSignout) {
         signOut();
       }
     } else {
       Alert.alert(
         'Sign Out',
-        'Are you sure you want to sign out from DhobiX?',
+        'Are you sure you want to sign out from LaundryGo?',
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -880,13 +880,13 @@ export const ProfileScreen = () => {
         activeOpacity={0.85}
       >
         <Ionicons name="log-out-outline" size={20} color="#FFF" />
-        <Text style={styles.signOutBtnText}>Sign Out from DhobiX</Text>
+        <Text style={styles.signOutBtnText}>Sign Out from LaundryGo</Text>
       </TouchableOpacity>
 
       {/* App Version Info */}
       <View style={styles.footerVersion}>
         <Text style={styles.footerVersionText}>
-          DhobiX v1.0.0 • RVS University Hostel Laundry Portal
+          LaundryGo v1.0.0 • RVS University Hostel Laundry Portal
         </Text>
       </View>
 

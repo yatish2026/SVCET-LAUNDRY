@@ -77,7 +77,7 @@ export const AuthScreen = () => {
 
   const isSlotReady = !!(stateLocation && academicCourse);
 
-  // 🎯 Dynamic Dhobi Slot Prediction based on Gender, Location & Course
+  // 🎯 Dynamic LaundryGo Slot Prediction based on Gender, Location & Course
   const computedSchedule = useMemo(() => {
     if (!stateLocation || !academicCourse) return null;
     return getStudentSchedule({
@@ -233,7 +233,7 @@ export const AuthScreen = () => {
         contentInsetAdjustmentBehavior="always"
         showsVerticalScrollIndicator={true}
       >
-        {/* 🌟 Brand Header: Logo + Big RVS University Beside It, DhobiX Below */}
+        {/* 🌟 Brand Header: Logo + Big RVS University Beside It, LaundryGo Below */}
         <View style={styles.brandContainer}>
           {/* Top Row: Logo Beside Big RVS UNIVERSITY Name */}
           <View style={styles.topLogoUnivRow}>
@@ -258,11 +258,11 @@ export const AuthScreen = () => {
             </View>
           </View>
 
-          {/* Bottom: Colorful DhobiX Title & Subtitle */}
-          <View style={styles.dhobiXSection}>
-            <View style={styles.dhobiXColorRowCentered}>
-              <Text style={styles.dhobiXTextPart1}>Dhobi</Text>
-              <Text style={styles.dhobiXTextPart2}>X</Text>
+          {/* Bottom: Colorful LaundryGo Title & Subtitle */}
+          <View style={styles.laundryGoSection}>
+            <View style={styles.laundryGoColorRowCentered}>
+              <Text style={styles.laundryGoTextPart1}>Laundry</Text>
+              <Text style={styles.laundryGoTextPart2}>Go</Text>
               <View style={styles.sparkleBadge}>
                 <Text style={styles.sparkleBadgeText}>✨ Smart Portal</Text>
               </View>
@@ -1174,25 +1174,25 @@ const styles = StyleSheet.create({
     letterSpacing: 1.8,
     marginTop: 2,
   },
-  dhobiXSection: {
+  laundryGoSection: {
     alignItems: 'center',
     marginTop: 4,
   },
-  dhobiXColorRowCentered: {
+  laundryGoColorRowCentered: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
     marginBottom: 2,
   },
-  dhobiXTextPart1: {
-    fontSize: 36,
+  laundryGoTextPart1: {
+    fontSize: 34,
     fontWeight: '900',
     color: '#4338CA',
     letterSpacing: 0.5,
   },
-  dhobiXTextPart2: {
-    fontSize: 40,
+  laundryGoTextPart2: {
+    fontSize: 38,
     fontWeight: '900',
     color: '#EA580C',
     letterSpacing: 0.5,
