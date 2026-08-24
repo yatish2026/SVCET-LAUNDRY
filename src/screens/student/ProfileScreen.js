@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -27,6 +28,7 @@ export const ProfileScreen = () => {
   const { profile, signOut } = useAuth();
   const { bookings } = useLaundry();
 
+  // Profile fields
   const [name, setName] = useState(profile?.full_name || '');
   const [studentId, setStudentId] = useState(profile?.student_id || '');
   const [roomNumber, setRoomNumber] = useState(profile?.room_number || '');
@@ -34,9 +36,17 @@ export const ProfileScreen = () => {
   const [hostelBlock, setHostelBlock] = useState(profile?.hostel_block || HOSTEL_BLOCKS[0]);
   const [academicYear, setAcademicYear] = useState(profile?.academic_year || '1st Year');
   const [avatarUri, setAvatarUri] = useState(profile?.avatar_url || null);
-  const [isEditing, setIsEditing] = useState(false);
+
+  // Edit Modal & UI State
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+
+  // 📅 Calendar / Timeframe Usage Analyzer State
+  const [calendarMode, setCalendarMode] = useState('MONTH'); // 'DAY' | 'MONTH' | 'YEAR'
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10)); // 'YYYY-MM-DD'
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7)); // 'YYYY-MM'
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear().toString()); // 'YYYY'
 
   // Load avatar from storage on mount
   useEffect(() => {
@@ -53,19 +63,67 @@ export const ProfileScreen = () => {
     loadAvatar();
   }, []);
 
-  // Compute student-specific laundry statistics
+  // Compute student-specific laundry bookings
   const studentEmail = (profile?.email || '').trim().toLowerCase();
   const studentRollNo = (profile?.student_id || '').trim();
   const cleanStudentName = (profile?.full_name || '').trim().toLowerCase();
 
-  const studentBookings = bookings.filter((b) => {
-    if (b.user_id && profile?.id && b.user_id === profile.id) return true;
-    if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
-    const bName = (b.student_name || '').trim().toLowerCase();
-    if (cleanStudentName && bName && bName === cleanStudentName) return true;
-    if (studentRollNo && studentRollNo !== 'SVCET-STD' && studentRollNo !== 'RVS-STD' && b.student_id === studentRollNo) return true;
-    return false;
-  });
+  const studentBookings = useMemo(() => {
+    return bookings.filter((b) => {
+      if (b.user_id && profile?.id && b.user_id === profile.id) return true;
+      if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
+      const bName = (b.student_name || '').trim().toLowerCase();
+      if (cleanStudentName && bName && bName === cleanStudentName) return true;
+      if (studentRollNo && studentRollNo !== 'SVCET-STD' && studentRollNo !== 'RVS-STD' && b.student_id === studentRollNo) return true;
+      return false;
+    });
+  }, [bookings, profile, studentEmail, cleanStudentName, studentRollNo]);
+
+  // Extract available months from student's history
+  const availableMonths = useMemo(() => {
+    const set = new Set();
+    const currentM = new Date().toISOString().slice(0, 7);
+    set.add(currentM);
+    studentBookings.forEach((b) => {
+      if (b.created_at) {
+        set.add(b.created_at.slice(0, 7));
+      }
+    });
+    return Array.from(set).sort().reverse();
+  }, [studentBookings]);
+
+  // Extract available years
+  const availableYears = useMemo(() => {
+    const set = new Set();
+    const currentY = new Date().getFullYear().toString();
+    set.add(currentY);
+    studentBookings.forEach((b) => {
+      if (b.created_at) {
+        set.add(b.created_at.slice(0, 4));
+      }
+    });
+    return Array.from(set).sort().reverse();
+  }, [studentBookings]);
+
+  // Filtered laundry activity based on Calendar / Timeframe selection
+  const calendarFilteredBookings = useMemo(() => {
+    return studentBookings.filter((b) => {
+      const bDate = b.created_at || '';
+      if (calendarMode === 'DAY') {
+        return bDate.startsWith(selectedDate);
+      } else if (calendarMode === 'MONTH') {
+        return bDate.startsWith(selectedMonth);
+      } else if (calendarMode === 'YEAR') {
+        return bDate.startsWith(selectedYear);
+      }
+      return true;
+    });
+  }, [studentBookings, calendarMode, selectedDate, selectedMonth, selectedYear]);
+
+  // Summary Metrics for selected timeframe
+  const timeframeClothesCount = useMemo(() => {
+    return calendarFilteredBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
+  }, [calendarFilteredBookings]);
 
   const totalClothesCleaned = studentBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
   const completedOrders = studentBookings.filter((b) => b.status === 'completed').length;
@@ -218,7 +276,7 @@ export const ProfileScreen = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveProfileModal = async () => {
     try {
       setSaving(true);
       const updatedProfile = {
@@ -237,12 +295,12 @@ export const ProfileScreen = () => {
         JSON.stringify(updatedProfile)
       );
 
-      setIsEditing(false);
+      setEditModalVisible(false);
 
       if (Platform.OS === 'web') {
-        window.alert('Your student profile and hostel details have been saved.');
+        window.alert('Your student profile details have been saved successfully.');
       } else {
-        Alert.alert('Profile Saved', 'Your student profile and hostel details have been saved.');
+        Alert.alert('Profile Updated', 'Your student profile details have been saved successfully.');
       }
     } catch (e) {
       Alert.alert('Error', 'Unable to save profile changes.');
@@ -315,13 +373,28 @@ export const ProfileScreen = () => {
     }
   };
 
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'completed':
+        return { label: 'Completed', color: '#16A34A', bg: '#DCFCE7' };
+      case 'ready_for_pickup':
+        return { label: 'Ready for Pickup', color: '#D97706', bg: '#FEF3C7' };
+      case 'drying_ironing':
+        return { label: 'Drying & Iron', color: '#7C3AED', bg: '#F3E8FF' };
+      case 'in_wash':
+        return { label: 'In Washing', color: '#2563EB', bg: '#DBEAFE' };
+      default:
+        return { label: 'Pending Intake', color: '#475569', bg: '#F1F5F9' };
+    }
+  };
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* 🪪 Digital Campus Identity Card */}
+      {/* 🪪 Professional Digital Campus ID Card */}
       <View style={styles.idCard}>
         <View style={styles.idCardTop}>
           <Image
@@ -331,7 +404,7 @@ export const ProfileScreen = () => {
           />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={styles.idCardUniversity}>RVS UNIVERSITY</Text>
-            <Text style={styles.idCardSub}>Hostel Laundry Digital Pass & ID</Text>
+            <Text style={styles.idCardSub}>Hostel Laundry Digital Identity</Text>
           </View>
           <View style={styles.yearPill}>
             <Text style={styles.yearPillText}>{academicYear}</Text>
@@ -381,19 +454,209 @@ export const ProfileScreen = () => {
         </View>
       </View>
 
+      {/* ✏️ Edit Profile Action Bar */}
+      <View style={styles.editActionCard}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.editCardTitle}>Student Profile & Room</Text>
+          <Text style={styles.editCardSub}>Update room number, phone, and name details</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.openEditBtn}
+          onPress={() => setEditModalVisible(true)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="create-outline" size={16} color="#FFF" />
+          <Text style={styles.openEditBtnText}>Edit Profile</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* 📅 CALENDAR / TIMEFRAME LAUNDRY USAGE ANALYZER */}
+      <View style={styles.calendarCard}>
+        <View style={styles.calendarCardHeader}>
+          <View>
+            <Text style={styles.cardSectionTitle}>📅 Laundry Usage Calendar & Stats</Text>
+            <Text style={styles.cardSectionSub}>Track clothes given for wash by day, month, or year</Text>
+          </View>
+        </View>
+
+        {/* 1. Timeframe Mode Tabs (Day / Month / Year) */}
+        <View style={styles.timeframeTabs}>
+          {[
+            { id: 'DAY', label: 'Day-Wise', icon: 'today-outline' },
+            { id: 'MONTH', label: 'Month-Wise', icon: 'calendar-outline' },
+            { id: 'YEAR', label: 'Yearly', icon: 'stats-chart-outline' },
+          ].map((tab) => (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.timeframeTab, calendarMode === tab.id && styles.timeframeTabActive]}
+              onPress={() => setCalendarMode(tab.id)}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={tab.icon}
+                size={15}
+                color={calendarMode === tab.id ? '#4338CA' : '#64748B'}
+              />
+              <Text style={[styles.timeframeTabText, calendarMode === tab.id && styles.timeframeTabTextActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* 2. Date / Month / Year Selector Row */}
+        {calendarMode === 'DAY' && (
+          <View style={styles.pickerRow}>
+            <Text style={styles.pickerLabel}>Choose Date:</Text>
+            <View style={styles.quickDatesWrap}>
+              <TouchableOpacity
+                style={[styles.quickDateChip, selectedDate === new Date().toISOString().slice(0, 10) && styles.quickDateChipActive]}
+                onPress={() => setSelectedDate(new Date().toISOString().slice(0, 10))}
+              >
+                <Text style={[styles.quickDateChipText, selectedDate === new Date().toISOString().slice(0, 10) && styles.quickDateChipTextActive]}>
+                  Today
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.quickDateChip, selectedDate === new Date(Date.now() - 86400000).toISOString().slice(0, 10) && styles.quickDateChipActive]}
+                onPress={() => setSelectedDate(new Date(Date.now() - 86400000).toISOString().slice(0, 10))}
+              >
+                <Text style={[styles.quickDateChipText, selectedDate === new Date(Date.now() - 86400000).toISOString().slice(0, 10) && styles.quickDateChipTextActive]}>
+                  Yesterday
+                </Text>
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.dateInputBox}
+                value={selectedDate}
+                onChangeText={setSelectedDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#94A3B8"
+              />
+            </View>
+          </View>
+        )}
+
+        {calendarMode === 'MONTH' && (
+          <View style={styles.pickerRow}>
+            <Text style={styles.pickerLabel}>Select Month:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {availableMonths.map((m) => {
+                const d = new Date(`${m}-01T00:00:00Z`);
+                const monthName = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+                const isSel = selectedMonth === m;
+
+                return (
+                  <TouchableOpacity
+                    key={m}
+                    style={[styles.quickDateChip, isSel && styles.quickDateChipActive]}
+                    onPress={() => setSelectedMonth(m)}
+                  >
+                    <Text style={[styles.quickDateChipText, isSel && styles.quickDateChipTextActive]}>
+                      {monthName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {calendarMode === 'YEAR' && (
+          <View style={styles.pickerRow}>
+            <Text style={styles.pickerLabel}>Select Year:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {availableYears.map((yr) => {
+                const isSel = selectedYear === yr;
+                return (
+                  <TouchableOpacity
+                    key={yr}
+                    style={[styles.quickDateChip, isSel && styles.quickDateChipActive]}
+                    onPress={() => setSelectedYear(yr)}
+                  >
+                    <Text style={[styles.quickDateChipText, isSel && styles.quickDateChipTextActive]}>
+                      Year {yr}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* 3. Selected Period Summary Metric Card */}
+        <View style={styles.periodSummaryCard}>
+          <View style={styles.periodSummaryItem}>
+            <Text style={styles.periodSummaryNum}>{timeframeClothesCount}</Text>
+            <Text style={styles.periodSummaryLabel}>Clothes Given</Text>
+          </View>
+          <View style={styles.periodSummaryDivider} />
+          <View style={styles.periodSummaryItem}>
+            <Text style={[styles.periodSummaryNum, { color: '#059669' }]}>
+              {calendarFilteredBookings.length}
+            </Text>
+            <Text style={styles.periodSummaryLabel}>Wash Drop-offs</Text>
+          </View>
+          <View style={styles.periodSummaryDivider} />
+          <View style={styles.periodSummaryItem}>
+            <Text style={[styles.periodSummaryNum, { color: '#D97706' }]}>
+              {calendarFilteredBookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled').length}
+            </Text>
+            <Text style={styles.periodSummaryLabel}>In Progress</Text>
+          </View>
+        </View>
+
+        {/* 4. Drop-off Log in this Period */}
+        {calendarFilteredBookings.length === 0 ? (
+          <View style={styles.emptyLogBox}>
+            <Ionicons name="calendar-outline" size={28} color="#94A3B8" />
+            <Text style={styles.emptyLogTitle}>No Laundry on this Date/Period</Text>
+            <Text style={styles.emptyLogSub}>You have not submitted any laundry orders in this selection.</Text>
+          </View>
+        ) : (
+          <View style={styles.calendarLogList}>
+            {calendarFilteredBookings.map((b) => {
+              const badge = getStatusBadge(b.status);
+              const dropDate = b.created_at ? new Date(b.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Drop Date';
+
+              return (
+                <View key={b.id} style={styles.calendarLogRow}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.calendarLogDate}>{dropDate}</Text>
+                      <Text style={styles.calendarLogToken}>#{b.pickup_token}</Text>
+                    </View>
+                    <Text style={styles.calendarLogItems}>
+                      🧺 <Text style={{ fontWeight: '800', color: '#1E293B' }}>{b.total_items}</Text> Clothes Cleaned
+                    </Text>
+                  </View>
+
+                  <View style={[styles.calendarLogBadge, { backgroundColor: badge.bg }]}>
+                    <Text style={[styles.calendarLogBadgeText, { color: badge.color }]}>
+                      {badge.label}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
       {/* 📊 Lifetime Laundry Statistics Card */}
       <View style={styles.statsCard}>
-        <Text style={styles.cardTitle}>🧺 Lifetime Laundry Activity</Text>
+        <Text style={styles.cardSectionTitle}>📈 Lifetime Total Laundry Stats</Text>
 
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
             <Text style={[styles.statNum, { color: '#4338CA' }]}>{totalClothesCleaned}</Text>
-            <Text style={styles.statLabel}>Clothes Washed</Text>
+            <Text style={styles.statLabel}>Total Clothes Washed</Text>
           </View>
 
           <View style={styles.statBox}>
             <Text style={[styles.statNum, { color: '#15803D' }]}>{completedOrders}</Text>
-            <Text style={styles.statLabel}>Completed Drops</Text>
+            <Text style={styles.statLabel}>Completed Washes</Text>
           </View>
 
           <View style={styles.statBox}>
@@ -403,140 +666,9 @@ export const ProfileScreen = () => {
         </View>
       </View>
 
-      {/* 📝 Profile Edit Form Fields */}
-      <View style={styles.card}>
-        <View style={styles.cardHeaderRow}>
-          <Text style={styles.cardTitle}>Student Profile & Room Details</Text>
-          <TouchableOpacity
-            style={[styles.editBtn, isEditing && styles.editBtnActive]}
-            onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="#4338CA" />
-            ) : (
-              <>
-                <Ionicons
-                  name={isEditing ? 'checkmark-circle' : 'create-outline'}
-                  size={15}
-                  color={isEditing ? '#FFF' : '#4338CA'}
-                />
-                <Text style={[styles.editBtnText, isEditing && { color: '#FFF' }]}>
-                  {isEditing ? 'Save Profile' : 'Edit Information'}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Change Photo Shortcut button */}
-        <TouchableOpacity
-          style={styles.changePhotoBtn}
-          onPress={showPhotoOptions}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="image-outline" size={16} color="#4338CA" />
-          <Text style={styles.changePhotoBtnText}>
-            {avatarUri ? 'Change Profile Picture' : 'Upload Profile Picture'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Full Name */}
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Full Name</Text>
-          <TextInput
-            style={[styles.input, !isEditing && styles.inputDisabled]}
-            value={name}
-            onChangeText={setName}
-            editable={isEditing}
-            placeholder="Your full name"
-            placeholderTextColor="#94A3B8"
-          />
-        </View>
-
-        {/* Roll Number */}
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Student / Roll Number</Text>
-          <TextInput
-            style={[styles.input, !isEditing && styles.inputDisabled]}
-            value={studentId}
-            onChangeText={setStudentId}
-            editable={isEditing}
-            placeholder="e.g. 21RVS045"
-            placeholderTextColor="#94A3B8"
-          />
-        </View>
-
-        {/* Academic Year Selection */}
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Academic Year</Text>
-          {isEditing ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.yearChoices}>
-              {ACADEMIC_YEARS.map((yr) => (
-                <TouchableOpacity
-                  key={yr}
-                  style={[styles.yearChoiceBtn, academicYear === yr && styles.yearChoiceBtnActive]}
-                  onPress={() => setAcademicYear(yr)}
-                >
-                  <Text style={[styles.yearChoiceText, academicYear === yr && styles.yearChoiceTextActive]}>
-                    {yr}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          ) : (
-            <TextInput
-              style={[styles.input, styles.inputDisabled]}
-              value={academicYear}
-              editable={false}
-            />
-          )}
-        </View>
-
-        {/* Hostel Block */}
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Hostel Block</Text>
-          <TextInput
-            style={[styles.input, !isEditing && styles.inputDisabled]}
-            value={hostelBlock}
-            onChangeText={setHostelBlock}
-            placeholder="e.g. Block A (Boys Hostel) or Kaveri Block"
-            placeholderTextColor="#94A3B8"
-            editable={isEditing}
-          />
-        </View>
-
-        {/* Room Number */}
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Room Number</Text>
-          <TextInput
-            style={[styles.input, !isEditing && styles.inputDisabled]}
-            value={roomNumber}
-            onChangeText={setRoomNumber}
-            placeholder="e.g. 204"
-            placeholderTextColor="#94A3B8"
-            editable={isEditing}
-          />
-        </View>
-
-        {/* Phone Number */}
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>Mobile Number (SMS Alerts)</Text>
-          <TextInput
-            style={[styles.input, !isEditing && styles.inputDisabled]}
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            placeholder="10-digit mobile number"
-            placeholderTextColor="#94A3B8"
-            editable={isEditing}
-            keyboardType="phone-pad"
-          />
-        </View>
-      </View>
-
       {/* 🔒 Privacy, Security & Account Management */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Privacy & Security</Text>
+      <View style={styles.settingsCard}>
+        <Text style={styles.cardSectionTitle}>Privacy & Account Settings</Text>
 
         <TouchableOpacity
           style={styles.actionRow}
@@ -584,6 +716,143 @@ export const ProfileScreen = () => {
         </Text>
       </View>
 
+      {/* 📝 SEPARATE EDIT PROFILE MODAL / SUB-PAGE */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.editModalContainer}>
+          {/* Edit Modal Header */}
+          <View style={styles.editModalHeader}>
+            <TouchableOpacity onPress={() => setEditModalVisible(false)} style={styles.editModalBackBtn}>
+              <Ionicons name="arrow-back" size={22} color="#0F172A" />
+            </TouchableOpacity>
+            <Text style={styles.editModalTitle}>Edit Student Profile</Text>
+            <TouchableOpacity
+              style={styles.modalSaveBtn}
+              onPress={handleSaveProfileModal}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.modalSaveBtnText}>Save</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.editModalBody} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+            {/* Avatar picker preview */}
+            <View style={styles.modalAvatarCenter}>
+              <TouchableOpacity onPress={showPhotoOptions} style={styles.avatarWrap} activeOpacity={0.85}>
+                {avatarUri ? (
+                  <Image source={{ uri: avatarUri }} style={styles.avatarImgLarge} />
+                ) : (
+                  <View style={styles.avatarFallbackLarge}>
+                    <Text style={styles.avatarFallbackTextLarge}>
+                      {(name || profile?.email || 'S').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.cameraIconBadgeLarge}>
+                  <Ionicons name="camera" size={16} color="#FFF" />
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.avatarHintText}>Tap to change profile picture</Text>
+            </View>
+
+            {/* Form Fields */}
+            <View style={styles.modalField}>
+              <Text style={styles.modalFieldLabel}>Full Name</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter full name"
+                placeholderTextColor="#94A3B8"
+              />
+            </View>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalFieldLabel}>Student / Roll Number</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={studentId}
+                onChangeText={setStudentId}
+                placeholder="e.g. 21RVS045"
+                placeholderTextColor="#94A3B8"
+              />
+            </View>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalFieldLabel}>Academic Year</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.yearChoices}>
+                {ACADEMIC_YEARS.map((yr) => (
+                  <TouchableOpacity
+                    key={yr}
+                    style={[styles.yearChoiceBtn, academicYear === yr && styles.yearChoiceBtnActive]}
+                    onPress={() => setAcademicYear(yr)}
+                  >
+                    <Text style={[styles.yearChoiceText, academicYear === yr && styles.yearChoiceTextActive]}>
+                      {yr}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalFieldLabel}>Hostel Block</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={hostelBlock}
+                onChangeText={setHostelBlock}
+                placeholder="e.g. Block A (Boys Hostel)"
+                placeholderTextColor="#94A3B8"
+              />
+            </View>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalFieldLabel}>Room Number</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={roomNumber}
+                onChangeText={setRoomNumber}
+                placeholder="e.g. 204"
+                placeholderTextColor="#94A3B8"
+              />
+            </View>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalFieldLabel}>Mobile Number (for SMS & WhatsApp)</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                placeholder="10-digit phone number"
+                placeholderTextColor="#94A3B8"
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            {/* Bottom Save Action */}
+            <TouchableOpacity
+              style={styles.saveActionBtn}
+              onPress={handleSaveProfileModal}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.saveActionBtnText}>Save Profile Changes</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
       {/* Privacy Policy Modal */}
       <PrivacyPolicyModal
         visible={showPrivacyModal}
@@ -608,7 +877,7 @@ const styles = StyleSheet.create({
     padding: 18,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    marginBottom: 16,
+    marginBottom: 14,
     boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
   },
   idCardTop: {
@@ -730,23 +999,230 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     fontWeight: '700',
   },
+  editActionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 14,
+  },
+  editCardTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  editCardSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  openEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4338CA',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    gap: 6,
+  },
+  openEditBtnText: {
+    color: '#FFF',
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  calendarCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 14,
+  },
+  calendarCardHeader: {
+    marginBottom: 12,
+  },
+  cardSectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  cardSectionSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  timeframeTabs: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    padding: 3,
+    gap: 4,
+    marginBottom: 12,
+  },
+  timeframeTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 7,
+    borderRadius: 7,
+    gap: 4,
+  },
+  timeframeTabActive: {
+    backgroundColor: '#FFFFFF',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+  },
+  timeframeTabText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  timeframeTabTextActive: {
+    color: '#4338CA',
+  },
+  pickerRow: {
+    marginBottom: 12,
+  },
+  pickerLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 6,
+  },
+  quickDatesWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  quickDateChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  quickDateChipActive: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#6366F1',
+  },
+  quickDateChipText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  quickDateChipTextActive: {
+    color: '#4338CA',
+  },
+  dateInputBox: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1E293B',
+    minWidth: 100,
+  },
+  periodSummaryCard: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
+  },
+  periodSummaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  periodSummaryNum: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#4338CA',
+  },
+  periodSummaryLabel: {
+    fontSize: 10.5,
+    color: '#64748B',
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  periodSummaryDivider: {
+    width: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  emptyLogBox: {
+    alignItems: 'center',
+    paddingVertical: 18,
+  },
+  emptyLogTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+    marginTop: 6,
+  },
+  emptyLogSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  calendarLogList: {
+    gap: 8,
+  },
+  calendarLogRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  calendarLogDate: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  calendarLogToken: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4338CA',
+  },
+  calendarLogItems: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  calendarLogBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  calendarLogBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
   statsCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   statsGrid: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 10,
   },
   statBox: {
     flex: 1,
@@ -758,115 +1234,23 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   statNum: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900',
   },
   statLabel: {
-    fontSize: 10.5,
+    fontSize: 10,
     color: '#64748B',
     fontWeight: '700',
     marginTop: 2,
     textAlign: 'center',
   },
-  card: {
+  settingsCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 16,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  editBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EEF2FF',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-    gap: 5,
-  },
-  editBtnActive: {
-    backgroundColor: '#4338CA',
-    borderColor: '#4338CA',
-  },
-  editBtnText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#4338CA',
-  },
-  changePhotoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingVertical: 8,
-    gap: 6,
     marginBottom: 14,
-  },
-  changePhotoBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#4338CA',
-  },
-  field: {
-    marginBottom: 12,
-  },
-  fieldLabel: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#475569',
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    fontSize: 13,
-    color: '#0F172A',
-  },
-  inputDisabled: {
-    backgroundColor: '#F8FAFC',
-    color: '#64748B',
-    borderColor: '#E2E8F0',
-  },
-  yearChoices: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  yearChoiceBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  yearChoiceBtnActive: {
-    backgroundColor: '#4338CA',
-    borderColor: '#4338CA',
-  },
-  yearChoiceText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  yearChoiceTextActive: {
-    color: '#FFF',
   },
   actionRow: {
     flexDirection: 'row',
@@ -913,6 +1297,142 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94A3B8',
     fontWeight: '600',
+  },
+  editModalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  editModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 48 : 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  editModalBackBtn: {
+    padding: 4,
+  },
+  editModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalSaveBtn: {
+    backgroundColor: '#4338CA',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  modalSaveBtnText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  editModalBody: {
+    flex: 1,
+  },
+  modalAvatarCenter: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatarImgLarge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2.5,
+    borderColor: '#4338CA',
+  },
+  avatarFallbackLarge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#4338CA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarFallbackTextLarge: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  cameraIconBadgeLarge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#0F172A',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  avatarHintText: {
+    fontSize: 12,
+    color: '#4338CA',
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  modalField: {
+    marginBottom: 14,
+  },
+  modalFieldLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 5,
+  },
+  modalInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13.5,
+    color: '#0F172A',
+  },
+  yearChoices: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  yearChoiceBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  yearChoiceBtnActive: {
+    backgroundColor: '#4338CA',
+    borderColor: '#4338CA',
+  },
+  yearChoiceText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  yearChoiceTextActive: {
+    color: '#FFF',
+  },
+  saveActionBtn: {
+    backgroundColor: '#4338CA',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  saveActionBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '800',
   },
 });
 
