@@ -42,6 +42,7 @@ export const ProfileScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
   const [hostelBlock, setHostelBlock] = useState(profile?.hostel_block || HOSTEL_BLOCKS[0]);
   const [academicYear, setAcademicYear] = useState(profile?.academic_year || ACADEMIC_COURSES[0]);
+  const [avatarUri, setAvatarUri] = useState(profile?.avatar_url || null);
   const userAvatarKey = useMemo(() => {
     if (profile?.id) return `@dobix_user_avatar_${profile.id}`;
     if (profile?.email) return `@dobix_user_avatar_${profile.email.trim().toLowerCase()}`;
