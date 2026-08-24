@@ -28,6 +28,7 @@ export const AuthScreen = () => {
   const { signIn, signUp } = useAuth();
 
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [regStep, setRegStep] = useState(1); // 1: Demographics & Slot, 2: Room & Account Details
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -84,13 +85,24 @@ export const AuthScreen = () => {
   };
 
   const handleRegister = async () => {
-    if (!email.trim() || !password || !fullName.trim() || !studentId.trim() || !roomNumber.trim()) {
-      Alert.alert('Required Fields', 'Please fill in all details marked with an asterisk (*).');
+    if (!fullName.trim()) {
+      Alert.alert('Missing Name', 'Please enter your full name.');
       return;
     }
-
-    if (password.length < 6) {
-      Alert.alert('Weak Password', 'Password must be at least 6 characters.');
+    if (!studentId.trim()) {
+      Alert.alert('Missing Roll Number', 'Please enter your student / roll number.');
+      return;
+    }
+    if (!roomNumber.trim()) {
+      Alert.alert('Missing Room', 'Please enter your room number.');
+      return;
+    }
+    if (!email.trim()) {
+      Alert.alert('Missing Email', 'Please enter your university email address.');
+      return;
+    }
+    if (!password || password.length < 6) {
+      Alert.alert('Password Requirement', 'Password must be at least 6 characters.');
       return;
     }
 
@@ -120,9 +132,10 @@ export const AuthScreen = () => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
     >
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -236,236 +249,299 @@ export const AuthScreen = () => {
               </View>
             </View>
           ) : (
-            /* Registration Form */
+            /* 2-Step Registration Form */
             <View style={styles.form}>
-              <Text style={styles.formTitle}>Student Registration</Text>
-              <Text style={styles.formSub}>Set up your profile to receive your laundry schedule</Text>
-
-              {/* 1. 🚻 Gender Selection */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Gender / Hostel Type *</Text>
-                <View style={styles.genderRow}>
-                  {STUDENT_GENDERS.map((g) => {
-                    const isSelected = gender === g.id;
-                    return (
-                      <TouchableOpacity
-                        key={g.id}
-                        style={[styles.genderBtn, isSelected && styles.genderBtnActive]}
-                        onPress={() => handleGenderChange(g.id)}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons
-                          name={g.icon}
-                          size={18}
-                          color={isSelected ? '#FFF' : '#64748B'}
-                        />
-                        <Text style={[styles.genderBtnText, isSelected && styles.genderBtnTextActive]}>
-                          {g.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* 2. 📍 Home State / Location Picker Button */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Home State / Region *</Text>
+              <View style={styles.stepProgressBar}>
                 <TouchableOpacity
-                  style={styles.dropdownBtn}
-                  onPress={() => setLocationModalVisible(true)}
+                  style={[styles.stepTab, regStep === 1 && styles.stepTabActive]}
+                  onPress={() => setRegStep(1)}
                   activeOpacity={0.8}
                 >
-                  <View style={styles.dropdownLeft}>
-                    <Ionicons name="location-outline" size={18} color="#4338CA" />
-                    <Text style={styles.dropdownSelectedText}>{stateLocation}</Text>
+                  <View style={[styles.stepNumberBadge, regStep === 1 && styles.stepNumberBadgeActive]}>
+                    <Text style={[styles.stepNumberText, regStep === 1 && styles.stepNumberTextActive]}>1</Text>
                   </View>
-                  <Ionicons name="chevron-down" size={18} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-
-              {/* 3. 🎓 Academic Course / Branch Picker Button */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Course & Year of Study *</Text>
-                <TouchableOpacity
-                  style={styles.dropdownBtn}
-                  onPress={() => setCourseModalVisible(true)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.dropdownLeft}>
-                    <Ionicons name="school-outline" size={18} color="#1D4ED8" />
-                    <Text style={styles.dropdownSelectedText}>{academicCourse}</Text>
-                  </View>
-                  <Ionicons name="chevron-down" size={18} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-
-              {/* 🌟 Dynamic Laundry Slot Calculation Card */}
-              <View style={[styles.slotPreviewCard, { backgroundColor: computedSchedule.badgeBg, borderColor: computedSchedule.badgeBorder }]}>
-                <View style={styles.slotPreviewHeader}>
-                  <Ionicons name="calendar" size={16} color={computedSchedule.badgeColor} />
-                  <Text style={[styles.slotPreviewTitle, { color: computedSchedule.badgeColor }]}>
-                    Your Laundry Slot: {computedSchedule.category}
+                  <Text style={[styles.stepTabText, regStep === 1 && styles.stepTabTextActive]}>
+                    Batch & Slot
                   </Text>
-                </View>
+                </TouchableOpacity>
 
-                <View style={styles.slotPreviewBody}>
-                  <View style={styles.slotPreviewItem}>
-                    <Text style={styles.slotPreviewLabel}>DROP-OFF</Text>
-                    <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
-                      {computedSchedule.dropoffDay}
-                    </Text>
+                <View style={styles.stepLine} />
+
+                <TouchableOpacity
+                  style={[styles.stepTab, regStep === 2 && styles.stepTabActive]}
+                  onPress={() => setRegStep(2)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.stepNumberBadge, regStep === 2 && styles.stepNumberBadgeActive]}>
+                    <Text style={[styles.stepNumberText, regStep === 2 && styles.stepNumberTextActive]}>2</Text>
+                  </View>
+                  <Text style={[styles.stepTabText, regStep === 2 && styles.stepTabTextActive]}>
+                    Room & Account
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* STEP 1: DEMOGRAPHICS & ASSIGNED SLOT */}
+              {regStep === 1 && (
+                <View>
+                  <Text style={styles.formTitle}>Select Your Course & Batch</Text>
+                  <Text style={styles.formSub}>Your designated laundry days are calculated automatically</Text>
+
+                  {/* 1. 🚻 Gender Selection */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Gender / Hostel Type *</Text>
+                    <View style={styles.genderRow}>
+                      {STUDENT_GENDERS.map((g) => {
+                        const isSelected = gender === g.id;
+                        return (
+                          <TouchableOpacity
+                            key={g.id}
+                            style={[styles.genderBtn, isSelected && styles.genderBtnActive]}
+                            onPress={() => handleGenderChange(g.id)}
+                            activeOpacity={0.8}
+                          >
+                            <Ionicons
+                              name={g.icon}
+                              size={18}
+                              color={isSelected ? '#FFF' : '#64748B'}
+                            />
+                            <Text style={[styles.genderBtnText, isSelected && styles.genderBtnTextActive]}>
+                              {g.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
                   </View>
 
-                  <Ionicons name="arrow-forward" size={18} color={computedSchedule.badgeColor} />
-
-                  <View style={styles.slotPreviewItem}>
-                    <Text style={styles.slotPreviewLabel}>RETURN / PICKUP</Text>
-                    <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
-                      {computedSchedule.pickupDay}
-                    </Text>
+                  {/* 2. 📍 Home State / Location Picker Button */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Home State / Region *</Text>
+                    <TouchableOpacity
+                      style={styles.dropdownBtn}
+                      onPress={() => setLocationModalVisible(true)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.dropdownLeft}>
+                        <Ionicons name="location-outline" size={18} color="#4338CA" />
+                        <Text style={styles.dropdownSelectedText}>{stateLocation}</Text>
+                      </View>
+                      <Ionicons name="chevron-down" size={18} color="#64748B" />
+                    </TouchableOpacity>
                   </View>
-                </View>
-                <Text style={styles.slotPreviewNotice}>{computedSchedule.description}</Text>
-              </View>
 
-              {/* Full Name */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name *</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="person-outline" size={18} color="#64748B" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your full name"
-                    placeholderTextColor="#94A3B8"
-                    value={fullName}
-                    onChangeText={setFullName}
-                  />
-                </View>
-              </View>
-
-              {/* Roll / Student ID */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Student / Roll Number *</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="card-outline" size={18} color="#64748B" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. 21RVS045"
-                    placeholderTextColor="#94A3B8"
-                    value={studentId}
-                    onChangeText={setStudentId}
-                    autoCapitalize="characters"
-                  />
-                </View>
-              </View>
-
-              {/* Hostel Block & Room Number */}
-              <View style={styles.rowInputs}>
-                <View style={[styles.inputGroup, { flex: 1.2, marginRight: 8 }]}>
-                  <Text style={styles.inputLabel}>Hostel Block *</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="business-outline" size={18} color="#64748B" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. Block A"
-                      placeholderTextColor="#94A3B8"
-                      value={hostelBlock}
-                      onChangeText={setHostelBlock}
-                    />
+                  {/* 3. 🎓 Academic Course / Branch Picker Button */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Course & Year of Study *</Text>
+                    <TouchableOpacity
+                      style={styles.dropdownBtn}
+                      onPress={() => setCourseModalVisible(true)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.dropdownLeft}>
+                        <Ionicons name="school-outline" size={18} color="#1D4ED8" />
+                        <Text style={styles.dropdownSelectedText}>{academicCourse}</Text>
+                      </View>
+                      <Ionicons name="chevron-down" size={18} color="#64748B" />
+                    </TouchableOpacity>
                   </View>
-                </View>
 
-                <View style={[styles.inputGroup, { flex: 0.8 }]}>
-                  <Text style={styles.inputLabel}>Room No *</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="key-outline" size={18} color="#64748B" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. 204"
-                      placeholderTextColor="#94A3B8"
-                      value={roomNumber}
-                      onChangeText={setRoomNumber}
-                    />
+                  {/* 🌟 Dynamic Laundry Slot Calculation Card */}
+                  <View style={[styles.slotPreviewCard, { backgroundColor: computedSchedule.badgeBg, borderColor: computedSchedule.badgeBorder }]}>
+                    <View style={styles.slotPreviewHeader}>
+                      <Ionicons name="calendar" size={16} color={computedSchedule.badgeColor} />
+                      <Text style={[styles.slotPreviewTitle, { color: computedSchedule.badgeColor }]}>
+                        Assigned Slot: {computedSchedule.category}
+                      </Text>
+                    </View>
+
+                    <View style={styles.slotPreviewBody}>
+                      <View style={styles.slotPreviewItem}>
+                        <Text style={styles.slotPreviewLabel}>DROP-OFF DAY</Text>
+                        <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
+                          {computedSchedule.dropoffDay}
+                        </Text>
+                      </View>
+
+                      <Ionicons name="arrow-forward" size={18} color={computedSchedule.badgeColor} />
+
+                      <View style={styles.slotPreviewItem}>
+                        <Text style={styles.slotPreviewLabel}>RETURN / PICKUP</Text>
+                        <Text style={[styles.slotPreviewVal, { color: computedSchedule.badgeColor }]}>
+                          {computedSchedule.pickupDay}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.slotPreviewNotice}>{computedSchedule.description}</Text>
                   </View>
-                </View>
-              </View>
 
-              {/* Mobile Number */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Mobile Number (for SMS & WhatsApp Alerts)</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="call-outline" size={18} color="#64748B" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="10-digit mobile number"
-                    placeholderTextColor="#94A3B8"
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    keyboardType="phone-pad"
-                  />
-                </View>
-              </View>
-
-              {/* Email */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>University Email *</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="mail-outline" size={18} color="#64748B" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="student@rvs.edu.in"
-                    placeholderTextColor="#94A3B8"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                  />
-                </View>
-              </View>
-
-              {/* Password */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Create Password *</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="lock-closed-outline" size={18} color="#64748B" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Minimum 6 characters"
-                    placeholderTextColor="#94A3B8"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                  />
+                  {/* Continue Button */}
                   <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeBtn}
+                    style={styles.primaryBtn}
+                    onPress={() => setRegStep(2)}
+                    activeOpacity={0.85}
                   >
-                    <Ionicons
-                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={18}
-                      color="#64748B"
-                    />
+                    <Text style={styles.primaryBtnText}>Continue: Room & Account Details</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#FFF" style={{ marginLeft: 6 }} />
                   </TouchableOpacity>
                 </View>
-              </View>
+              )}
 
-              {/* Register Button */}
-              <TouchableOpacity
-                style={[styles.primaryBtn, loading && styles.btnDisabled]}
-                onPress={handleRegister}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFF" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.primaryBtnText}>Complete Registration</Text>
-                    <Ionicons name="checkmark-circle" size={18} color="#FFF" style={{ marginLeft: 6 }} />
-                  </>
-                )}
-              </TouchableOpacity>
+              {/* STEP 2: PERSONAL, ROOM & ACCOUNT DETAILS */}
+              {regStep === 2 && (
+                <View>
+                  <Text style={styles.formTitle}>Student Room & Account</Text>
+                  <Text style={styles.formSub}>Enter your hostel details and set your password</Text>
+
+                  {/* Full Name */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Full Name *</Text>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="person-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Enter your full name"
+                        placeholderTextColor="#94A3B8"
+                        value={fullName}
+                        onChangeText={setFullName}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Roll / Student ID */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Student / Roll Number *</Text>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="card-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="e.g. 21RVS045"
+                        placeholderTextColor="#94A3B8"
+                        value={studentId}
+                        onChangeText={setStudentId}
+                        autoCapitalize="characters"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Hostel Block & Room Number */}
+                  <View style={styles.rowInputs}>
+                    <View style={[styles.inputGroup, { flex: 1.2, marginRight: 8 }]}>
+                      <Text style={styles.inputLabel}>Hostel Block *</Text>
+                      <View style={styles.inputWrapper}>
+                        <Ionicons name="business-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                        <TextInput
+                          style={styles.input}
+                          placeholder="e.g. Block A"
+                          placeholderTextColor="#94A3B8"
+                          value={hostelBlock}
+                          onChangeText={setHostelBlock}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={[styles.inputGroup, { flex: 0.8 }]}>
+                      <Text style={styles.inputLabel}>Room No *</Text>
+                      <View style={styles.inputWrapper}>
+                        <Ionicons name="key-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                        <TextInput
+                          style={styles.input}
+                          placeholder="e.g. 204"
+                          placeholderTextColor="#94A3B8"
+                          value={roomNumber}
+                          onChangeText={setRoomNumber}
+                        />
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Mobile Number */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Mobile Number (for SMS & WhatsApp)</Text>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="call-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="10-digit mobile number"
+                        placeholderTextColor="#94A3B8"
+                        value={phoneNumber}
+                        onChangeText={setPhoneNumber}
+                        keyboardType="phone-pad"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Email */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>University Email *</Text>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="mail-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="student@rvs.edu.in"
+                        placeholderTextColor="#94A3B8"
+                        value={email}
+                        onChangeText={setEmail}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Password */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Create Password *</Text>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="lock-closed-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Minimum 6 characters"
+                        placeholderTextColor="#94A3B8"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowPassword(!showPassword)}
+                        style={styles.eyeBtn}
+                      >
+                        <Ionicons
+                          name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                          size={18}
+                          color="#64748B"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Register Button */}
+                  <TouchableOpacity
+                    style={[styles.primaryBtn, loading && styles.btnDisabled]}
+                    onPress={handleRegister}
+                    disabled={loading}
+                    activeOpacity={0.85}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFF" size="small" />
+                    ) : (
+                      <>
+                        <Text style={styles.primaryBtnText}>Complete Registration</Text>
+                        <Ionicons name="checkmark-circle" size={18} color="#FFF" style={{ marginLeft: 6 }} />
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Back to Step 1 */}
+                  <TouchableOpacity
+                    style={styles.backStepBtn}
+                    onPress={() => setRegStep(1)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="arrow-back" size={16} color="#64748B" />
+                    <Text style={styles.backStepBtnText}>Back to Course & Batch Selection</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
 
               <View style={styles.switchPrompt}>
                 <Text style={styles.switchPromptText}>Already registered? </Text>
@@ -476,6 +552,9 @@ export const AuthScreen = () => {
             </View>
           )}
         </View>
+
+        {/* Extra bottom spacer for mobile keyboard clearance */}
+        <View style={{ height: 180 }} />
       </ScrollView>
 
       {/* 📍 CLEAN LOCATION SELECTION MODAL */}
@@ -608,10 +687,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F1F5F9',
   },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
   scrollContent: {
     padding: 20,
     paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingBottom: Platform.OS === 'web' ? 40 : 180,
+    paddingBottom: 40,
     alignItems: 'center',
   },
   brandHeader: {
@@ -651,7 +734,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 20,
+    marginBottom: 18,
   },
   tab: {
     flex: 1,
@@ -671,11 +754,66 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: '#4338CA',
   },
+  stepProgressBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 16,
+  },
+  stepTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  stepTabActive: {
+    backgroundColor: '#EEF2FF',
+  },
+  stepNumberBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberBadgeActive: {
+    backgroundColor: '#4338CA',
+  },
+  stepNumberText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748B',
+  },
+  stepNumberTextActive: {
+    color: '#FFFFFF',
+  },
+  stepTabText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  stepTabTextActive: {
+    color: '#4338CA',
+  },
+  stepLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#CBD5E1',
+    marginHorizontal: 6,
+  },
   form: {
     width: '100%',
   },
   formTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 4,
@@ -683,7 +821,7 @@ const styles = StyleSheet.create({
   formSub: {
     fontSize: 12,
     color: '#64748B',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   inputGroup: {
     marginBottom: 14,
@@ -828,6 +966,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  backStepBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  backStepBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#64748B',
   },
   switchPrompt: {
     flexDirection: 'row',
