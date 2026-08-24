@@ -77,13 +77,14 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
             <Ionicons name="menu-outline" size={26} color="#0F172A" />
           </TouchableOpacity>
 
-          {/* Center College Emblem Logo */}
+          {/* Center College Emblem Logo & App Name */}
           <View style={styles.logoContainer}>
             <Image
               source={require('../assets/college_logo.png')}
               style={styles.collegeLogo}
               resizeMode="contain"
             />
+            <Text style={styles.headerAppName}>DobiX</Text>
           </View>
 
           {/* Right Actions: Notifications & Logout */}
@@ -118,8 +119,9 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
             <Text style={styles.staffPillText}>Laundry Staff & Admin Portal</Text>
           </View>
         )}
-      </View>
+      </SafeAreaView>
 
+      {/* Notifications Drawer */}
       <NotificationModal
         visible={notifVisible}
         onClose={() => setNotifVisible(false)}
@@ -130,19 +132,31 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     backgroundColor: '#FFFFFF',
-    paddingTop: Platform.OS === 'ios' ? 4 : 8,
-    paddingBottom: 8,
-    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+      },
+    }),
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 52,
+    height: 54,
+    paddingHorizontal: 16,
   },
   sideBtn: {
     width: 38,
@@ -152,12 +166,21 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 7,
   },
   collegeLogo: {
-    width: 140,
-    height: 48,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+  },
+  headerAppName: {
+    fontSize: 19,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.5,
   },
   rightActions: {
     flexDirection: 'row',
