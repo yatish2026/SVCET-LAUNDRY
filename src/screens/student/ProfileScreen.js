@@ -268,7 +268,7 @@ export const ProfileScreen = () => {
       {/* Sign Out Button */}
       <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut} activeOpacity={0.85}>
         <Ionicons name="log-out-outline" size={18} color="#4338CA" />
-        <Text style={styles.signOutBtnText}>Sign Out from CampusWash</Text>
+        <Text style={styles.signOutBtnText}>Sign Out from DobiX</Text>
       </TouchableOpacity>
 
       {/* Privacy Policy Modal */}

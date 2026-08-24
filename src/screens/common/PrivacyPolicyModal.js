@@ -36,11 +36,11 @@ export const PrivacyPolicyModal = ({ visible, onClose }) => {
 
           {/* Policy Content Scroll */}
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.lastUpdated}>Last Updated: August 2026 • SVCET CampusWash</Text>
+            <Text style={styles.lastUpdated}>Last Updated: August 2026 • DobiX</Text>
 
             <Text style={styles.sectionHeading}>1. Overview & Commitment</Text>
             <Text style={styles.bodyText}>
-              SVCET CampusWash is committed to protecting student privacy. This application is dedicated strictly to managing hostel laundry requests, schedule slots, and pickup tokens for students and campus staff.
+              DobiX is committed to protecting student privacy. This application is dedicated strictly to managing hostel laundry requests, schedule slots, and pickup tokens for students and campus staff of RVS University.
             </Text>
 
             <Text style={styles.sectionHeading}>2. Information We Collect</Text>
@@ -70,8 +70,8 @@ export const PrivacyPolicyModal = ({ visible, onClose }) => {
             <Text style={styles.sectionHeading}>6. Contact Information</Text>
             <Text style={styles.bodyText}>
               For any questions regarding privacy or hostel laundry management, please contact:{"\n"}
-              📧 Email: <Text style={styles.boldText}>laundry-support@svcet.edu.in</Text>{"\n"}
-              📍 SVCET Campus Hostel Office, Counter 1
+              📧 Email: <Text style={styles.boldText}>laundry@rvsu.org</Text>{"\n"}
+              📍 RVS University Campus Hostel Office, Counter 1
             </Text>
           </ScrollView>
 

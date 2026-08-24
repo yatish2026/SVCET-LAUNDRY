@@ -1,6 +1,6 @@
 <?php
 /**
- * SVCET CampusWash - Production API Handler
+ * DobiX - RVS University Smart Hostel Laundry Production API Handler
  * Features:
  * 1. Tiered Rate Limiting (Exponential Backoff for Auth, moderate for public, loose for user)
  * 2. Strict Input Schema Validation (Type, Length, Regex, Enum Whitelists)

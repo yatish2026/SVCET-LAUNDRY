@@ -210,8 +210,8 @@ export const SideMenuDrawer = ({
               resizeMode="contain"
             />
             <View style={{ marginLeft: 8 }}>
-              <Text style={styles.footerAppTitle}>SVCET CampusWash</Text>
-              <Text style={styles.footerAppSub}>Connected to GoDaddy MySQL</Text>
+              <Text style={styles.footerAppTitle}>DobiX</Text>
+              <Text style={styles.footerAppSub}>RVS University • MySQL Live</Text>
             </View>
           </View>
         </View>

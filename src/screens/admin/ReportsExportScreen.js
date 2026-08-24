@@ -74,7 +74,7 @@ export const ReportsExportScreen = () => {
         link.setAttribute('href', url);
         link.setAttribute(
           'download',
-          `SVCET_Laundry_Report_${selectedYear.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`
+          `RVS_DobiX_Report_${selectedYear.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`
         );
         document.body.appendChild(link);
         link.click();

@@ -90,7 +90,7 @@ export const AuthScreen = () => {
       });
       Alert.alert(
         'Account Registered! 🎉',
-        `Welcome to CampusWash! Your allocated laundry drop-off day is every ${yearCfg.dropoffDay} with pickup on ${yearCfg.pickupDay}.`
+        `Welcome to DobiX! Your allocated laundry drop-off day is every ${yearCfg.dropoffDay} with pickup on ${yearCfg.pickupDay}.`
       );
     } catch (err) {
       Alert.alert('Registration Failed', err.message || 'Unable to register. Please try again.');
@@ -119,8 +119,8 @@ export const AuthScreen = () => {
             style={styles.collegeEmblem}
             resizeMode="contain"
           />
-          <Text style={styles.brandTitle}>SVCET CampusWash</Text>
-          <Text style={styles.brandSub}>Hostel Laundry Management Portal</Text>
+          <Text style={styles.brandTitle}>DobiX</Text>
+          <Text style={styles.brandSub}>RVS University • Hostel Laundry Portal</Text>
         </View>
 
         {/* Card Container */}
@@ -161,8 +161,8 @@ export const AuthScreen = () => {
           {authMode === 'login' ? (
             /* Login Form */
             <View style={styles.form}>
-              <Text style={styles.formTitle}>Welcome to CampusWash</Text>
-              <Text style={styles.formSub}>Sign in with your registered account</Text>
+              <Text style={styles.formTitle}>Welcome to DobiX</Text>
+              <Text style={styles.formSub}>Sign in with your RVS account</Text>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email Address</Text>

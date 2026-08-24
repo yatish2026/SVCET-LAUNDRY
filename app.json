@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SVCET CampusWash",
-    "slug": "rvsu-svcet",
+    "name": "DobiX",
+    "slug": "dobix",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,10 +13,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.svcet.campuswash"
+      "bundleIdentifier": "com.rvsu.dobix"
     },
     "android": {
-      "package": "com.svcet.campuswash",
+      "package": "com.rvsu.dobix",
       "versionCode": 1,
       "permissions": [
         "CAMERA",
