@@ -229,7 +229,7 @@ export const AuthScreen = () => {
         contentInsetAdjustmentBehavior="always"
         showsVerticalScrollIndicator={true}
       >
-        {/* 🌟 Side-by-Side University & DobiX Brand Header */}
+        {/* 🌟 Side-by-Side University & Colorful DobiX Brand Header */}
         <View style={styles.brandHeaderSideBySide}>
           <View style={styles.brandLogoHalo}>
             <View style={styles.brandLogoContainer3D}>
@@ -242,11 +242,19 @@ export const AuthScreen = () => {
           </View>
 
           <View style={styles.brandTextGroup}>
-            <View style={styles.brandUnivPill}>
-              <Ionicons name="school" size={13} color="#4338CA" />
-              <Text style={styles.brandUnivPillText}>RVS UNIVERSITY</Text>
+            <View style={styles.brandUnivHeader}>
+              <Ionicons name="school" size={16} color="#4338CA" />
+              <Text style={styles.brandUnivMainTitle}>RVS UNIVERSITY</Text>
             </View>
-            <Text style={styles.brandTitle}>DobiX</Text>
+
+            <View style={styles.dobiXColorRow}>
+              <Text style={styles.dobiXTextPart1}>Dobi</Text>
+              <Text style={styles.dobiXTextPart2}>X</Text>
+              <View style={styles.sparkleBadge}>
+                <Text style={styles.sparkleBadgeText}>✨ Smart</Text>
+              </View>
+            </View>
+
             <Text style={styles.brandSubtitle}>Smart Hostel Laundry Portal</Text>
           </View>
         </View>
@@ -1048,36 +1056,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    gap: 14,
     marginBottom: 20,
-    marginTop: 8,
+    marginTop: 6,
     width: '100%',
     maxWidth: 460,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
   brandLogoHalo: {
-    padding: 3,
-    borderRadius: 56,
+    padding: 4,
+    borderRadius: 66,
     backgroundColor: '#EEF2FF',
-    boxShadow: '0 10px 24px rgba(67, 56, 202, 0.22)',
-    elevation: 8,
+    boxShadow: '0 12px 30px rgba(67, 56, 202, 0.25)',
+    elevation: 10,
   },
   brandLogoContainer3D: {
-    width: 98,
-    height: 98,
-    borderRadius: 49,
+    width: 114,
+    height: 114,
+    borderRadius: 57,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 0,
     overflow: 'hidden',
-    borderWidth: 3,
+    borderWidth: 3.5,
     borderColor: '#4338CA',
   },
   brandLogo: {
     width: '100%',
     height: '100%',
-    borderRadius: 49,
+    borderRadius: 57,
     transform: [{ scale: 1.16 }],
   },
   brandTextGroup: {
@@ -1085,30 +1093,51 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
-  brandUnivPill: {
+  brandUnivHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#EEF2FF',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#A5B4FC',
-    marginBottom: 4,
+    gap: 6,
+    marginBottom: 2,
   },
-  brandUnivPillText: {
-    fontSize: 11,
+  brandUnivMainTitle: {
+    fontSize: 16.5,
     fontWeight: '900',
-    color: '#3730A3',
+    color: '#1E1B4B',
     letterSpacing: 1,
   },
-  brandTitle: {
-    fontSize: 34,
+  dobiXColorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 1,
+    marginVertical: 1,
+  },
+  dobiXTextPart1: {
+    fontSize: 38,
     fontWeight: '900',
-    color: '#0F172A',
+    color: '#4338CA',
     letterSpacing: 0.5,
-    lineHeight: 38,
+    lineHeight: 42,
+  },
+  dobiXTextPart2: {
+    fontSize: 42,
+    fontWeight: '900',
+    color: '#EA580C',
+    letterSpacing: 0.5,
+    lineHeight: 44,
+  },
+  sparkleBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 2,
+    paddingHorizontal: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    marginLeft: 6,
+  },
+  sparkleBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#D97706',
   },
   brandSubtitle: {
     fontSize: 12,
