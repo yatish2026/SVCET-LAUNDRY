@@ -229,37 +229,44 @@ export const AuthScreen = () => {
         contentInsetAdjustmentBehavior="always"
         showsVerticalScrollIndicator={true}
       >
-        {/* 🌟 Centered 3D Logo & Tri-Color RVS University Brand Header */}
-        <View style={styles.brandHeaderCentered}>
-          {/* Big 3D Logo Emblem */}
-          <View style={styles.brandLogoHalo}>
-            <View style={styles.brandLogoContainer3D}>
-              <Image
-                source={require('../../assets/rvs_logo.png')}
-                style={styles.brandLogo}
-                resizeMode="cover"
-              />
+        {/* 🌟 Brand Header: Logo + Big RVS University Beside It, DobiX Below */}
+        <View style={styles.brandContainer}>
+          {/* Top Row: Logo Beside Big RVS UNIVERSITY Name */}
+          <View style={styles.topLogoUnivRow}>
+            {/* Left: Big 3D Logo Emblem */}
+            <View style={styles.brandLogoHalo}>
+              <View style={styles.brandLogoContainer3D}>
+                <Image
+                  source={require('../../assets/rvs_logo.png')}
+                  style={styles.brandLogo}
+                  resizeMode="cover"
+                />
+              </View>
+            </View>
+
+            {/* Right: Big RVS UNIVERSITY Title */}
+            <View style={styles.univTextContainer}>
+              <View style={styles.rvsLettersRow}>
+                <Text style={styles.rvsLetterR}>R</Text>
+                <Text style={styles.rvsLetterV}>V</Text>
+                <Text style={styles.rvsLetterS}>S</Text>
+              </View>
+              <Text style={styles.rvsUnivWord}>UNIVERSITY</Text>
+              <Text style={styles.univTagline}>SMART CAMPUS PORTAL</Text>
             </View>
           </View>
 
-          {/* Tri-Color RVS UNIVERSITY Name */}
-          <View style={styles.rvsUnivRow}>
-            <Text style={styles.rvsLetterR}>R</Text>
-            <Text style={styles.rvsLetterV}>V</Text>
-            <Text style={styles.rvsLetterS}>S</Text>
-            <Text style={styles.rvsUnivWord}>UNIVERSITY</Text>
-          </View>
-
-          {/* Colorful DobiX App Title */}
-          <View style={styles.dobiXColorRowCentered}>
-            <Text style={styles.dobiXTextPart1}>Dobi</Text>
-            <Text style={styles.dobiXTextPart2}>X</Text>
-            <View style={styles.sparkleBadge}>
-              <Text style={styles.sparkleBadgeText}>✨ Smart Portal</Text>
+          {/* Bottom: Colorful DobiX Title & Subtitle */}
+          <View style={styles.dobiXSection}>
+            <View style={styles.dobiXColorRowCentered}>
+              <Text style={styles.dobiXTextPart1}>Dobi</Text>
+              <Text style={styles.dobiXTextPart2}>X</Text>
+              <View style={styles.sparkleBadge}>
+                <Text style={styles.sparkleBadgeText}>✨ Smart Portal</Text>
+              </View>
             </View>
+            <Text style={styles.brandSubtitle}>🧺 Smart Hostel Laundry Management ✨</Text>
           </View>
-
-          <Text style={styles.brandSubtitle}>🧺 Smart Hostel Laundry Management ✨</Text>
         </View>
 
         {/* 🌟 Main Authentication Card */}
@@ -1055,25 +1062,33 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     alignItems: 'center',
   },
-  brandHeaderCentered: {
+  brandContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
     marginTop: 6,
     width: '100%',
+    maxWidth: 460,
+  },
+  topLogoUnivRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    marginBottom: 8,
+    paddingHorizontal: 8,
   },
   brandLogoHalo: {
-    padding: 4,
-    borderRadius: 70,
+    padding: 3.5,
+    borderRadius: 60,
     backgroundColor: '#EEF2FF',
-    boxShadow: '0 14px 34px rgba(67, 56, 202, 0.28)',
-    elevation: 12,
-    marginBottom: 10,
+    boxShadow: '0 12px 28px rgba(67, 56, 202, 0.25)',
+    elevation: 10,
   },
   brandLogoContainer3D: {
-    width: 124,
-    height: 124,
-    borderRadius: 62,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1085,56 +1100,69 @@ const styles = StyleSheet.create({
   brandLogo: {
     width: '100%',
     height: '100%',
-    borderRadius: 62,
+    borderRadius: 52,
     transform: [{ scale: 1.16 }],
   },
-  rvsUnivRow: {
+  univTextContainer: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  rvsLettersRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 3,
-    marginBottom: 4,
   },
   rvsLetterR: {
-    fontSize: 26,
+    fontSize: 38,
     fontWeight: '900',
     color: '#DC2626', // Vibrant Red matching emblem
     letterSpacing: 0.5,
   },
   rvsLetterV: {
-    fontSize: 26,
+    fontSize: 38,
     fontWeight: '900',
     color: '#D97706', // Vibrant Amber Gold matching emblem
     letterSpacing: 0.5,
   },
   rvsLetterS: {
-    fontSize: 26,
+    fontSize: 38,
     fontWeight: '900',
     color: '#2563EB', // Vibrant Royal Blue matching emblem
     letterSpacing: 0.5,
-    marginRight: 6,
   },
   rvsUnivWord: {
     fontSize: 22,
     fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: 2,
+    letterSpacing: 2.5,
+    marginTop: -4,
+  },
+  univTagline: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 1.5,
+    marginTop: 2,
+  },
+  dobiXSection: {
+    alignItems: 'center',
+    marginTop: 4,
   },
   dobiXColorRowCentered: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   dobiXTextPart1: {
-    fontSize: 38,
+    fontSize: 36,
     fontWeight: '900',
     color: '#4338CA',
     letterSpacing: 0.5,
   },
   dobiXTextPart2: {
-    fontSize: 42,
+    fontSize: 40,
     fontWeight: '900',
     color: '#EA580C',
     letterSpacing: 0.5,
@@ -1149,12 +1177,12 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   sparkleBadgeText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#D97706',
   },
   brandSubtitle: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#475569',
     fontWeight: '700',
     textAlign: 'center',
