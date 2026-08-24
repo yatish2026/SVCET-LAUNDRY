@@ -119,8 +119,8 @@ function validateString($val, $fieldName, $minLen = 1, $maxLen = 100) {
 }
 
 function validatePhone($phone) {
-    if (!preg_match('/^[0-9+\s\-]{10,15}$/', trim($phone))) {
-        throw new InvalidArgumentException("Invalid phone number format (10-15 digits required).");
+    if (!preg_match('/^[0-9+\s\-]{7,25}$/', trim($phone))) {
+        throw new InvalidArgumentException("Invalid phone number format.");
     }
     return trim($phone);
 }
