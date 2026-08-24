@@ -60,7 +60,7 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
           {/* Center College Emblem Logo & App Name */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('../assets/college_logo.png')}
+              source={require('../assets/rvs_logo.png')}
               style={styles.collegeLogo}
               resizeMode="contain"
             />

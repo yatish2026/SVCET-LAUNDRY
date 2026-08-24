@@ -205,7 +205,7 @@ export const SideMenuDrawer = ({
           {/* Footer Info */}
           <View style={styles.drawerFooter}>
             <Image
-              source={require('../assets/college_logo.png')}
+              source={require('../assets/rvs_logo.png')}
               style={styles.footerLogo}
               resizeMode="contain"
             />

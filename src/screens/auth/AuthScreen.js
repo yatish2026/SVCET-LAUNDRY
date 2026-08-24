@@ -115,7 +115,7 @@ export const AuthScreen = () => {
         {/* College Emblem Brand Header */}
         <View style={styles.brandHero}>
           <Image
-            source={require('../../assets/college_logo.png')}
+            source={require('../../assets/rvs_logo.png')}
             style={styles.collegeEmblem}
             resizeMode="contain"
           />
