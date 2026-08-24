@@ -28,7 +28,6 @@ export const StudentHomeScreen = ({
   const [selectedTokenBooking, setSelectedTokenBooking] = useState(null);
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [rulesModalVisible, setRulesModalVisible] = useState(false);
-  const [activityTimeframe, setActivityTimeframe] = useState('ALL'); // 'ALL' | 'MONTH' | 'WEEK'
 
   const studentName = profile?.full_name || profile?.email?.split('@')[0] || 'Student';
   const studentPhone = profile?.phone_number || '';
@@ -73,41 +72,6 @@ export const StudentHomeScreen = ({
   const readyBookings = studentBookings.filter((b) => b.status === 'ready_for_pickup');
   const completedBookings = studentBookings.filter((b) => b.status === 'completed');
   const primaryActive = activeBookings[0];
-
-  // 📊 Time-based Analytics Calculations
-  const currentYearMonth = today.toISOString().slice(0, 7);
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-  const totalClothesAllTime = useMemo(() => {
-    return studentBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
-  }, [studentBookings]);
-
-  const thisMonthBookings = useMemo(() => {
-    return studentBookings.filter((b) => (b.created_at || '').startsWith(currentYearMonth));
-  }, [studentBookings, currentYearMonth]);
-
-  const thisMonthClothes = useMemo(() => {
-    return thisMonthBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
-  }, [thisMonthBookings]);
-
-  const thisWeekBookings = useMemo(() => {
-    return studentBookings.filter((b) => {
-      if (!b.created_at) return false;
-      const bDate = new Date(b.created_at);
-      return bDate >= sevenDaysAgo;
-    });
-  }, [studentBookings, sevenDaysAgo]);
-
-  const thisWeekClothes = useMemo(() => {
-    return thisWeekBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
-  }, [thisWeekBookings]);
-
-  // Displayed activity list based on selected tab
-  const displayedActivityBookings = useMemo(() => {
-    if (activityTimeframe === 'WEEK') return thisWeekBookings;
-    if (activityTimeframe === 'MONTH') return thisMonthBookings;
-    return studentBookings;
-  }, [activityTimeframe, studentBookings, thisMonthBookings, thisWeekBookings]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -305,114 +269,6 @@ export const StudentHomeScreen = ({
             {readyBookings.length > 0 ? '✨ 1 Bag Ready!' : 'Present at counter'}
           </Text>
         </TouchableOpacity>
-      </View>
-
-      {/* 📊 LAUNDRY USAGE & ACTIVITY BREAKDOWN SECTION */}
-      <View style={styles.usageContainer}>
-        <View style={styles.usageHeaderRow}>
-          <Text style={styles.sectionHeader}>LAUNDRY USAGE & HABITS</Text>
-          <TouchableOpacity onPress={onNavigateToHistory} activeOpacity={0.7}>
-            <Text style={styles.seeAllText}>View All Log →</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 4 Summary Stat Tiles */}
-        <View style={styles.usageStatsGrid}>
-          <View style={[styles.usageStatBox, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-            <Text style={[styles.usageStatNum, { color: '#1D4ED8' }]}>{thisWeekClothes}</Text>
-            <Text style={styles.usageStatLabel}>This Week</Text>
-            <Text style={styles.usageStatSub}>{thisWeekBookings.length} {thisWeekBookings.length === 1 ? 'drop' : 'drops'}</Text>
-          </View>
-
-          <View style={[styles.usageStatBox, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-            <Text style={[styles.usageStatNum, { color: '#15803D' }]}>{thisMonthClothes}</Text>
-            <Text style={styles.usageStatLabel}>This Month</Text>
-            <Text style={styles.usageStatSub}>{thisMonthBookings.length} {thisMonthBookings.length === 1 ? 'drop' : 'drops'}</Text>
-          </View>
-
-          <View style={[styles.usageStatBox, { backgroundColor: '#FAF5FF', borderColor: '#E9D5FF' }]}>
-            <Text style={[styles.usageStatNum, { color: '#7E22CE' }]}>{totalClothesAllTime}</Text>
-            <Text style={styles.usageStatLabel}>All-Time Total</Text>
-            <Text style={styles.usageStatSub}>{studentBookings.length} total bags</Text>
-          </View>
-
-          <View style={[styles.usageStatBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-            <Text style={[styles.usageStatNum, { color: '#C2410C' }]}>{completedBookings.length}</Text>
-            <Text style={styles.usageStatLabel}>Cleaned Loads</Text>
-            <Text style={styles.usageStatSub}>{activeBookings.length} active now</Text>
-          </View>
-        </View>
-
-        {/* Timeframe Filter Tabs for Activity Timeline */}
-        <View style={styles.activityTabs}>
-          {[
-            { id: 'ALL', label: `All Drops (${studentBookings.length})` },
-            { id: 'MONTH', label: `This Month (${thisMonthBookings.length})` },
-            { id: 'WEEK', label: `This Week (${thisWeekBookings.length})` },
-          ].map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[styles.activityTab, activityTimeframe === tab.id && styles.activityTabActive]}
-              onPress={() => setActivityTimeframe(tab.id)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.activityTabText, activityTimeframe === tab.id && styles.activityTabTextActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Date-wise Drop-off Breakdown List */}
-        {displayedActivityBookings.length === 0 ? (
-          <View style={styles.emptyActivityCard}>
-            <Ionicons name="calendar-outline" size={32} color="#94A3B8" />
-            <Text style={styles.emptyActivityTitle}>No Laundry In This Period</Text>
-            <Text style={styles.emptyActivitySub}>
-              {activityTimeframe === 'WEEK'
-                ? 'You have not submitted any laundry in the last 7 days.'
-                : 'No laundry drop-offs recorded for this timeframe.'}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.activityList}>
-            {displayedActivityBookings.slice(0, 4).map((b) => {
-              const statusInfo = getStatusInfo(b.status);
-              const itemsCount = b.total_items || 0;
-              const dateText = b.created_at ? new Date(b.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recent Drop';
-
-              return (
-                <TouchableOpacity
-                  key={b.id}
-                  style={styles.activityCard}
-                  onPress={() => onSelectBooking(b.id)}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.activityCardLeft}>
-                    <View style={styles.activityIconCircle}>
-                      <Ionicons name="shirt-outline" size={18} color="#4338CA" />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={styles.activityDate}>{dateText}</Text>
-                        <Text style={styles.activityToken}>#{b.pickup_token}</Text>
-                      </View>
-                      <Text style={styles.activityItems}>
-                        🧺 <Text style={{ fontWeight: '800' }}>{itemsCount}</Text> clothes submitted
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={[styles.activityStatusBadge, { backgroundColor: statusInfo.bg }]}>
-                    <Text style={[styles.activityStatusText, { color: statusInfo.color }]}>
-                      {statusInfo.label}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
       </View>
 
       {/* 🛠️ TOOLS SECTION */}
