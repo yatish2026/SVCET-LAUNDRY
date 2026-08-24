@@ -49,8 +49,8 @@ export const ProfileScreen = () => {
   const [saving, setSaving] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
-  // 📅 Calendar / Timeframe Usage Analyzer State
-  const [calendarMode, setCalendarMode] = useState('MONTH'); // 'DAY' | 'MONTH' | 'YEAR'
+  // 📅 Single Unified Timeframe State ('ALL' | 'MONTH' | 'DAY' | 'YEAR')
+  const [calendarMode, setCalendarMode] = useState('ALL');
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10)); // 'YYYY-MM-DD'
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7)); // 'YYYY-MM'
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear().toString()); // 'YYYY'
@@ -122,7 +122,7 @@ export const ProfileScreen = () => {
     return Array.from(set).sort().reverse();
   }, [studentBookings]);
 
-  // Filtered laundry activity based on Calendar selection
+  // Filtered laundry activity based on chosen timeframe
   const calendarFilteredBookings = useMemo(() => {
     return studentBookings.filter((b) => {
       const bDate = b.created_at || '';
@@ -133,18 +133,22 @@ export const ProfileScreen = () => {
       } else if (calendarMode === 'YEAR') {
         return bDate.startsWith(selectedYear);
       }
-      return true;
+      return true; // 'ALL'
     });
   }, [studentBookings, calendarMode, selectedDate, selectedMonth, selectedYear]);
 
-  // Summary Metrics
+  // Dynamic Metrics for the selected timeframe (Single Source of Truth)
   const timeframeClothesCount = useMemo(() => {
     return calendarFilteredBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
   }, [calendarFilteredBookings]);
 
-  const totalClothesCleaned = studentBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
-  const completedOrders = studentBookings.filter((b) => b.status === 'completed').length;
-  const activeOrders = studentBookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled').length;
+  const timeframeCompletedCount = useMemo(() => {
+    return calendarFilteredBookings.filter((b) => b.status === 'completed').length;
+  }, [calendarFilteredBookings]);
+
+  const timeframeActiveCount = useMemo(() => {
+    return calendarFilteredBookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled').length;
+  }, [calendarFilteredBookings]);
 
   // Compress avatar photo
   const compressAvatar = async (uri) => {
@@ -493,42 +497,30 @@ export const ProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 📊 UNIFIED LAUNDRY ANALYTICS & USAGE CALENDAR */}
+      {/* 📊 SINGLE COMBINED LAUNDRY ANALYTICS & USAGE HUB */}
       <View style={styles.calendarCard}>
         <View style={styles.calendarCardHeader}>
           <View>
-            <Text style={styles.cardSectionTitle}>📊 Laundry Analytics & Usage Activity</Text>
-            <Text style={styles.cardSectionSub}>Lifetime wash metrics and date-wise drop analyzer</Text>
+            <Text style={styles.cardSectionTitle}>📊 Laundry Analytics & Wash Usage</Text>
+            <Text style={styles.cardSectionSub}>
+              {calendarMode === 'ALL'
+                ? 'All-Time total wash metrics'
+                : calendarMode === 'MONTH'
+                ? `Activity for ${new Date(`${selectedMonth}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })}`
+                : calendarMode === 'DAY'
+                ? `Activity for ${selectedDate}`
+                : `Activity for Year ${selectedYear}`}
+            </Text>
           </View>
         </View>
 
-        {/* 1. Lifetime Overview Grid */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: '#4338CA' }]}>{totalClothesCleaned}</Text>
-            <Text style={styles.statLabel}>Total Clothes</Text>
-          </View>
-
-          <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: '#15803D' }]}>{completedOrders}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
-          </View>
-
-          <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: '#D97706' }]}>{activeOrders}</Text>
-            <Text style={styles.statLabel}>Active Bags</Text>
-          </View>
-        </View>
-
-        <View style={styles.analyticsDivider} />
-
-        {/* 2. Interactive Timeframe Filter Tabs */}
-        <Text style={styles.filterSectionTitle}>🗓️ Filter By Date or Timeframe</Text>
+        {/* 1. Timeframe Filter Tabs */}
         <View style={styles.timeframeTabs}>
           {[
-            { id: 'DAY', label: 'Day-Wise', icon: 'today-outline' },
+            { id: 'ALL', label: 'All-Time', icon: 'stats-chart-outline' },
             { id: 'MONTH', label: 'Month-Wise', icon: 'calendar-outline' },
-            { id: 'YEAR', label: 'Yearly', icon: 'stats-chart-outline' },
+            { id: 'DAY', label: 'Day-Wise', icon: 'today-outline' },
+            { id: 'YEAR', label: 'Yearly', icon: 'time-outline' },
           ].map((tab) => (
             <TouchableOpacity
               key={tab.id}
@@ -538,7 +530,7 @@ export const ProfileScreen = () => {
             >
               <Ionicons
                 name={tab.icon}
-                size={15}
+                size={14}
                 color={calendarMode === tab.id ? '#4338CA' : '#64748B'}
               />
               <Text style={[styles.timeframeTabText, calendarMode === tab.id && styles.timeframeTabTextActive]}>
@@ -548,10 +540,9 @@ export const ProfileScreen = () => {
           ))}
         </View>
 
-        {/* Selector Row */}
+        {/* 2. Date / Month Pickers (Only when Day, Month, or Year is active) */}
         {calendarMode === 'DAY' && (
           <View style={styles.pickerRow}>
-            <Text style={styles.pickerLabel}>Choose Date:</Text>
             <View style={styles.quickDatesWrap}>
               <TouchableOpacity
                 style={[styles.quickDateChip, selectedDate === new Date().toISOString().slice(0, 10) && styles.quickDateChipActive]}
@@ -584,7 +575,6 @@ export const ProfileScreen = () => {
 
         {calendarMode === 'MONTH' && (
           <View style={styles.pickerRow}>
-            <Text style={styles.pickerLabel}>Select Month:</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {availableMonths.map((m) => {
                 const d = new Date(`${m}-01T00:00:00Z`);
@@ -609,7 +599,6 @@ export const ProfileScreen = () => {
 
         {calendarMode === 'YEAR' && (
           <View style={styles.pickerRow}>
-            <Text style={styles.pickerLabel}>Select Year:</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {availableYears.map((yr) => {
                 const isSel = selectedYear === yr;
@@ -629,34 +618,30 @@ export const ProfileScreen = () => {
           </View>
         )}
 
-        {/* Selected Period Summary Metric Card */}
-        <View style={styles.periodSummaryCard}>
-          <View style={styles.periodSummaryItem}>
-            <Text style={styles.periodSummaryNum}>{timeframeClothesCount}</Text>
-            <Text style={styles.periodSummaryLabel}>Clothes in Selection</Text>
+        {/* 3. THE SINGLE UNIFIED STATS GRID (Updates dynamically!) */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statBox}>
+            <Text style={[styles.statNum, { color: '#4338CA' }]}>{timeframeClothesCount}</Text>
+            <Text style={styles.statLabel}>Clothes Washed</Text>
           </View>
-          <View style={styles.periodSummaryDivider} />
-          <View style={styles.periodSummaryItem}>
-            <Text style={[styles.periodSummaryNum, { color: '#059669' }]}>
-              {calendarFilteredBookings.length}
-            </Text>
-            <Text style={styles.periodSummaryLabel}>Drop-offs</Text>
+
+          <View style={styles.statBox}>
+            <Text style={[styles.statNum, { color: '#15803D' }]}>{timeframeCompletedCount}</Text>
+            <Text style={styles.statLabel}>Completed</Text>
           </View>
-          <View style={styles.periodSummaryDivider} />
-          <View style={styles.periodSummaryItem}>
-            <Text style={[styles.periodSummaryNum, { color: '#D97706' }]}>
-              {calendarFilteredBookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled').length}
-            </Text>
-            <Text style={styles.periodSummaryLabel}>In Progress</Text>
+
+          <View style={styles.statBox}>
+            <Text style={[styles.statNum, { color: '#D97706' }]}>{timeframeActiveCount}</Text>
+            <Text style={styles.statLabel}>In Progress</Text>
           </View>
         </View>
 
-        {/* Drop-off Log in this Period */}
+        {/* 4. Drop-off Log in this Period */}
         {calendarFilteredBookings.length === 0 ? (
           <View style={styles.emptyLogBox}>
-            <Ionicons name="calendar-outline" size={28} color="#94A3B8" />
-            <Text style={styles.emptyLogTitle}>No Laundry on this Date/Period</Text>
-            <Text style={styles.emptyLogSub}>You have not submitted any laundry orders in this selection.</Text>
+            <Ionicons name="calendar-outline" size={26} color="#94A3B8" />
+            <Text style={styles.emptyLogTitle}>No Laundry for this Selection</Text>
+            <Text style={styles.emptyLogSub}>No drop-offs recorded for the chosen timeframe.</Text>
           </View>
         ) : (
           <View style={styles.calendarLogList}>
@@ -1123,17 +1108,6 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
   },
-  analyticsDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 14,
-  },
-  filterSectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#475569',
-    marginBottom: 8,
-  },
   timeframeTabs: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
@@ -1165,12 +1139,6 @@ const styles = StyleSheet.create({
   },
   pickerRow: {
     marginBottom: 12,
-  },
-  pickerLabel: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#475569',
-    marginBottom: 6,
   },
   quickDatesWrap: {
     flexDirection: 'row',
@@ -1209,33 +1177,30 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     minWidth: 100,
   },
-  periodSummaryCard: {
+  statsGrid: {
     flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  statBox: {
+    flex: 1,
     backgroundColor: '#F8FAFC',
     borderRadius: 12,
     padding: 12,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 12,
   },
-  periodSummaryItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  periodSummaryNum: {
+  statNum: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#4338CA',
   },
-  periodSummaryLabel: {
-    fontSize: 10.5,
+  statLabel: {
+    fontSize: 10,
     color: '#64748B',
     fontWeight: '700',
     marginTop: 2,
-  },
-  periodSummaryDivider: {
-    width: 1,
-    backgroundColor: '#E2E8F0',
+    textAlign: 'center',
   },
   emptyLogBox: {
     alignItems: 'center',
@@ -1289,39 +1254,6 @@ const styles = StyleSheet.create({
   calendarLogBadgeText: {
     fontSize: 9.5,
     fontWeight: '800',
-  },
-  statsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 14,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  statNum: {
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  statLabel: {
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: '700',
-    marginTop: 2,
-    textAlign: 'center',
   },
   settingsCard: {
     backgroundColor: '#FFFFFF',
