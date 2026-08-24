@@ -442,6 +442,124 @@ try {
             ]);
             break;
 
+        case 'get_tickets':
+            if ($method !== 'GET') {
+                http_response_code(405);
+                echo json_encode(["success" => false, "error" => "Method not allowed"]);
+                exit();
+            }
+
+            // Ensure laundry_tickets table exists
+            $conn->exec("CREATE TABLE IF NOT EXISTS laundry_tickets (
+                id VARCHAR(64) PRIMARY KEY,
+                student_name VARCHAR(100) NOT NULL,
+                student_email VARCHAR(100),
+                student_id VARCHAR(50),
+                room_number VARCHAR(20),
+                hostel_block VARCHAR(60),
+                phone_number VARCHAR(30),
+                category VARCHAR(60),
+                category_id VARCHAR(40),
+                title VARCHAR(200) NOT NULL,
+                description TEXT NOT NULL,
+                photo_uri LONGTEXT,
+                status VARCHAR(30) DEFAULT 'open',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+            $stmt = $conn->query("SELECT * FROM laundry_tickets ORDER BY created_at DESC");
+            $tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode(["success" => true, "tickets" => $tickets]);
+            break;
+
+        case 'create_ticket':
+            if ($method !== 'POST') {
+                http_response_code(405);
+                echo json_encode(["success" => false, "error" => "Method not allowed"]);
+                exit();
+            }
+
+            // Ensure laundry_tickets table exists
+            $conn->exec("CREATE TABLE IF NOT EXISTS laundry_tickets (
+                id VARCHAR(64) PRIMARY KEY,
+                student_name VARCHAR(100) NOT NULL,
+                student_email VARCHAR(100),
+                student_id VARCHAR(50),
+                room_number VARCHAR(20),
+                hostel_block VARCHAR(60),
+                phone_number VARCHAR(30),
+                category VARCHAR(60),
+                category_id VARCHAR(40),
+                title VARCHAR(200) NOT NULL,
+                description TEXT NOT NULL,
+                photo_uri LONGTEXT,
+                status VARCHAR(30) DEFAULT 'open',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+            $tId = !empty($body['id']) ? $body['id'] : 'tkt_' . round(microtime(true) * 1000);
+            $sName = validateString($body['student_name'] ?? 'Student', 'Student Name', 1, 100);
+            $sEmail = $body['student_email'] ?? '';
+            $sId = $body['student_id'] ?? '';
+            $rNum = $body['room_number'] ?? '';
+            $hBlock = $body['hostel_block'] ?? '';
+            $pNum = $body['phone_number'] ?? '';
+            $cat = $body['category'] ?? 'General Issue';
+            $catId = $body['category_id'] ?? 'other';
+            $title = validateString($body['title'] ?? '', 'Ticket Title', 2, 200);
+            $desc = validateString($body['description'] ?? '', 'Description', 2, 5000);
+            $photo = $body['photo_uri'] ?? null;
+            $status = 'open';
+
+            $ins = $conn->prepare("INSERT INTO laundry_tickets (id, student_name, student_email, student_id, room_number, hostel_block, phone_number, category, category_id, title, description, photo_uri, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $ins->execute([$tId, $sName, $sEmail, $sId, $rNum, $hBlock, $pNum, $cat, $catId, $title, $desc, $photo, $status]);
+
+            http_response_code(201);
+            echo json_encode([
+                "success" => true,
+                "message" => "Ticket created successfully.",
+                "ticket" => [
+                    "id" => $tId,
+                    "student_name" => $sName,
+                    "student_email" => $sEmail,
+                    "student_id" => $sId,
+                    "room_number" => $rNum,
+                    "hostel_block" => $hBlock,
+                    "phone_number" => $pNum,
+                    "category" => $cat,
+                    "category_id" => $catId,
+                    "title" => $title,
+                    "description" => $desc,
+                    "photo_uri" => $photo,
+                    "status" => $status,
+                    "created_at" => date('c')
+                ]
+            ]);
+            break;
+
+        case 'update_ticket_status':
+            if ($method !== 'POST') {
+                http_response_code(405);
+                echo json_encode(["success" => false, "error" => "Method not allowed"]);
+                exit();
+            }
+
+            $tId = $body['ticket_id'] ?? '';
+            $status = in_array($body['status'] ?? '', ['open', 'in_progress', 'resolved']) ? $body['status'] : 'resolved';
+
+            if (empty($tId)) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "error" => "Ticket ID required."]);
+                exit();
+            }
+
+            $upd = $conn->prepare("UPDATE laundry_tickets SET status = ? WHERE id = ?");
+            $upd->execute([$status, $tId]);
+
+            echo json_encode(["success" => true, "message" => "Ticket updated successfully."]);
+            break;
+
         default:
             http_response_code(404);
             echo json_encode(["success" => false, "error" => "Endpoint not found."]);

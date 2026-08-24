@@ -28,13 +28,11 @@ import { useLaundry } from '../../context/LaundryContext';
 import { apiService } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PrivacyPolicyModal from '../common/PrivacyPolicyModal';
-import SupportModal from '../../components/SupportModal';
+import RaiseTicketModal from '../../components/RaiseTicketModal';
 
 export const ProfileScreen = () => {
   const { profile, updateProfile, signOut } = useAuth();
-  const { bookings } = useLaundry();
-
-  const [showSupportModal, setShowSupportModal] = useState(false);
+  const { bookings, tickets } = useLaundry();
 
   // Profile fields
   const [name, setName] = useState(profile?.full_name || '');
@@ -46,6 +44,18 @@ export const ProfileScreen = () => {
   const [hostelBlock, setHostelBlock] = useState(profile?.hostel_block || HOSTEL_BLOCKS[0]);
   const [academicYear, setAcademicYear] = useState(profile?.academic_year || ACADEMIC_COURSES[0]);
   const [avatarUri, setAvatarUri] = useState(profile?.avatar_url || null);
+  const [ticketModalVisible, setTicketModalVisible] = useState(false);
+
+  // Filter student tickets
+  const myTickets = useMemo(() => {
+    if (!tickets || !Array.isArray(tickets)) return [];
+    return tickets.filter(
+      (t) =>
+        (profile?.email && t.student_email?.toLowerCase() === profile.email.toLowerCase()) ||
+        (profile?.student_id && t.student_id === profile.student_id)
+    );
+  }, [tickets, profile]);
+
   const userAvatarKey = useMemo(() => {
     if (profile?.id) return `@dobix_user_avatar_${profile.id}`;
     if (profile?.email) return `@dobix_user_avatar_${profile.email.trim().toLowerCase()}`;
@@ -710,29 +720,6 @@ export const ProfileScreen = () => {
         )}
       </View>
 
-      {/* 🎫 Help & Support / Grievance Redressal Card */}
-      <View style={styles.supportCard}>
-        <View style={styles.supportCardLeft}>
-          <View style={styles.supportIconBox}>
-            <Ionicons name="chatbubbles" size={22} color="#4338CA" />
-          </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.supportCardTitle}>Need Help or Have a Complaint?</Text>
-            <Text style={styles.supportCardSub}>
-              Report missing/damaged clothes, software bugs, or delays directly to laundry staff.
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={styles.supportActionBtn}
-          onPress={() => setShowSupportModal(true)}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="add-circle-outline" size={16} color="#FFF" style={{ marginRight: 4 }} />
-          <Text style={styles.supportActionBtnText}>Submit / View Tickets</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* 🔒 Privacy, Security & Account Management */}
       <View style={styles.settingsCard}>
         <Text style={styles.cardSectionTitle}>Privacy & Account Settings</Text>
@@ -764,6 +751,65 @@ export const ProfileScreen = () => {
           </View>
           <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
         </TouchableOpacity>
+      </View>
+
+      {/* 🎫 24/7 HELP DESK & ISSUE TICKET HUB */}
+      <View style={styles.supportHubCard}>
+        <View style={styles.supportHubHeader}>
+          <View style={styles.supportIconWrap}>
+            <Ionicons name="chatbubbles" size={20} color="#4338CA" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={styles.supportHubTitle}>Need Help or Found a Bug?</Text>
+            <Text style={styles.supportHubSub}>Report app crashes, server errors, or laundry issues</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.raiseTicketActionBtn}
+          onPress={() => setTicketModalVisible(true)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="add-circle" size={18} color="#FFF" />
+          <Text style={styles.raiseTicketActionBtnText}>Raise a Ticket / Report Issue</Text>
+        </TouchableOpacity>
+
+        {/* My Submitted Tickets List */}
+        {myTickets.length > 0 && (
+          <View style={styles.myTicketsWrap}>
+            <Text style={styles.myTicketsHeader}>My Submitted Complaints ({myTickets.length})</Text>
+            {myTickets.map((tkt) => {
+              const isResolved = tkt.status === 'resolved';
+              return (
+                <View key={tkt.id} style={styles.ticketItemRow}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={styles.ticketItemTitle} numberOfLines={1}>
+                      {tkt.title}
+                    </Text>
+                    <Text style={styles.ticketItemCat}>
+                      {tkt.category} • {new Date(tkt.created_at).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.ticketStatusPill,
+                      isResolved ? styles.tktPillResolved : styles.tktPillOpen,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.ticketStatusPillText,
+                        isResolved ? styles.tktPillTextResolved : styles.tktPillTextOpen,
+                      ]}
+                    >
+                      {isResolved ? 'Resolved' : 'In Review'}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       {/* 🚪 Sign Out Button */}
@@ -1078,6 +1124,12 @@ export const ProfileScreen = () => {
       <PrivacyPolicyModal
         visible={showPrivacyModal}
         onClose={() => setShowPrivacyModal(false)}
+      />
+
+      {/* 🎫 Raise Support Ticket / Complaint Modal */}
+      <RaiseTicketModal
+        visible={ticketModalVisible}
+        onClose={() => setTicketModalVisible(false)}
       />
     </ScrollView>
   );
@@ -1427,23 +1479,228 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
   },
+  calendarLogBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  calendarLogBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  settingsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 14,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  actionRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  actionRowText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  actionDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 4,
+  },
+  supportHubCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 16,
+    boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+  },
+  supportHubHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  supportIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supportHubTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  supportHubSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  raiseTicketActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4338CA',
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  raiseTicketActionBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  myTicketsWrap: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  myTicketsHeader: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#475569',
+    marginBottom: 8,
+  },
+  ticketItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  ticketItemTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  ticketItemCat: {
+    fontSize: 10.5,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  ticketStatusPill: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  tktPillOpen: {
+    backgroundColor: '#FEF3C7',
+  },
+  tktPillResolved: {
+    backgroundColor: '#DCFCE7',
+  },
+  ticketStatusPillText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+  },
+  tktPillTextOpen: {
+    color: '#D97706',
+  },
+  tktPillTextResolved: {
+    color: '#15803D',
+  },
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0F172A',
+    paddingVertical: 14,
+    borderRadius: 14,
+    gap: 8,
+    marginTop: 4,
+  },
+  signOutBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  footerVersion: {
+    alignItems: 'center',
+    marginTop: 18,
+  },
+  footerVersionText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  editModalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   editModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 48 : 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  editModalBackBtn: {
+    padding: 4,
+  },
+  editModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalSaveBtn: {
+    backgroundColor: '#4338CA',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  modalSaveBtnText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  editModalBody: {
+    flex: 1,
   },
   modalAvatarCenter: {
     alignItems: 'center',
     marginBottom: 20,
-  },
-  avatarWrap: {
-    position: 'relative',
   },
   avatarImgLarge: {
     width: 80,
     height: 80,
     borderRadius: 40,
     borderWidth: 2.5,
+    borderColor: '#4338CA',
+  },
+  avatarFallbackLarge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#4338CA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarFallbackTextLarge: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#FFFFFF',
   },
   cameraIconBadgeLarge: {
     position: 'absolute',
@@ -1459,9 +1716,10 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   avatarHintText: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 6,
+    fontSize: 12,
+    color: '#4338CA',
+    fontWeight: '700',
+    marginTop: 8,
   },
   modalField: {
     marginBottom: 14,
@@ -1470,7 +1728,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#475569',
-    marginBottom: 6,
+    marginBottom: 5,
   },
   modalInput: {
     backgroundColor: '#F8FAFC',
@@ -1479,7 +1737,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 13,
+    fontSize: 13.5,
     color: '#0F172A',
   },
   genderModalBtn: {
@@ -1487,9 +1745,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#F8FAFC',
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     gap: 6,
@@ -1499,9 +1757,39 @@ const styles = StyleSheet.create({
     borderColor: '#4338CA',
   },
   genderModalBtnText: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '700',
     color: '#475569',
+  },
+  chipModalBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  chipModalBtnActive: {
+    backgroundColor: '#4338CA',
+    borderColor: '#4338CA',
+  },
+  chipModalBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  saveActionBtn: {
+    backgroundColor: '#4338CA',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  saveActionBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '800',
   },
   dropdownPickerBtn: {
     flexDirection: 'row',
@@ -1511,8 +1799,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   dropdownPickerLeft: {
     flexDirection: 'row',
@@ -1520,7 +1808,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dropdownPickerText: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#0F172A',
   },

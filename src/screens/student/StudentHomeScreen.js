@@ -106,12 +106,6 @@ export const StudentHomeScreen = ({
     >
       {/* 🌟 Top Greeting Card */}
       <View style={styles.greetingCard}>
-        {/* RVS University Pill */}
-        <View style={styles.univBrandPill}>
-          <Ionicons name="school" size={12} color="#4338CA" />
-          <Text style={styles.univBrandPillText}>RVS UNIVERSITY • SMART HOSTEL PORTAL</Text>
-        </View>
-
         <View style={styles.greetingTopRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.greetingName}>Hi {studentName},</Text>
@@ -135,16 +129,10 @@ export const StudentHomeScreen = ({
           onPress={() => setScheduleModalVisible(true)}
           activeOpacity={0.7}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-            <View style={styles.scheduleMiniDot} />
-            <Text style={styles.viewScheduleText}>
-              <Text style={{ fontWeight: '800' }}>{yearConfig.category}:</Text> Drop {yearConfig.dropoffDay} → Return {yearConfig.pickupDay}
-            </Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={styles.viewScheduleAction}>View Matrix</Text>
-            <Ionicons name="chevron-forward" size={16} color="#0284C7" />
-          </View>
+          <Text style={styles.viewScheduleText}>
+            {yearConfig.category}: Drop {yearConfig.dropoffDay} → Collect {yearConfig.pickupDay}
+          </Text>
+          <Ionicons name="chevron-forward" size={18} color="#0284C7" />
         </TouchableOpacity>
       </View>
 
@@ -281,57 +269,6 @@ export const StudentHomeScreen = ({
             {readyBookings.length > 0 ? '✨ 1 Bag Ready!' : 'Present at counter'}
           </Text>
         </TouchableOpacity>
-      </View>
-
-      {/* 📅 WEEKLY LAUNDRY ROSTER SECTION */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <Text style={styles.sectionHeaderNoMargin}>WEEKLY LAUNDRY MATRIX</Text>
-        <TouchableOpacity onPress={() => setScheduleModalVisible(true)}>
-          <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#4338CA' }}>Full Schedule ➔</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.weeklyMatrixCard}>
-        {[
-          { day: 'MON', title: 'B.Tech 1st & 2nd Year', drop: 'Monday', pick: 'Wednesday', time: '2 Days', color: '#2563EB', bg: '#EFF6FF' },
-          { day: 'TUE', title: 'B.Tech 3rd & 4th Year (MBA, MCA)', drop: 'Tuesday', pick: 'Thursday', time: '2 Days', color: '#7C3AED', bg: '#FAF5FF' },
-          { day: 'WED', title: 'Diploma 1st-2nd Yr (Nursing, Pharmacy, BBT)', drop: 'Wednesday', pick: 'Friday', time: '2 Days', color: '#0284C7', bg: '#F0F9FF' },
-          { day: 'THU', title: 'Girls Hostel (All Branches & Years)', drop: 'Thursday', pick: 'Saturday', time: '2 Days', color: '#DB2777', bg: '#FDF2F8' },
-          { day: 'FRI', title: 'Nepal, Andaman, South Africa & Other States', drop: 'Friday', pick: 'Monday', time: '3 Days', color: '#059669', bg: '#ECFDF5' },
-          { day: 'SAT', title: 'Bihar State Batch (Pick up on Tuesday)', drop: 'Saturday', pick: 'Tuesday', time: '3 Days', color: '#D97706', bg: '#FFFBEB' },
-        ].map((item, idx) => {
-          const isMyDay = yearConfig.dropoffDay === item.drop && yearConfig.pickupDay === item.pick;
-          return (
-            <View
-              key={idx}
-              style={[
-                styles.matrixItemRow,
-                { backgroundColor: item.bg },
-                isMyDay && { borderWidth: 2, borderColor: item.color, backgroundColor: '#FFFFFF' },
-              ]}
-            >
-              <View style={[styles.matrixDayBadge, { backgroundColor: item.color }]}>
-                <Text style={styles.matrixDayBadgeText}>{item.day}</Text>
-              </View>
-
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.matrixBatchTitle, isMyDay && { color: item.color, fontWeight: '900' }]}>
-                    {item.title}
-                  </Text>
-                  {isMyDay && (
-                    <View style={[styles.myBatchPill, { backgroundColor: item.color }]}>
-                      <Text style={styles.myBatchPillText}>YOU</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.matrixTurnaroundText}>
-                  Drop {item.drop} ➔ Get on <Text style={{ fontWeight: '800', color: '#0F172A' }}>{item.pick}</Text> ({item.time})
-                </Text>
-              </View>
-            </View>
-          );
-        })}
       </View>
 
       {/* 🛠️ TOOLS SECTION */}
@@ -519,36 +456,6 @@ const styles = StyleSheet.create({
     fontSize: 8.5,
     color: '#64748B',
   },
-  univBrandPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#EEF2FF',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-  },
-  univBrandPillText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#4338CA',
-    letterSpacing: 0.5,
-  },
-  scheduleMiniDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#0284C7',
-  },
-  viewScheduleAction: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#0284C7',
-  },
   cardDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
@@ -560,8 +467,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   viewScheduleText: {
-    fontSize: 12,
-    color: '#0369A1',
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0284C7',
   },
   sectionHeader: {
     fontSize: 12,
@@ -569,61 +477,6 @@ const styles = StyleSheet.create({
     color: '#475569',
     letterSpacing: 0.8,
     marginBottom: 10,
-  },
-  sectionHeaderNoMargin: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#475569',
-    letterSpacing: 0.8,
-  },
-  weeklyMatrixCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 20,
-    gap: 8,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-  },
-  matrixItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 12,
-  },
-  matrixDayBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  matrixDayBadgeText: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  matrixBatchTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  myBatchPill: {
-    paddingVertical: 1,
-    paddingHorizontal: 6,
-    borderRadius: 6,
-  },
-  myBatchPillText: {
-    fontSize: 9,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  matrixTurnaroundText: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 2,
   },
   essentialsGrid: {
     flexDirection: 'row',

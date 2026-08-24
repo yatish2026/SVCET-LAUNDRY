@@ -6,6 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
+  Modal,
+  Image,
+  Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
@@ -18,19 +22,21 @@ export const AdminDashboardScreen = ({
   onNavigateToApprovals,
   onNavigateToSubmissions,
   onNavigateToReports,
-  onNavigateToTickets,
 }) => {
   const { profile } = useAuth();
   const {
     bookings,
-    tickets,
     grandTotalClothes,
     yearWiseStats,
+    tickets = [],
+    updateTicketStatus,
     refreshData,
   } = useLaundry();
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [showQRScanner, setShowQRScanner] = React.useState(false);
+  const [selectedTicket, setSelectedTicket] = React.useState(null);
+  const [ticketFilter, setTicketFilter] = React.useState('all'); // 'all' | 'open' | 'resolved'
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -48,6 +54,13 @@ export const AdminDashboardScreen = ({
   ).length;
 
   const readyCount = bookings.filter((b) => b.status === 'ready_for_pickup').length;
+  const openTicketsCount = (tickets || []).filter((t) => t.status !== 'resolved').length;
+
+  const filteredTickets = (tickets || []).filter((t) => {
+    if (ticketFilter === 'open') return t.status !== 'resolved';
+    if (ticketFilter === 'resolved') return t.status === 'resolved';
+    return true;
+  });
 
   const currentDateStr = new Date().toLocaleDateString('en-US', {
     weekday: 'short',
@@ -208,35 +221,6 @@ export const AdminDashboardScreen = ({
         </TouchableOpacity>
       </View>
 
-      {/* 🎫 Student Support & Complaints Hub */}
-      <TouchableOpacity
-        style={styles.complaintsBanner}
-        onPress={onNavigateToTickets}
-        activeOpacity={0.85}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-          <View style={styles.complaintsIconWrap}>
-            <Ionicons name="chatbubbles" size={22} color="#FFF" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.complaintsTitle}>Student Support & Grievances</Text>
-              {(tickets?.filter((t) => t.status === 'open').length || 0) > 0 && (
-                <View style={styles.openTicketsBadge}>
-                  <Text style={styles.openTicketsBadgeText}>
-                    {tickets.filter((t) => t.status === 'open').length} New
-                  </Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.complaintsSub}>
-              View missing clothes reports, software bugs, & reply to students
-            </Text>
-          </View>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color="#4338CA" />
-      </TouchableOpacity>
-
       {/* 📊 Year-Wise Breakdown Section */}
       <Text style={styles.sectionHeader}>COLLEGE YEAR BREAKDOWN</Text>
 
@@ -308,6 +292,222 @@ export const AdminDashboardScreen = ({
           );
         })}
       </View>
+
+      {/* 🎫 STUDENT COMPLAINTS & TECHNICAL ISSUES HUB */}
+      <View style={styles.complaintsHeaderRow}>
+        <Text style={styles.sectionHeader}>STUDENT COMPLAINTS & ISSUES</Text>
+        {openTicketsCount > 0 && (
+          <View style={styles.openTicketsBadge}>
+            <Text style={styles.openTicketsBadgeText}>{openTicketsCount} Unresolved</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Filter Tabs */}
+      <View style={styles.tktFilterRow}>
+        {[
+          { id: 'all', label: `All (${tickets.length})` },
+          { id: 'open', label: `Open (${openTicketsCount})` },
+          { id: 'resolved', label: `Resolved (${tickets.length - openTicketsCount})` },
+        ].map((tab) => (
+          <TouchableOpacity
+            key={tab.id}
+            style={[styles.tktFilterTab, ticketFilter === tab.id && styles.tktFilterTabActive]}
+            onPress={() => setTicketFilter(tab.id)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.tktFilterText, ticketFilter === tab.id && styles.tktFilterTextActive]}>
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {filteredTickets.length === 0 ? (
+        <View style={styles.emptyTicketsBox}>
+          <Ionicons name="checkmark-circle" size={36} color="#10B981" />
+          <Text style={styles.emptyTicketsTitle}>
+            {ticketFilter === 'open' ? 'No Open Complaints' : 'No Tickets Logged'}
+          </Text>
+          <Text style={styles.emptyTicketsSub}>
+            All student laundry issues and app server complaints are resolved!
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.ticketsList}>
+          {filteredTickets.map((tkt) => {
+            const isResolved = tkt.status === 'resolved';
+            return (
+              <TouchableOpacity
+                key={tkt.id}
+                style={[styles.ticketCard, isResolved && styles.ticketCardResolved]}
+                onPress={() => setSelectedTicket(tkt)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.ticketCardTop}>
+                  <View style={[styles.catBadge, { backgroundColor: isResolved ? '#DCFCE7' : '#FEF3C7' }]}>
+                    <Text style={[styles.catBadgeText, { color: isResolved ? '#15803D' : '#D97706' }]}>
+                      {tkt.category || 'Complaint'}
+                    </Text>
+                  </View>
+                  <Text style={styles.ticketDate}>
+                    {new Date(tkt.created_at).toLocaleDateString()}
+                  </Text>
+                </View>
+
+                <Text style={styles.ticketTitle} numberOfLines={1}>
+                  {tkt.title}
+                </Text>
+                <Text style={styles.ticketDesc} numberOfLines={2}>
+                  {tkt.description}
+                </Text>
+
+                <View style={styles.ticketCardFooter}>
+                  <View style={styles.studentMeta}>
+                    <Ionicons name="person-outline" size={13} color="#64748B" />
+                    <Text style={styles.studentMetaText}>
+                      {tkt.student_name} • Room {tkt.room_number || 'N/A'} ({tkt.student_id || ''})
+                    </Text>
+                  </View>
+
+                  {tkt.photo_uri && (
+                    <View style={styles.hasPhotoPill}>
+                      <Ionicons name="image" size={12} color="#4338CA" />
+                      <Text style={styles.hasPhotoPillText}>Photo Attached</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
+      {/* 📋 TICKET DETAIL & RESOLUTION MODAL */}
+      <Modal
+        visible={!!selectedTicket}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSelectedTicket(null)}
+      >
+        <View style={styles.tktModalOverlay}>
+          <TouchableOpacity
+            style={styles.tktModalBackdrop}
+            activeOpacity={1}
+            onPress={() => setSelectedTicket(null)}
+          />
+          <View style={styles.tktModalSheet}>
+            {selectedTicket && (
+              <ScrollView showsVerticalScrollIndicator={true} contentContainerStyle={{ padding: 20 }}>
+                {/* Modal Header */}
+                <View style={styles.tktModalHeader}>
+                  <View style={{ flex: 1 }}>
+                    <View
+                      style={[
+                        styles.catBadge,
+                        {
+                          backgroundColor:
+                            selectedTicket.status === 'resolved' ? '#DCFCE7' : '#FEF3C7',
+                          alignSelf: 'flex-start',
+                          marginBottom: 6,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.catBadgeText,
+                          {
+                            color:
+                              selectedTicket.status === 'resolved' ? '#15803D' : '#D97706',
+                          },
+                        ]}
+                      >
+                        {selectedTicket.status === 'resolved' ? 'RESOLVED' : 'OPEN / IN REVIEW'}
+                      </Text>
+                    </View>
+                    <Text style={styles.tktModalTitle}>{selectedTicket.title}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setSelectedTicket(null)} style={{ padding: 4 }}>
+                    <Ionicons name="close-circle" size={26} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Student Info Box */}
+                <View style={styles.tktStudentCard}>
+                  <Text style={styles.tktStudentName}>{selectedTicket.student_name}</Text>
+                  <Text style={styles.tktStudentSub}>
+                    Roll No: {selectedTicket.student_id || 'N/A'} • Room:{' '}
+                    {selectedTicket.room_number || 'N/A'} (
+                    {selectedTicket.hostel_block || 'Hostel'})
+                  </Text>
+                  {selectedTicket.phone_number ? (
+                    <Text style={styles.tktStudentPhone}>
+                      📞 Contact Phone: {selectedTicket.phone_number}
+                    </Text>
+                  ) : null}
+                  {selectedTicket.student_email ? (
+                    <Text style={styles.tktStudentEmail}>
+                      ✉️ Email: {selectedTicket.student_email}
+                    </Text>
+                  ) : null}
+                </View>
+
+                {/* Description */}
+                <Text style={styles.tktDetailLabel}>Detailed Issue Explanation:</Text>
+                <View style={styles.tktDescBox}>
+                  <Text style={styles.tktDescFull}>{selectedTicket.description}</Text>
+                </View>
+
+                {/* Photo Preview if attached */}
+                {selectedTicket.photo_uri && (
+                  <View style={{ marginTop: 14 }}>
+                    <Text style={styles.tktDetailLabel}>Attached Image / Proof:</Text>
+                    <Image
+                      source={{ uri: selectedTicket.photo_uri }}
+                      style={styles.tktFullImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                )}
+
+                {/* Resolution Action */}
+                <View style={styles.tktActionRow}>
+                  {selectedTicket.status !== 'resolved' ? (
+                    <TouchableOpacity
+                      style={styles.resolveActionBtn}
+                      onPress={async () => {
+                        await updateTicketStatus(selectedTicket.id, 'resolved');
+                        setSelectedTicket({ ...selectedTicket, status: 'resolved' });
+                        if (Platform.OS === 'web') {
+                          window.alert('✅ Issue Ticket Marked as Resolved!');
+                        } else {
+                          Alert.alert('Resolved', 'Ticket has been marked as resolved.');
+                        }
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="checkmark-circle" size={18} color="#FFF" />
+                      <Text style={styles.resolveActionBtnText}>Mark as Resolved</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.reopenActionBtn}
+                      onPress={async () => {
+                        await updateTicketStatus(selectedTicket.id, 'open');
+                        setSelectedTicket({ ...selectedTicket, status: 'open' });
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="refresh" size={16} color="#4338CA" />
+                      <Text style={styles.reopenActionBtnText}>Re-open Ticket</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* QR Scanner Modal for Handover */}
       <QRScannerModal
@@ -562,46 +762,270 @@ const styles = StyleSheet.create({
     height: 24,
     backgroundColor: '#F1F5F9',
   },
-  complaintsBanner: {
+  complaintsHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 6,
+    marginBottom: 6,
+  },
+  openTicketsBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  openTicketsBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  tktFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  tktFilterTab: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1.5,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  tktFilterTabActive: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#4338CA',
+  },
+  tktFilterText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  tktFilterTextActive: {
+    color: '#4338CA',
+    fontWeight: '800',
+  },
+  emptyTicketsBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: 20,
-    boxShadow: '0 4px 14px rgba(67, 56, 202, 0.08)',
   },
-  complaintsIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#4338CA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  complaintsTitle: {
+  emptyTicketsTitle: {
     fontSize: 14,
     fontWeight: '800',
+    color: '#1E293B',
+    marginTop: 8,
+  },
+  emptyTicketsSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 3,
+  },
+  ticketsList: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  ticketCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#FEE2E2',
+    boxShadow: '0 2px 8px rgba(220, 38, 38, 0.06)',
+  },
+  ticketCardResolved: {
+    borderColor: '#E2E8F0',
+    boxShadow: 'none',
+    opacity: 0.85,
+  },
+  ticketCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  catBadge: {
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  catBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  ticketDate: {
+    fontSize: 10,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  ticketTitle: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  ticketDesc: {
+    fontSize: 12,
+    color: '#475569',
+    lineHeight: 16,
+    marginBottom: 8,
+  },
+  ticketCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F8FAFC',
+  },
+  studentMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+  },
+  studentMetaText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  hasPhotoPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+  },
+  hasPhotoPillText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#4338CA',
+  },
+  tktModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  tktModalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  tktModalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '85%',
+    minHeight: 380,
+  },
+  tktModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  tktModalTitle: {
+    fontSize: 17,
+    fontWeight: '900',
     color: '#0F172A',
   },
-  complaintsSub: {
+  tktStudentCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
+  },
+  tktStudentName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  tktStudentSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  tktStudentPhone: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#4338CA',
+    marginTop: 4,
+  },
+  tktStudentEmail: {
     fontSize: 11,
     color: '#64748B',
     marginTop: 2,
   },
-  openTicketsBadge: {
-    backgroundColor: '#EF4444',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 8,
+  tktDetailLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#334155',
+    marginBottom: 6,
   },
-  openTicketsBadgeText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: '900',
+  tktDescBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  tktDescFull: {
+    fontSize: 13,
+    color: '#1E293B',
+    lineHeight: 18,
+  },
+  tktFullImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 12,
+    backgroundColor: '#0F172A',
+    marginTop: 4,
+  },
+  tktActionRow: {
+    marginTop: 18,
+  },
+  resolveActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#16A34A',
+    paddingVertical: 14,
+    borderRadius: 14,
+    gap: 8,
+  },
+  resolveActionBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  reopenActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    gap: 6,
+  },
+  reopenActionBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4338CA',
   },
 });
 

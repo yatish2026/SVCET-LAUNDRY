@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from '../services/apiService';
 import { calculateYearSchedule } from '../constants/schedule';
 
@@ -11,61 +10,26 @@ export const LaundryProvider = ({ children }) => {
   const [tickets, setTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isServerConnected, setIsServerConnected] = useState(true);
-  const [serverStatusMessage, setServerStatusMessage] = useState('RVS University Live');
+  const [serverStatusMessage, setServerStatusMessage] = useState('GoDaddy Server Connected');
 
-  // Load Support Tickets from storage
-  useEffect(() => {
-    const loadTickets = async () => {
-      try {
-        const stored = await AsyncStorage.getItem('@dobix_support_tickets');
-        if (stored) {
-          setTickets(JSON.parse(stored));
-        } else {
-          const sampleTickets = [
-            {
-              id: 'TKT-1001',
-              user_id: 'usr_sample',
-              student_name: 'Rahul Sharma',
-              student_id: '21RVS045',
-              student_email: 'student@rvs.edu.in',
-              room_number: '204',
-              hostel_block: 'Block A (Boys Hostel)',
-              phone_number: '9876543210',
-              category: 'Clothes Missing / Delay',
-              subject: 'Blue Hoodie not returned in Friday wash',
-              description: 'I submitted 5 clothes on Wednesday intake, but the navy blue hoodie was not in the returned laundry bag. Please check with the laundry counter.',
-              photos: [],
-              status: 'in_progress', // 'open' | 'in_progress' | 'resolved'
-              created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-              admin_reply: 'Our team is checking the Friday wash batch records and will update you shortly.',
-            },
-          ];
-          setTickets(sampleTickets);
-          await AsyncStorage.setItem('@dobix_support_tickets', JSON.stringify(sampleTickets));
-        }
-      } catch (e) {
-        console.log('Error loading tickets:', e);
-      }
-    };
-    loadTickets();
-  }, []);
-
-  // Fetch all bookings and notifications from GoDaddy API
+  // Fetch all bookings, notifications, and tickets
   const refreshData = useCallback(async () => {
     try {
-      const [fetchedBookings, fetchedNotifs] = await Promise.all([
+      const [fetchedBookings, fetchedNotifs, fetchedTickets] = await Promise.all([
         apiService.getBookings(),
         apiService.getNotifications(),
+        apiService.getTickets(),
       ]);
 
       setBookings(fetchedBookings);
       setNotifications(fetchedNotifs);
+      setTickets(fetchedTickets);
       setIsServerConnected(true);
-      setServerStatusMessage('RVS University Live');
+      setServerStatusMessage('GoDaddy rvsu.org Live');
     } catch (err) {
-      console.log('Error refreshing data:', err);
+      console.log('Error refreshing GoDaddy data:', err);
       setIsServerConnected(false);
-      setServerStatusMessage('Connecting...');
+      setServerStatusMessage('Connecting to GoDaddy...');
     }
   }, []);
 
@@ -75,46 +39,6 @@ export const LaundryProvider = ({ children }) => {
     const interval = setInterval(refreshData, 10000);
     return () => clearInterval(interval);
   }, [refreshData]);
-
-  // Create a new support complaint ticket
-  const createTicket = async (ticketData) => {
-    const newTicket = {
-      id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
-      status: 'open',
-      created_at: new Date().toISOString(),
-      admin_reply: '',
-      photos: [],
-      ...ticketData,
-    };
-    const updated = [newTicket, ...tickets];
-    setTickets(updated);
-    try {
-      await AsyncStorage.setItem('@dobix_support_tickets', JSON.stringify(updated));
-    } catch (e) {
-      console.log('Error saving ticket:', e);
-    }
-    return newTicket;
-  };
-
-  // Update ticket status & reply (Staff / Admin)
-  const updateTicketStatus = async (ticketId, newStatus, adminReply = '') => {
-    const updated = tickets.map((t) =>
-      t.id === ticketId
-        ? {
-            ...t,
-            status: newStatus,
-            admin_reply: adminReply || t.admin_reply,
-            resolved_at: newStatus === 'resolved' ? new Date().toISOString() : t.resolved_at,
-          }
-        : t
-    );
-    setTickets(updated);
-    try {
-      await AsyncStorage.setItem('@dobix_support_tickets', JSON.stringify(updated));
-    } catch (e) {
-      console.log('Error updating ticket:', e);
-    }
-  };
 
   // Create a new laundry booking
   const createBooking = async ({
@@ -179,6 +103,21 @@ export const LaundryProvider = ({ children }) => {
     return advanceBookingStatus(bookingId, 'cancelled');
   };
 
+  // Create Support Ticket / Complaint
+  const createTicket = async (ticketData) => {
+    const newTkt = await apiService.createTicket(ticketData);
+    setTickets((prev) => [newTkt, ...prev.filter((t) => t.id !== newTkt.id)]);
+    return newTkt;
+  };
+
+  // Update Support Ticket Status
+  const updateTicketStatus = async (ticketId, newStatus) => {
+    setTickets((prev) =>
+      prev.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t))
+    );
+    await apiService.updateTicketStatus(ticketId, newStatus);
+  };
+
   const markNotificationRead = (notifId) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notifId ? { ...n, is_read: 1 } : n))
@@ -229,10 +168,10 @@ export const LaundryProvider = ({ children }) => {
         createBooking,
         advanceBookingStatus,
         cancelBooking,
-        markNotificationRead,
-        clearAllNotifications,
         createTicket,
         updateTicketStatus,
+        markNotificationRead,
+        clearAllNotifications,
       }}
     >
       {children}

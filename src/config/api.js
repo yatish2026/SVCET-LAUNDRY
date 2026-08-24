@@ -10,6 +10,9 @@ export const API_ENDPOINTS = {
   UPDATE_STATUS: `${API_BASE_URL}?action=update_status`,
   GET_NOTIFICATIONS: `${API_BASE_URL}?action=get_notifications`,
   DELETE_ACCOUNT: `${API_BASE_URL}?action=delete_account`,
+  GET_TICKETS: `${API_BASE_URL}?action=get_tickets`,
+  CREATE_TICKET: `${API_BASE_URL}?action=create_ticket`,
+  UPDATE_TICKET_STATUS: `${API_BASE_URL}?action=update_ticket_status`,
 };
 
 export default API_BASE_URL;
