@@ -7,10 +7,14 @@ export const STUDENT_GENDERS = [
 
 export const STUDENT_LOCATIONS = [
   'Andhra Pradesh',
-  'Kerala',
+  'Telangana',
+  'Karnataka',
   'Tamil Nadu',
+  'Kerala',
   'Bihar',
   'Nepal',
+  'Rajasthan',
+  'Punjab',
   'Andaman & Nicobar',
   'South Africa',
   'Other States / International',
