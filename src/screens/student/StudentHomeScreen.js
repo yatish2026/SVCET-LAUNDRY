@@ -323,12 +323,12 @@ export const StudentHomeScreen = ({
 
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
               {[
-                { title: '1st Year B.Tech (AP, TS, KA, TN, KL, RJ, PB)', drop: 'Friday', pick: 'Monday', color: '#2563EB', key: '1st' },
-                { title: '2nd B.Tech & 1st Year Diploma', drop: 'Saturday', pick: 'Tuesday', color: '#0284C7', key: '2nd' },
-                { title: '3rd & 4th Year B.Tech, MBA, MCA', drop: 'Monday', pick: 'Wednesday', color: '#7C3AED', key: '3rd' },
-                { title: 'Nepal, Andaman, South Africa, Dip 2, Nursing, Pharmacy, BBT', drop: 'Tuesday', pick: 'Thursday', color: '#059669', key: 'nepal' },
-                { title: 'Bihar State Batch', drop: 'Wednesday', pick: 'Friday', color: '#D97706', key: 'bihar' },
-                { title: 'Girls Hostel (All Branches & Years)', drop: 'Tuesday', pick: 'Friday', color: '#DB2777', key: 'girls' },
+                { title: 'Monday: 3rd & 4th Year B.Tech, MBA, MCA', drop: 'Monday', pick: 'Wednesday', color: '#7C3AED', key: 'mon' },
+                { title: 'Tuesday: Nepal, Andaman, Africa, Dip 2, Nursing, Pharmacy, BBT', drop: 'Tuesday', pick: 'Thursday', color: '#059669', key: 'tue' },
+                { title: 'Wednesday: Bihar State Batch', drop: 'Wednesday', pick: 'Friday', color: '#D97706', key: 'wed' },
+                { title: 'Thursday: Girls Hostel (All Branches & Years)', drop: 'Thursday', pick: 'Saturday', color: '#DB2777', key: 'thu' },
+                { title: 'Friday: 1st Year B.Tech Batch', drop: 'Friday', pick: 'Monday', color: '#2563EB', key: 'fri' },
+                { title: 'Saturday: 2nd Year B.Tech & 1st Year Diploma', drop: 'Saturday', pick: 'Tuesday', color: '#0284C7', key: 'sat' },
               ].map((item, idx) => {
                 const isCurrent = yearConfig.dropoffDay === item.drop && yearConfig.pickupDay === item.pick;
                 return (
