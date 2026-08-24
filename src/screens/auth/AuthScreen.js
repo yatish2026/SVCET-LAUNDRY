@@ -231,19 +231,23 @@ export const AuthScreen = () => {
       >
         {/* 🌟 3D Radiant University Brand Header */}
         <View style={styles.brandHeader}>
-          <View style={styles.brandLogoContainer3D}>
-            <Image
-              source={require('../../assets/rvs_logo.png')}
-              style={styles.brandLogo}
-              resizeMode="cover"
-            />
+          <View style={styles.brandLogoHalo}>
+            <View style={styles.brandLogoContainer3D}>
+              <Image
+                source={require('../../assets/rvs_logo.png')}
+                style={styles.brandLogo}
+                resizeMode="cover"
+              />
+            </View>
           </View>
+
           <View style={styles.brandUnivPill}>
-            <Ionicons name="school" size={13} color="#4338CA" />
+            <Ionicons name="school" size={14} color="#4338CA" />
             <Text style={styles.brandUnivPillText}>RVS UNIVERSITY</Text>
           </View>
+
           <Text style={styles.brandTitle}>DobiX</Text>
-          <Text style={styles.brandSubtitle}>Smart Hostel Laundry Portal</Text>
+          <Text style={styles.brandSubtitle}>🧺 Smart Hostel Laundry Portal ✨</Text>
         </View>
 
         {/* 🌟 Main Authentication Card */}
@@ -1041,60 +1045,67 @@ const styles = StyleSheet.create({
   },
   brandHeader: {
     alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 6,
+    marginBottom: 22,
+    marginTop: 8,
+  },
+  brandLogoHalo: {
+    padding: 4,
+    borderRadius: 66,
+    backgroundColor: '#EEF2FF',
+    boxShadow: '0 14px 34px rgba(67, 56, 202, 0.25)',
+    elevation: 12,
+    marginBottom: 12,
   },
   brandLogoContainer3D: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 0,
     overflow: 'hidden',
-    borderWidth: 3,
+    borderWidth: 3.5,
     borderColor: '#4338CA',
-    boxShadow: '0 12px 28px rgba(67, 56, 202, 0.3)',
-    elevation: 8,
-    marginBottom: 12,
   },
   brandLogo: {
     width: '100%',
     height: '100%',
-    borderRadius: 48,
-    transform: [{ scale: 1.15 }],
+    borderRadius: 60,
+    transform: [{ scale: 1.16 }],
   },
   brandUnivPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
     backgroundColor: '#EEF2FF',
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
+    paddingVertical: 5,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#A5B4FC',
     marginBottom: 6,
+    boxShadow: '0 2px 8px rgba(67, 56, 202, 0.1)',
   },
   brandUnivPillText: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: '#4338CA',
-    letterSpacing: 0.8,
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#3730A3',
+    letterSpacing: 1.2,
   },
   brandTitle: {
-    fontSize: 32,
+    fontSize: 38,
     fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   brandSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: 13.5,
+    color: '#475569',
     fontWeight: '700',
     marginTop: 2,
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
   card: {
     width: '100%',
