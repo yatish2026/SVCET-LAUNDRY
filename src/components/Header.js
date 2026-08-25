@@ -57,14 +57,17 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
             <Ionicons name="menu-outline" size={26} color="#0F172A" />
           </TouchableOpacity>
 
-          {/* Center College Emblem Logo & Decent VASTRA App Name */}
+          {/* Center College Emblem Logo & Sunset Crimson VASTRA App Name */}
           <View style={styles.logoContainer}>
             <Image
               source={require('../../assets/rvs_logo.png')}
               style={styles.collegeLogo}
               resizeMode="contain"
             />
-            <Text style={styles.headerAppName}>VASTRA</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={[styles.headerAppName, { color: '#E11D48' }]}>VAS</Text>
+              <Text style={[styles.headerAppName, { color: '#F97316' }]}>TRA</Text>
+            </View>
           </View>
 
           {/* Right Actions: Notifications & Logout */}
@@ -161,8 +164,7 @@ const styles = StyleSheet.create({
   headerAppName: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#1E3A8A', // Deep Royal Sapphire - decent & premium
-    letterSpacing: 1.2,
+    letterSpacing: 1,
   },
   rightActions: {
     flexDirection: 'row',

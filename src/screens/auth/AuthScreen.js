@@ -258,10 +258,11 @@ export const AuthScreen = () => {
             </View>
           </View>
 
-          {/* Bottom: Decent Premium VASTRA Brand Name & Subtitle */}
+          {/* Bottom: Sunset Crimson & Coral VASTRA Brand Name & Subtitle */}
           <View style={styles.vastraSection}>
             <View style={styles.vastraLettersRow}>
-              <Text style={styles.vastraMainTitle}>VASTRA</Text>
+              <Text style={[styles.vastraMainTitle, { color: '#E11D48' }]}>VAS</Text>
+              <Text style={[styles.vastraMainTitle, { color: '#F97316' }]}>TRA</Text>
               <View style={styles.vastraSparkleBadge}>
                 <Text style={styles.vastraSparkleText}>✨ Smart Portal</Text>
               </View>
@@ -1188,8 +1189,7 @@ const styles = StyleSheet.create({
   vastraMainTitle: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#1E3A8A', // Deep Royal Sapphire - decent, rich & premium
-    letterSpacing: 2.5,
+    letterSpacing: 2,
   },
   vastraSparkleBadge: {
     backgroundColor: '#FEF3C7',

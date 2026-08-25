@@ -222,7 +222,10 @@ export const SideMenuDrawer = ({
               resizeMode="contain"
             />
             <View style={{ marginLeft: 8 }}>
-              <Text style={styles.footerAppTitle}>VASTRA</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={[styles.footerAppTitle, { color: '#E11D48' }]}>VAS</Text>
+                <Text style={[styles.footerAppTitle, { color: '#F97316' }]}>TRA</Text>
+              </View>
               <Text style={styles.footerAppSub}>RVS University • Smart Laundry Portal</Text>
             </View>
           </View>
@@ -374,8 +377,7 @@ const styles = StyleSheet.create({
   footerAppTitle: {
     fontSize: 13,
     fontWeight: '900',
-    color: '#1E3A8A', // Deep Royal Sapphire - decent & premium
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   footerAppSub: {
     fontSize: 9,
