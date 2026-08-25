@@ -14,6 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
 import { useLaundry } from '../../context/LaundryContext';
 import { ACADEMIC_COURSES } from '../../constants/schedule';
+import AdminCalendarAnalyticsModal from '../../components/AdminCalendarAnalyticsModal';
+import StudentAuditLedgerModal from '../../components/StudentAuditLedgerModal';
+import AdminStudentCensusModal from '../../components/AdminStudentCensusModal';
+import AdminScheduleEditorModal from '../../components/AdminScheduleEditorModal';
 
 export const REPORT_FILTER_SECTIONS = [
   { id: 'TIMEFRAME', label: 'Time Period', icon: 'calendar' },
@@ -43,6 +47,12 @@ export const ReportsExportScreen = () => {
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [showFilterPickerModal, setShowFilterPickerModal] = useState(false);
   const [activeFilterSection, setActiveFilterSection] = useState('TIMEFRAME');
+
+  // Modals for the 4 analytics & audit sections
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showStudentAuditModal, setShowStudentAuditModal] = useState(false);
+  const [showCensusModal, setShowCensusModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   // Available months extracted from bookings
   const availableMonths = useMemo(() => {
@@ -331,60 +341,105 @@ export const ReportsExportScreen = () => {
         </View>
       </View>
 
-      {/* 📑 Comprehensive Export Scope & Information Card */}
+      {/* 📊 FOUR CALENDAR, AUDIT & CENSUS SECTIONS */}
       <View style={styles.sectionCard}>
-        <View style={styles.exportScopeHeader}>
-          <View style={styles.scopeIconBox}>
-            <Ionicons name="grid-outline" size={20} color="#059669" />
-          </View>
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={styles.scopeTitle}>Export Summary & Dataset Details</Text>
-            <Text style={styles.scopeSub}>
-              {filteredBookings.length} records ready for spreadsheet download
-            </Text>
-          </View>
+        <View style={styles.sectionHeaderRow}>
+          <Ionicons name="analytics" size={18} color="#4338CA" />
+          <Text style={styles.sectionTitle}>CALENDAR & STUDENT AUDIT MODULES</Text>
         </View>
+        <Text style={styles.sectionSubtitle}>
+          Deep dive into day-wise calendar load, individual student audits, census & timelines
+        </Text>
 
-        {/* Breakdown of exported fields */}
-        <View style={styles.scopeDetailsBox}>
-          <Text style={styles.scopeDetailsTitle}>Included Export Columns:</Text>
-          <View style={styles.columnsTagsGrid}>
-            {[
-              'Booking ID',
-              'Pickup Token (#LND)',
-              'Submission Date',
-              'Student Name',
-              'Roll Number',
-              'Course & Year',
-              'Hostel Block',
-              'Room Number',
-              'Phone Number',
-              'Total Clothes',
-              'Items Breakdown',
-              'Current Status',
-              'Drop-off Slot',
-              'Pickup Slot',
-              'Special Notes',
-            ].map((col) => (
-              <View key={col} style={styles.colTagPill}>
-                <Ionicons name="checkmark-circle" size={12} color="#059669" />
-                <Text style={styles.colTagText}>{col}</Text>
+        <View style={styles.modulesGrid}>
+          {/* Module 1: Daily & Calendar Analytics */}
+          <TouchableOpacity
+            style={[styles.moduleCard, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}
+            onPress={() => setShowCalendarModal(true)}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.moduleIconBox, { backgroundColor: '#4338CA' }]}>
+              <Ionicons name="calendar" size={20} color="#FFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.moduleCardHeader}>
+                <Text style={[styles.moduleTitle, { color: '#312E81' }]}>
+                  Daily & Calendar Analytics
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color="#4338CA" />
               </View>
-            ))}
-          </View>
-        </View>
+              <Text style={styles.moduleSub}>
+                Day-wise intake, weekly load & monthly interactive calendar
+              </Text>
+            </View>
+          </TouchableOpacity>
 
-        {/* Big Download Button */}
-        <TouchableOpacity
-          style={styles.bigDownloadBtn}
-          onPress={handleDownloadCSV}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="cloud-download-outline" size={20} color="#FFF" />
-          <Text style={styles.bigDownloadBtnText}>
-            Download {filteredBookings.length} Records (.CSV)
-          </Text>
-        </TouchableOpacity>
+          {/* Module 2: Student Audit Ledger & Dossier */}
+          <TouchableOpacity
+            style={[styles.moduleCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}
+            onPress={() => setShowStudentAuditModal(true)}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.moduleIconBox, { backgroundColor: '#15803D' }]}>
+              <Ionicons name="people" size={20} color="#FFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.moduleCardHeader}>
+                <Text style={[styles.moduleTitle, { color: '#14532D' }]}>
+                  Student Audit & Ledger
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color="#15803D" />
+              </View>
+              <Text style={styles.moduleSub}>
+                Search student or roll no to check weekly, monthly & total submissions
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Module 3: Student Census & Login Hub */}
+          <TouchableOpacity
+            style={[styles.moduleCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
+            onPress={() => setShowCensusModal(true)}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.moduleIconBox, { backgroundColor: '#2563EB' }]}>
+              <Ionicons name="pie-chart" size={20} color="#FFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.moduleCardHeader}>
+                <Text style={[styles.moduleTitle, { color: '#1E3A8A' }]}>
+                  Student Census & Logins
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+              </View>
+              <Text style={styles.moduleSub}>
+                Total logins vs used Dhobi, boys & girls, Nepal, Andhra & batches
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Module 4: Edit Dhobi Weekly Schedule */}
+          <TouchableOpacity
+            style={[styles.moduleCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
+            onPress={() => setShowScheduleModal(true)}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.moduleIconBox, { backgroundColor: '#D97706' }]}>
+              <Ionicons name="time" size={20} color="#FFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.moduleCardHeader}>
+                <Text style={[styles.moduleTitle, { color: '#78350F' }]}>
+                  Edit Dhobi Weekly Schedule
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color="#D97706" />
+              </View>
+              <Text style={styles.moduleSub}>
+                Customize intake days, return timelines, and slot hours per batch
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* 🎛️ Filter Bottom Sheet Modal with Top Segmented Switcher */}
@@ -630,6 +685,33 @@ export const ReportsExportScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* 📅 1. Calendar Analytics Modal */}
+      <AdminCalendarAnalyticsModal
+        visible={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        bookings={bookings}
+      />
+
+      {/* 👥 2. Student Audit Ledger Modal */}
+      <StudentAuditLedgerModal
+        visible={showStudentAuditModal}
+        onClose={() => setShowStudentAuditModal(false)}
+        bookings={bookings}
+      />
+
+      {/* 📊 3. Student Census Modal */}
+      <AdminStudentCensusModal
+        visible={showCensusModal}
+        onClose={() => setShowCensusModal(false)}
+        bookings={bookings}
+      />
+
+      {/* ⚙️ 4. Dhobi Schedule Matrix Modal */}
+      <AdminScheduleEditorModal
+        visible={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+      />
     </ScrollView>
   );
 };
@@ -716,6 +798,55 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     gap: 12,
     ...THEME.shadows.sm,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: 0.5,
+  },
+  sectionSubtitle: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: -4,
+  },
+  modulesGrid: {
+    gap: 10,
+    marginTop: 4,
+  },
+  moduleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1.5,
+    gap: 12,
+  },
+  moduleIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moduleCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  moduleTitle: {
+    fontSize: 13.5,
+    fontWeight: '900',
+  },
+  moduleSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
   },
   searchRow: {
     flexDirection: 'row',
@@ -829,79 +960,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#64748B',
     marginTop: 2,
-  },
-  exportScopeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  scopeIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: '#ECFDF5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  scopeTitle: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  scopeSub: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 1,
-  },
-  scopeDetailsBox: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 8,
-  },
-  scopeDetailsTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#334155',
-  },
-  columnsTagsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  colTagPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  colTagText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  bigDownloadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#059669',
-    paddingVertical: 14,
-    borderRadius: 14,
-    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)',
-  },
-  bigDownloadBtnText: {
-    fontSize: 13.5,
-    fontWeight: '900',
-    color: '#FFFFFF',
   },
 
   /* 🎛️ Filter Bottom Sheet Modal Styles */
