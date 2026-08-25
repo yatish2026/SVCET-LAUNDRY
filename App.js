@@ -217,19 +217,22 @@ const MainApp = () => {
                     </Text>
                   </TouchableOpacity>
 
-                  {/* Central Floating Action: Book Slot */}
+                  {/* Central Action: Book Slot */}
                   <TouchableOpacity
-                    style={styles.heroDockItem}
+                    style={[
+                      styles.dockItem,
+                      studentTab === 'new_booking' && styles.dockItemActive,
+                    ]}
                     onPress={() => setStudentTab('new_booking')}
-                    activeOpacity={0.8}
+                    activeOpacity={0.7}
                   >
                     <View
                       style={[
-                        styles.heroOrb,
-                        studentTab === 'new_booking' && styles.heroOrbActive,
+                        styles.heroOrbSmall,
+                        studentTab === 'new_booking' && styles.heroOrbSmallActive,
                       ]}
                     >
-                      <Ionicons name="add" size={19} color="#FFFFFF" />
+                      <Ionicons name="add" size={14} color="#FFFFFF" />
                     </View>
                     <Text
                       style={[
@@ -506,29 +509,17 @@ const styles = StyleSheet.create({
     color: '#2563EB',
     fontWeight: '800',
   },
-  heroDockItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-    marginHorizontal: 2,
-  },
-  heroOrb: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  heroOrbSmall: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -8,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)',
-    elevation: 4,
+    marginBottom: 1,
   },
-  heroOrbActive: {
+  heroOrbSmallActive: {
     backgroundColor: '#1D4ED8',
-    borderColor: '#DBEAFE',
-    transform: [{ scale: 1.05 }],
   },
   dockBadge: {
     position: 'absolute',
