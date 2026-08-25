@@ -20,6 +20,7 @@ import QRScannerModal from '../../components/QRScannerModal';
 import AdminCalendarAnalyticsModal from '../../components/AdminCalendarAnalyticsModal';
 import StudentAuditLedgerModal from '../../components/StudentAuditLedgerModal';
 import AdminStudentCensusModal from '../../components/AdminStudentCensusModal';
+import AdminScheduleEditorModal from '../../components/AdminScheduleEditorModal';
 
 export const AdminDashboardScreen = ({
   onNavigateToApprovals,
@@ -42,6 +43,7 @@ export const AdminDashboardScreen = ({
   const [showCalendarModal, setShowCalendarModal] = React.useState(false);
   const [showStudentAuditModal, setShowStudentAuditModal] = React.useState(false);
   const [showCensusModal, setShowCensusModal] = React.useState(false);
+  const [showScheduleEditorModal, setShowScheduleEditorModal] = React.useState(false);
   const [selectedTicket, setSelectedTicket] = React.useState(null);
   const [ticketFilter, setTicketFilter] = React.useState('all'); // 'all' | 'open' | 'resolved'
 
@@ -325,6 +327,26 @@ export const AdminDashboardScreen = ({
             </View>
             <Text style={styles.advancedToolSub}>
               Total logins vs used Dhobi, boys & girls, Nepal, Andhra & batches
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Card 4: Edit Dhobi Weekly Schedule & Timelines */}
+        <TouchableOpacity
+          style={[styles.advancedToolCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
+          onPress={() => setShowScheduleEditorModal(true)}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.advancedToolIconBox, { backgroundColor: '#D97706' }]}>
+            <Ionicons name="time" size={20} color="#FFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={styles.advancedToolTitle}>Edit Dhobi Weekly Schedule</Text>
+              <Ionicons name="chevron-forward" size={16} color="#D97706" />
+            </View>
+            <Text style={styles.advancedToolSub}>
+              Customize intake days, return timelines, and slot hours per batch
             </Text>
           </View>
         </TouchableOpacity>
@@ -695,6 +717,12 @@ export const AdminDashboardScreen = ({
         visible={showCensusModal}
         onClose={() => setShowCensusModal(false)}
         bookings={bookings}
+      />
+
+      {/* ⚙️ Edit Dhobi Weekly Schedule & Timelines Modal */}
+      <AdminScheduleEditorModal
+        visible={showScheduleEditorModal}
+        onClose={() => setShowScheduleEditorModal(false)}
       />
     </ScrollView>
   );

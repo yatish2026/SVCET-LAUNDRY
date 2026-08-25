@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
+import { ACADEMIC_COURSES, STUDENT_BRANCHES } from '../constants/schedule';
 
 export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,11 +103,43 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
         !q ||
         st.student_name.toLowerCase().includes(q) ||
         st.student_id.toLowerCase().includes(q) ||
+        st.student_email.toLowerCase().includes(q) ||
         st.room_number.toLowerCase().includes(q) ||
         st.hostel_block.toLowerCase().includes(q) ||
         st.phone_number.includes(q);
 
-      const matchYear = selectedYearFilter === 'ALL' || st.academic_year === selectedYearFilter;
+      let matchYear = true;
+      if (selectedYearFilter !== 'ALL') {
+        const selLower = selectedYearFilter.toLowerCase();
+        const stLower = (st.academic_year || '').toLowerCase();
+
+        if (selLower.includes('1st') && (stLower.includes('1st') || stLower.includes('first'))) {
+          matchYear = true;
+        } else if (selLower.includes('2nd') && (stLower.includes('2nd') || stLower.includes('second'))) {
+          matchYear = true;
+        } else if (selLower.includes('3rd') && (stLower.includes('3rd') || stLower.includes('third'))) {
+          matchYear = true;
+        } else if (
+          selLower.includes('4th') &&
+          (stLower.includes('4th') || stLower.includes('fourth') || stLower.includes('final'))
+        ) {
+          matchYear = true;
+        } else if (selLower.includes('diploma') && stLower.includes('diploma')) {
+          matchYear = true;
+        } else if (selLower.includes('pharmacy') && stLower.includes('pharmacy')) {
+          matchYear = true;
+        } else if (selLower.includes('nursing') && stLower.includes('nursing')) {
+          matchYear = true;
+        } else if (selLower.includes('mba') && stLower.includes('mba')) {
+          matchYear = true;
+        } else if (selLower.includes('mca') && stLower.includes('mca')) {
+          matchYear = true;
+        } else if (selLower.includes('bio') && (stLower.includes('bio') || stLower.includes('bbt'))) {
+          matchYear = true;
+        } else {
+          matchYear = stLower.includes(selLower) || selLower.includes(stLower);
+        }
+      }
 
       return matchSearch && matchYear;
     });
@@ -361,33 +394,31 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                   ) : null}
                 </View>
 
-                {/* Academic Year Filter Chips */}
+                {/* Academic Course & Year Filter Chips */}
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.yearChipsRow}
                 >
-                  {['ALL', '1st Year B.Tech', '2nd Year B.Tech', '3rd Year B.Tech', '4th Year B.Tech'].map(
-                    (yr) => (
-                      <TouchableOpacity
-                        key={yr}
+                  {['ALL', ...ACADEMIC_COURSES].map((yr) => (
+                    <TouchableOpacity
+                      key={yr}
+                      style={[
+                        styles.yearChip,
+                        selectedYearFilter === yr && styles.yearChipActive,
+                      ]}
+                      onPress={() => setSelectedYearFilter(yr)}
+                    >
+                      <Text
                         style={[
-                          styles.yearChip,
-                          selectedYearFilter === yr && styles.yearChipActive,
+                          styles.yearChipText,
+                          selectedYearFilter === yr && styles.yearChipTextActive,
                         ]}
-                        onPress={() => setSelectedYearFilter(yr)}
                       >
-                        <Text
-                          style={[
-                            styles.yearChipText,
-                            selectedYearFilter === yr && styles.yearChipTextActive,
-                          ]}
-                        >
-                          {yr === 'ALL' ? 'All Students' : yr.split(' ')[0] + ' Year'}
-                        </Text>
-                      </TouchableOpacity>
-                    )
-                  )}
+                        {yr === 'ALL' ? 'All Courses' : yr}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </ScrollView>
               </View>
 
