@@ -103,11 +103,8 @@ export const WelcomeSplashScreen = ({ onFinish }) => {
           <Text style={styles.rvsUnivWord}>UNIVERSITY</Text>
         </View>
 
-        {/* Sunset Crimson & Coral VASTRA App Name */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={[styles.appName, { color: '#E11D48' }]}>VAS</Text>
-          <Text style={[styles.appName, { color: '#F97316' }]}>TRA</Text>
-        </View>
+        {/* VASTRA App Name */}
+        <Text style={styles.appName}>VASTRA</Text>
         <Text style={styles.appSub}>🧺 Smart Hostel Laundry Portal ✨</Text>
 
         {/* 🌟 3D Feature Badges */}
@@ -243,6 +240,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 36,
     fontWeight: '900',
+    color: '#0F172A',
     letterSpacing: 3,
     marginTop: 4,
   },
