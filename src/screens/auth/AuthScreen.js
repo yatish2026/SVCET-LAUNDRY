@@ -1149,25 +1149,25 @@ const styles = StyleSheet.create({
   rvsLetterR: {
     fontSize: 46,
     fontWeight: '900',
-    color: '#DC2626', // Vibrant Red matching emblem
+    color: '#DC2626', // Vibrant Red
     letterSpacing: 0.5,
   },
   rvsLetterV: {
     fontSize: 46,
     fontWeight: '900',
-    color: '#D97706', // Vibrant Amber Gold matching emblem
+    color: '#7C3AED', // Brinjal / Violet
     letterSpacing: 0.5,
   },
   rvsLetterS: {
     fontSize: 46,
     fontWeight: '900',
-    color: '#2563EB', // Vibrant Royal Blue matching emblem
+    color: '#16A34A', // Vibrant Green
     letterSpacing: 0.5,
   },
   rvsUnivWord: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#0F172A',
+    color: '#2563EB', // Vibrant Blue
     letterSpacing: 2.5,
     marginTop: -8,
   },
