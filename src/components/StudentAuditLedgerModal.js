@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,17 +8,56 @@ import {
   ScrollView,
   TextInput,
   Image,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
-import { ACADEMIC_COURSES, STUDENT_BRANCHES } from '../constants/schedule';
+import apiService from '../services/apiService';
+
+const { width } = Dimensions.get('window');
+
+export const AUDIT_CATEGORY_FILTERS = [
+  { id: 'ALL', label: 'All Courses & Batches', icon: 'apps' },
+  { id: '1ST_YEAR', label: '1st Year (All)', icon: 'school' },
+  { id: '2ND_YEAR', label: '2nd Year (All)', icon: 'school' },
+  { id: '3RD_YEAR', label: '3rd Year B.Tech', icon: 'school' },
+  { id: '4TH_YEAR', label: '4th Year B.Tech', icon: 'school' },
+  { id: 'DIPLOMA', label: 'Diploma (1st & 2nd)', icon: 'construct' },
+  { id: 'MBA_MCA', label: 'MBA / MCA Postgrad', icon: 'briefcase' },
+  { id: 'PHARMACY_NURSING', label: 'Pharmacy & Nursing', icon: 'medkit' },
+  { id: 'GIRLS_HOSTEL', label: 'Girls Hostel (All)', icon: 'woman' },
+  { id: 'NEPAL_INTL', label: 'Nepal & International', icon: 'globe' },
+  { id: 'BIHAR_STATE', label: 'Bihar State Batch', icon: 'leaf' },
+];
+
+export const ACTIVITY_FILTERS = [
+  { id: 'ALL', label: 'All Activity' },
+  { id: 'ACTIVE', label: '🧺 Active (Submitted)' },
+  { id: 'HIGH_VOLUME', label: '🔥 High Volume (>10 Clothes)' },
+  { id: 'ZERO', label: '💤 0 Submissions' },
+];
 
 export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => {
+  const [registeredUsers, setRegisteredUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedYearFilter, setSelectedYearFilter] = useState('ALL');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('ALL');
+  const [selectedActivityFilter, setSelectedActivityFilter] = useState('ALL');
   const [selectedStudentKey, setSelectedStudentKey] = useState(null); // Key of student opened in dossier
 
-  // Compute unique student accounts dynamically from bookings
+  // Fetch registered users on modal open to ensure all registered students appear
+  useEffect(() => {
+    if (visible) {
+      const fetchCensus = async () => {
+        const users = await apiService.getStudentsCensus();
+        if (users && users.length > 0) {
+          setRegisteredUsers(users);
+        }
+      };
+      fetchCensus();
+    }
+  }, [visible]);
+
+  // Compute unique student accounts dynamically combining bookings + registered accounts
   const studentDirectory = useMemo(() => {
     const studentMap = {};
     const now = new Date();
@@ -32,8 +71,8 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
 
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+    // 1. Process all bookings
     bookings.forEach((b) => {
-      // Create a unique key per student
       const key = (b.student_id || b.student_name || b.student_email || 'unknown')
         .trim()
         .toLowerCase();
@@ -44,10 +83,13 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
           student_id: b.student_id || 'N/A',
           student_name: b.student_name || 'Student',
           student_email: b.student_email || '',
-          academic_year: b.academic_year || '1st Year B.Tech',
-          hostel_block: b.hostel_block || 'Hostel',
+          academic_year: b.academic_year || '1st Year',
+          branch: b.branch || 'CSE',
+          hostel_block: b.hostel_block || 'Hostel Block',
           room_number: b.room_number || 'N/A',
           phone_number: b.phone_number || '',
+          gender: (b.gender || '').toLowerCase() || (b.hostel_block?.toLowerCase().includes('girl') ? 'female' : 'male'),
+          location: b.location || (b.hostel_block?.toLowerCase().includes('nepal') ? 'Nepal' : 'Andhra Pradesh'),
           avatar_url: b.student_avatar || null,
           totalSubmissions: 0,
           totalClothes: 0,
@@ -73,7 +115,6 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
         st.activeCount++;
       }
 
-      // Check date for weekly and monthly counts
       if (b.created_at) {
         const orderDate = new Date(b.created_at);
         if (orderDate >= startOfWeek) {
@@ -87,15 +128,106 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
       }
     });
 
+    // 2. Process all registered users (ensuring students with 0 bookings are also listed)
+    registeredUsers.forEach((u) => {
+      const key = (u.student_id || u.full_name || u.email || 'unknown').trim().toLowerCase();
+
+      if (!studentMap[key]) {
+        studentMap[key] = {
+          key,
+          student_id: u.student_id || 'N/A',
+          student_name: u.full_name || 'Student',
+          student_email: u.email || '',
+          academic_year: u.academic_year || '1st Year',
+          branch: u.branch || 'CSE',
+          hostel_block: u.hostel_block || 'Hostel Block',
+          room_number: u.room_number || 'N/A',
+          phone_number: u.phone_number || '',
+          gender: (u.gender || '').toLowerCase() || (u.hostel_block?.toLowerCase().includes('girl') ? 'female' : 'male'),
+          location: u.location || (u.hostel_block?.toLowerCase().includes('nepal') ? 'Nepal' : 'Andhra Pradesh'),
+          avatar_url: u.avatar_url || null,
+          totalSubmissions: 0,
+          totalClothes: 0,
+          thisWeekSubmissions: 0,
+          thisWeekClothes: 0,
+          thisMonthSubmissions: 0,
+          thisMonthClothes: 0,
+          completedCount: 0,
+          activeCount: 0,
+          orders: [],
+        };
+      } else {
+        if (u.email && !studentMap[key].student_email) studentMap[key].student_email = u.email;
+        if (u.gender) studentMap[key].gender = u.gender.toLowerCase();
+        if (u.location) studentMap[key].location = u.location;
+        if (u.branch) studentMap[key].branch = u.branch;
+        if (u.academic_year) studentMap[key].academic_year = u.academic_year;
+      }
+    });
+
     // Sort orders for each student newest first
     Object.values(studentMap).forEach((st) => {
       st.orders.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     });
 
     return Object.values(studentMap);
-  }, [bookings]);
+  }, [bookings, registeredUsers]);
 
-  // Filtered Students list based on search & year
+  // Compute counts per category filter
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    AUDIT_CATEGORY_FILTERS.forEach((f) => (counts[f.id] = 0));
+
+    studentDirectory.forEach((st) => {
+      counts.ALL++;
+
+      const yrLower = (st.academic_year || '').toLowerCase();
+      const locLower = (st.location || '').toLowerCase();
+      const hBlockLower = (st.hostel_block || '').toLowerCase();
+      const genderLower = (st.gender || '').toLowerCase();
+
+      if (yrLower.includes('1st') || yrLower.includes('first')) {
+        counts['1ST_YEAR'] = (counts['1ST_YEAR'] || 0) + 1;
+      }
+      if (yrLower.includes('2nd') || yrLower.includes('second')) {
+        counts['2ND_YEAR'] = (counts['2ND_YEAR'] || 0) + 1;
+      }
+      if (yrLower.includes('3rd') || yrLower.includes('third')) {
+        counts['3RD_YEAR'] = (counts['3RD_YEAR'] || 0) + 1;
+      }
+      if (yrLower.includes('4th') || yrLower.includes('fourth') || yrLower.includes('final')) {
+        counts['4TH_YEAR'] = (counts['4TH_YEAR'] || 0) + 1;
+      }
+      if (yrLower.includes('diploma')) {
+        counts['DIPLOMA'] = (counts['DIPLOMA'] || 0) + 1;
+      }
+      if (yrLower.includes('mba') || yrLower.includes('mca')) {
+        counts['MBA_MCA'] = (counts['MBA_MCA'] || 0) + 1;
+      }
+      if (yrLower.includes('pharmacy') || yrLower.includes('nursing')) {
+        counts['PHARMACY_NURSING'] = (counts['PHARMACY_NURSING'] || 0) + 1;
+      }
+      if (genderLower === 'female' || hBlockLower.includes('girl') || hBlockLower.includes('women')) {
+        counts['GIRLS_HOSTEL'] = (counts['GIRLS_HOSTEL'] || 0) + 1;
+      }
+      if (
+        locLower.includes('nepal') ||
+        locLower.includes('andaman') ||
+        locLower.includes('international') ||
+        locLower.includes('south africa') ||
+        hBlockLower.includes('nepal')
+      ) {
+        counts['NEPAL_INTL'] = (counts['NEPAL_INTL'] || 0) + 1;
+      }
+      if (locLower.includes('bihar')) {
+        counts['BIHAR_STATE'] = (counts['BIHAR_STATE'] || 0) + 1;
+      }
+    });
+
+    return counts;
+  }, [studentDirectory]);
+
+  // Filtered Students list based on search, category & activity
   const filteredStudents = useMemo(() => {
     return studentDirectory.filter((st) => {
       const q = searchQuery.trim().toLowerCase();
@@ -106,44 +238,76 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
         st.student_email.toLowerCase().includes(q) ||
         st.room_number.toLowerCase().includes(q) ||
         st.hostel_block.toLowerCase().includes(q) ||
+        (st.branch && st.branch.toLowerCase().includes(q)) ||
+        (st.location && st.location.toLowerCase().includes(q)) ||
         st.phone_number.includes(q);
 
-      let matchYear = true;
-      if (selectedYearFilter !== 'ALL') {
-        const selLower = selectedYearFilter.toLowerCase();
-        const stLower = (st.academic_year || '').toLowerCase();
+      // Category matching
+      let matchCat = true;
+      const yrLower = (st.academic_year || '').toLowerCase();
+      const locLower = (st.location || '').toLowerCase();
+      const hBlockLower = (st.hostel_block || '').toLowerCase();
+      const genderLower = (st.gender || '').toLowerCase();
 
-        if (selLower.includes('1st') && (stLower.includes('1st') || stLower.includes('first'))) {
-          matchYear = true;
-        } else if (selLower.includes('2nd') && (stLower.includes('2nd') || stLower.includes('second'))) {
-          matchYear = true;
-        } else if (selLower.includes('3rd') && (stLower.includes('3rd') || stLower.includes('third'))) {
-          matchYear = true;
-        } else if (
-          selLower.includes('4th') &&
-          (stLower.includes('4th') || stLower.includes('fourth') || stLower.includes('final'))
-        ) {
-          matchYear = true;
-        } else if (selLower.includes('diploma') && stLower.includes('diploma')) {
-          matchYear = true;
-        } else if (selLower.includes('pharmacy') && stLower.includes('pharmacy')) {
-          matchYear = true;
-        } else if (selLower.includes('nursing') && stLower.includes('nursing')) {
-          matchYear = true;
-        } else if (selLower.includes('mba') && stLower.includes('mba')) {
-          matchYear = true;
-        } else if (selLower.includes('mca') && stLower.includes('mca')) {
-          matchYear = true;
-        } else if (selLower.includes('bio') && (stLower.includes('bio') || stLower.includes('bbt'))) {
-          matchYear = true;
-        } else {
-          matchYear = stLower.includes(selLower) || selLower.includes(stLower);
-        }
+      switch (selectedCategoryFilter) {
+        case '1ST_YEAR':
+          matchCat = yrLower.includes('1st') || yrLower.includes('first');
+          break;
+        case '2ND_YEAR':
+          matchCat = yrLower.includes('2nd') || yrLower.includes('second');
+          break;
+        case '3RD_YEAR':
+          matchCat = yrLower.includes('3rd') || yrLower.includes('third');
+          break;
+        case '4TH_YEAR':
+          matchCat = yrLower.includes('4th') || yrLower.includes('fourth') || yrLower.includes('final');
+          break;
+        case 'DIPLOMA':
+          matchCat = yrLower.includes('diploma');
+          break;
+        case 'MBA_MCA':
+          matchCat = yrLower.includes('mba') || yrLower.includes('mca');
+          break;
+        case 'PHARMACY_NURSING':
+          matchCat = yrLower.includes('pharmacy') || yrLower.includes('nursing');
+          break;
+        case 'GIRLS_HOSTEL':
+          matchCat = genderLower === 'female' || hBlockLower.includes('girl') || hBlockLower.includes('women');
+          break;
+        case 'NEPAL_INTL':
+          matchCat =
+            locLower.includes('nepal') ||
+            locLower.includes('andaman') ||
+            locLower.includes('international') ||
+            locLower.includes('south africa') ||
+            hBlockLower.includes('nepal');
+          break;
+        case 'BIHAR_STATE':
+          matchCat = locLower.includes('bihar');
+          break;
+        default:
+          matchCat = true;
       }
 
-      return matchSearch && matchYear;
+      // Activity matching
+      let matchActivity = true;
+      switch (selectedActivityFilter) {
+        case 'ACTIVE':
+          matchActivity = st.totalSubmissions > 0;
+          break;
+        case 'HIGH_VOLUME':
+          matchActivity = st.totalClothes >= 10;
+          break;
+        case 'ZERO':
+          matchActivity = st.totalSubmissions === 0;
+          break;
+        default:
+          matchActivity = true;
+      }
+
+      return matchSearch && matchCat && matchActivity;
     });
-  }, [studentDirectory, searchQuery, selectedYearFilter]);
+  }, [studentDirectory, searchQuery, selectedCategoryFilter, selectedActivityFilter]);
 
   // Current student selected for full dossier view
   const activeStudent = useMemo(() => {
@@ -226,7 +390,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                       <Text style={styles.profileYearText}>{activeStudent.academic_year}</Text>
                     </View>
                     <Text style={styles.profileLocationText}>
-                      🏢 {activeStudent.hostel_block} • Room {activeStudent.room_number}
+                      🏢 {activeStudent.hostel_block} • Room {activeStudent.room_number} (📍 {activeStudent.location})
                     </Text>
                   </View>
                 </View>
@@ -308,70 +472,80 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                 📑 COMPLETE ORDER HISTORY ({activeStudent.orders.length} Submissions)
               </Text>
 
-              <View style={styles.dossierOrdersList}>
-                {activeStudent.orders.map((ord, idx) => {
-                  const statusObj = getStatusInfo(ord.status);
-                  const itemsList = Object.entries(ord.items || {})
-                    .map(([k, v]) => `${k}: ${v}`)
-                    .join(' • ');
+              {activeStudent.orders.length === 0 ? (
+                <View style={styles.emptyOrdersCard}>
+                  <Ionicons name="shirt-outline" size={32} color="#94A3B8" />
+                  <Text style={styles.emptyOrdersTitle}>No Laundry Orders Yet</Text>
+                  <Text style={styles.emptyOrdersSub}>
+                    This student has registered their account but hasn't submitted any clothes yet.
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.dossierOrdersList}>
+                  {activeStudent.orders.map((ord, idx) => {
+                    const statusObj = getStatusInfo(ord.status);
+                    const itemsList = Object.entries(ord.items || {})
+                      .map(([k, v]) => `${k}: ${v}`)
+                      .join(' • ');
 
-                  return (
-                    <View key={ord.id || idx} style={styles.dossierOrderCard}>
-                      <View style={styles.dossierOrderTop}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <View style={styles.tokenPill}>
-                            <Text style={styles.tokenPillText}>#{ord.pickup_token}</Text>
+                    return (
+                      <View key={ord.id || idx} style={styles.dossierOrderCard}>
+                        <View style={styles.dossierOrderTop}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <View style={styles.tokenPill}>
+                              <Text style={styles.tokenPillText}>#{ord.pickup_token}</Text>
+                            </View>
+                            <Text style={styles.orderDateTitle}>
+                              {new Date(ord.created_at).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </Text>
                           </View>
-                          <Text style={styles.orderDateTitle}>
-                            {new Date(ord.created_at).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                            })}
+
+                          <View style={[styles.statusBadge, { backgroundColor: statusObj.bg }]}>
+                            <Text style={[styles.statusBadgeText, { color: statusObj.color }]}>
+                              {statusObj.label}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Items breakdown */}
+                        <View style={styles.itemsBreakdownBox}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Ionicons name="shirt-outline" size={14} color="#4338CA" />
+                            <Text style={styles.clothesCountHeader}>
+                              Total Clothes: {ord.total_items || 1}
+                            </Text>
+                          </View>
+                          <Text style={styles.clothesBreakdownList}>
+                            {itemsList || 'Regular mix clothes'}
                           </Text>
                         </View>
 
-                        <View style={[styles.statusBadge, { backgroundColor: statusObj.bg }]}>
-                          <Text style={[styles.statusBadgeText, { color: statusObj.color }]}>
-                            {statusObj.label}
+                        {/* Timing details */}
+                        <View style={styles.dossierTimingRow}>
+                          <Text style={styles.timingText}>
+                            📥 Drop-off: {ord.dropoff_slot_time || 'Standard Slot'}
+                          </Text>
+                          <Text style={styles.timingText}>
+                            📤 Pickup: {ord.pickup_slot_time || 'Counter Token'}
                           </Text>
                         </View>
+
+                        {ord.special_instructions ? (
+                          <View style={styles.instructionsBox}>
+                            <Text style={styles.instructionsText}>
+                              💬 Note: {ord.special_instructions}
+                            </Text>
+                          </View>
+                        ) : null}
                       </View>
-
-                      {/* Items breakdown */}
-                      <View style={styles.itemsBreakdownBox}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Ionicons name="shirt-outline" size={14} color="#4338CA" />
-                          <Text style={styles.clothesCountHeader}>
-                            Total Clothes: {ord.total_items || 1}
-                          </Text>
-                        </View>
-                        <Text style={styles.clothesBreakdownList}>
-                          {itemsList || 'Regular mix clothes'}
-                        </Text>
-                      </View>
-
-                      {/* Timing details */}
-                      <View style={styles.dossierTimingRow}>
-                        <Text style={styles.timingText}>
-                          📥 Drop-off: {ord.dropoff_slot_time || 'Standard Slot'}
-                        </Text>
-                        <Text style={styles.timingText}>
-                          📤 Pickup: {ord.pickup_slot_time || 'Counter Token'}
-                        </Text>
-                      </View>
-
-                      {ord.special_instructions ? (
-                        <View style={styles.instructionsBox}>
-                          <Text style={styles.instructionsText}>
-                            💬 Note: {ord.special_instructions}
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  );
-                })}
-              </View>
+                    );
+                  })}
+                </View>
+              )}
             </ScrollView>
           ) : (
             /* Student Directory & Search View */
@@ -382,7 +556,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                   <Ionicons name="search" size={18} color="#64748B" />
                   <TextInput
                     style={styles.searchInput}
-                    placeholder="Search by student name, roll no, room, block..."
+                    placeholder="Search student name, roll ID, room, block, email..."
                     placeholderTextColor="#94A3B8"
                     value={searchQuery}
                     onChangeText={setSearchQuery}
@@ -394,32 +568,74 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                   ) : null}
                 </View>
 
-                {/* Academic Course & Year Filter Chips */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.yearChipsRow}
-                >
-                  {['ALL', ...ACADEMIC_COURSES].map((yr) => (
-                    <TouchableOpacity
-                      key={yr}
-                      style={[
-                        styles.yearChip,
-                        selectedYearFilter === yr && styles.yearChipActive,
-                      ]}
-                      onPress={() => setSelectedYearFilter(yr)}
-                    >
-                      <Text
-                        style={[
-                          styles.yearChipText,
-                          selectedYearFilter === yr && styles.yearChipTextActive,
-                        ]}
-                      >
-                        {yr === 'ALL' ? 'All Courses' : yr}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                {/* 1. Academic Batch / Year Filter Chips */}
+                <View>
+                  <Text style={styles.filterSectionLabel}>🎓 Select Batch / Course:</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.yearChipsRow}
+                  >
+                    {AUDIT_CATEGORY_FILTERS.map((f) => {
+                      const count = categoryCounts[f.id] || 0;
+                      const isSelected = selectedCategoryFilter === f.id;
+
+                      return (
+                        <TouchableOpacity
+                          key={f.id}
+                          style={[styles.yearChip, isSelected && styles.yearChipActive]}
+                          onPress={() => setSelectedCategoryFilter(f.id)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons
+                            name={f.icon}
+                            size={13}
+                            color={isSelected ? '#FFF' : '#4338CA'}
+                          />
+                          <Text
+                            style={[
+                              styles.yearChipText,
+                              isSelected && styles.yearChipTextActive,
+                            ]}
+                          >
+                            {f.label} ({count})
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+
+                {/* 2. Activity / Submission Volume Filter Chips */}
+                <View style={{ marginTop: 2 }}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.activityChipsRow}
+                  >
+                    {ACTIVITY_FILTERS.map((act) => {
+                      const isSelected = selectedActivityFilter === act.id;
+
+                      return (
+                        <TouchableOpacity
+                          key={act.id}
+                          style={[styles.activityChip, isSelected && styles.activityChipActive]}
+                          onPress={() => setSelectedActivityFilter(act.id)}
+                          activeOpacity={0.8}
+                        >
+                          <Text
+                            style={[
+                              styles.activityChipText,
+                              isSelected && styles.activityChipTextActive,
+                            ]}
+                          >
+                            {act.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
               </View>
 
               {/* Student Cards List */}
@@ -430,17 +646,17 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
               >
                 <View style={styles.listHeaderRow}>
                   <Text style={styles.listCountText}>
-                    Showing {filteredStudents.length} Registered Students
+                    Showing {filteredStudents.length} Students
                   </Text>
-                  <Text style={styles.listHintText}>Tap student for full audit dossier</Text>
+                  <Text style={styles.listHintText}>Tap any student for full audit dossier</Text>
                 </View>
 
                 {filteredStudents.length === 0 ? (
                   <View style={styles.emptyDirectoryBox}>
                     <Ionicons name="people-outline" size={36} color="#94A3B8" />
-                    <Text style={styles.emptyDirectoryTitle}>No Students Found</Text>
+                    <Text style={styles.emptyDirectoryTitle}>No Students in this Filter</Text>
                     <Text style={styles.emptyDirectorySub}>
-                      No student records matched your search query.
+                      No registered students found for {selectedCategoryFilter}. Tap 'All Courses & Batches' to view all.
                     </Text>
                   </View>
                 ) : (
@@ -459,7 +675,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                         </View>
 
                         <View style={{ flex: 1, marginLeft: 10 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                             <Text style={styles.studentCardName}>{st.student_name}</Text>
                             <View style={styles.cardRollBadge}>
                               <Text style={styles.cardRollBadgeText}>{st.student_id}</Text>
@@ -467,6 +683,9 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                           </View>
                           <Text style={styles.studentCardSub}>
                             {st.academic_year} • Room {st.room_number} ({st.hostel_block})
+                          </Text>
+                          <Text style={styles.studentRegionSub}>
+                            📍 {st.location || 'Campus'} • 📞 {st.phone_number || 'No Phone'}
                           </Text>
                         </View>
                       </View>
@@ -477,8 +696,18 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                           <Text style={styles.statPillNum}>{st.totalSubmissions}</Text>
                           <Text style={styles.statPillLabel}>Bags</Text>
                         </View>
-                        <View style={[styles.statPill, { backgroundColor: '#F0FDF4' }]}>
-                          <Text style={[styles.statPillNum, { color: '#15803D' }]}>
+                        <View
+                          style={[
+                            styles.statPill,
+                            { backgroundColor: st.totalClothes > 0 ? '#F0FDF4' : '#F8FAFC' },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.statPillNum,
+                              { color: st.totalClothes > 0 ? '#15803D' : '#64748B' },
+                            ]}
+                          >
                             {st.totalClothes}
                           </Text>
                           <Text style={styles.statPillLabel}>Clothes</Text>
@@ -556,7 +785,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
-    gap: 10,
+    gap: 8,
   },
   searchBar: {
     flexDirection: 'row',
@@ -574,15 +803,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#0F172A',
   },
+  filterSectionLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+    marginBottom: 6,
+    marginTop: 2,
+  },
   yearChipsRow: {
     flexDirection: 'row',
     gap: 6,
     paddingBottom: 4,
   },
   yearChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -598,6 +837,33 @@ const styles = StyleSheet.create({
   },
   yearChipTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  activityChipsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingBottom: 4,
+  },
+  activityChip: {
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  activityChipActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  activityChipText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  activityChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   modalScroll: {
     flex: 1,
@@ -672,8 +938,14 @@ const styles = StyleSheet.create({
   },
   studentCardSub: {
     fontSize: 11,
-    color: '#64748B',
+    color: '#4338CA',
+    fontWeight: '700',
     marginTop: 2,
+  },
+  studentRegionSub: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 1,
   },
   studentCardRight: {
     flexDirection: 'row',
@@ -860,6 +1132,27 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '600',
     marginTop: 2,
+  },
+  emptyOrdersCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyOrdersTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#475569',
+    marginTop: 8,
+  },
+  emptyOrdersSub: {
+    fontSize: 11.5,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 3,
   },
   dossierOrdersList: {
     gap: 10,
