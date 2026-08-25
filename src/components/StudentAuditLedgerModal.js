@@ -38,6 +38,12 @@ export const ACTIVITY_OPTIONS = [
   { id: 'ZERO', label: '💤 0 Submissions' },
 ];
 
+export const FILTER_SECTIONS = [
+  { id: 'COURSE', label: 'Course & Year', icon: 'school' },
+  { id: 'ACTIVITY', label: 'Activity', icon: 'basket' },
+  { id: 'REGION', label: 'State & Region', icon: 'location' },
+];
+
 export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => {
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,7 +52,8 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
   const [selectedLocationFilter, setSelectedLocationFilter] = useState('ALL');
   const [selectedGenderFilter, setSelectedGenderFilter] = useState('ALL');
   const [showFilterPickerModal, setShowFilterPickerModal] = useState(false);
-  const [selectedStudentKey, setSelectedStudentKey] = useState(null); // Key of student opened in dossier
+  const [activeFilterSection, setActiveFilterSection] = useState('COURSE'); // 'COURSE' | 'ACTIVITY' | 'REGION'
+  const [selectedStudentKey, setSelectedStudentKey] = useState(null);
 
   // Fetch registered users on modal open
   useEffect(() => {
@@ -169,7 +176,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
       }
     });
 
-    // Sort orders for each student newest first
+    // Sort orders newest first
     Object.values(studentMap).forEach((st) => {
       st.orders.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     });
@@ -398,7 +405,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
             </TouchableOpacity>
           </View>
 
-          {/* If a student is selected, show Full Dossier view; otherwise show Student Search Directory */}
+          {/* Dossier or Directory View */}
           {activeStudent ? (
             <ScrollView
               style={styles.modalScroll}
@@ -465,7 +472,6 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
               <Text style={styles.sectionHeaderTitle}>⚖️ FAIRNESS & SUBMISSION METRICS</Text>
 
               <View style={styles.metricsGrid}>
-                {/* Lifetime Total */}
                 <View style={[styles.metricCard, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
                   <View style={styles.metricTop}>
                     <Ionicons name="cube" size={18} color="#4338CA" />
@@ -477,7 +483,6 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                   <Text style={styles.metricSub}>{activeStudent.totalClothes} total clothes</Text>
                 </View>
 
-                {/* This Month */}
                 <View style={[styles.metricCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
                   <View style={styles.metricTop}>
                     <Ionicons name="calendar" size={18} color="#15803D" />
@@ -489,7 +494,6 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                   <Text style={styles.metricSub}>{activeStudent.thisMonthClothes} clothes this month</Text>
                 </View>
 
-                {/* This Week */}
                 <View style={[styles.metricCard, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
                   <View style={styles.metricTop}>
                     <Ionicons name="flash" size={18} color="#B45309" />
@@ -501,7 +505,6 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                   <Text style={styles.metricSub}>{activeStudent.thisWeekClothes} clothes this week</Text>
                 </View>
 
-                {/* Current Active */}
                 <View style={[styles.metricCard, { backgroundColor: '#FAF5FF', borderColor: '#E9D5FF' }]}>
                   <View style={styles.metricTop}>
                     <Ionicons name="timer" size={18} color="#7C3AED" />
@@ -558,7 +561,6 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                           </View>
                         </View>
 
-                        {/* Items breakdown */}
                         <View style={styles.itemsBreakdownBox}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                             <Ionicons name="shirt-outline" size={14} color="#4338CA" />
@@ -571,7 +573,6 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                           </Text>
                         </View>
 
-                        {/* Timing details */}
                         <View style={styles.dossierTimingRow}>
                           <Text style={styles.timingText}>
                             📥 Drop-off: {ord.dropoff_slot_time || 'Standard Slot'}
@@ -617,7 +618,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                     ) : null}
                   </View>
 
-                  {/* ⚙️ Modern Filter Button */}
+                  {/* ⚙️ Filter Button */}
                   <TouchableOpacity
                     style={[
                       styles.filterButton,
@@ -647,12 +648,12 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                   </TouchableOpacity>
                 </View>
 
-                {/* Active Filter Chips / Summary Bar */}
+                {/* Active Filter Chips Bar */}
                 {activeFiltersCount > 0 || searchQuery ? (
                   <View style={styles.activeFiltersBar}>
                     <View style={styles.activeFilterPill}>
                       <Text style={styles.activeFilterPillText} numberOfLines={1}>
-                        Filtered: {selectedCategoryLabel}
+                        Filters: {selectedCategoryLabel}
                         {selectedActivityFilter !== 'ALL' ? ` • ${selectedActivityFilter}` : ''}
                         {selectedLocationFilter !== 'ALL' ? ` • ${selectedLocationFilter}` : ''}
                       </Text>
@@ -728,7 +729,6 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                         </View>
                       </View>
 
-                      {/* Stat summary pills */}
                       <View style={styles.studentCardRight}>
                         <View style={styles.statPill}>
                           <Text style={styles.statPillNum}>{st.totalSubmissions}</Text>
@@ -759,7 +759,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
             </View>
           )}
 
-          {/* 🎛️ Clean Dropdown / Modal Filter Sheet */}
+          {/* 🎛️ Clean Segmented Filter Category Modal */}
           <Modal
             visible={showFilterPickerModal}
             animationType="slide"
@@ -768,6 +768,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
           >
             <View style={styles.filterModalOverlay}>
               <View style={styles.filterModalSheet}>
+                {/* Modal Header */}
                 <View style={styles.filterModalHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Ionicons name="options" size={20} color="#4338CA" />
@@ -778,14 +779,52 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                   </TouchableOpacity>
                 </View>
 
+                {/* 🧭 Top Segmented Category Switcher Header */}
+                <View style={styles.categorySwitcherBar}>
+                  {FILTER_SECTIONS.map((sec) => {
+                    const isSecActive = activeFilterSection === sec.id;
+                    const hasSelection =
+                      (sec.id === 'COURSE' && selectedCategoryFilter !== 'ALL') ||
+                      (sec.id === 'ACTIVITY' && selectedActivityFilter !== 'ALL') ||
+                      (sec.id === 'REGION' && selectedLocationFilter !== 'ALL');
+
+                    return (
+                      <TouchableOpacity
+                        key={sec.id}
+                        style={[
+                          styles.categorySwitcherTab,
+                          isSecActive && styles.categorySwitcherTabActive,
+                        ]}
+                        onPress={() => setActiveFilterSection(sec.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons
+                          name={sec.icon}
+                          size={14}
+                          color={isSecActive ? '#4338CA' : '#64748B'}
+                        />
+                        <Text
+                          style={[
+                            styles.categorySwitcherText,
+                            isSecActive && styles.categorySwitcherTextActive,
+                          ]}
+                        >
+                          {sec.label}
+                        </Text>
+                        {hasSelection ? <View style={styles.tabSelectionDot} /> : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Options List for Active Category */}
                 <ScrollView
-                  style={{ maxHeight: '75%' }}
-                  contentContainerStyle={{ padding: 18, gap: 16 }}
+                  style={{ maxHeight: '68%' }}
+                  contentContainerStyle={{ padding: 18, gap: 10 }}
                   showsVerticalScrollIndicator={true}
                 >
-                  {/* 1. Academic Batch / Year Selection */}
-                  <View>
-                    <Text style={styles.filterGroupTitle}>🎓 Select Academic Batch / Course:</Text>
+                  {/* Category 1: Course & Year */}
+                  {activeFilterSection === 'COURSE' && (
                     <View style={styles.filterOptionsGrid}>
                       {AUDIT_CATEGORY_OPTIONS.map((opt) => {
                         const count = categoryCounts[opt.id] || 0;
@@ -835,11 +874,10 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                         );
                       })}
                     </View>
-                  </View>
+                  )}
 
-                  {/* 2. Submission Activity */}
-                  <View>
-                    <Text style={styles.filterGroupTitle}>🧺 Submission Activity:</Text>
+                  {/* Category 2: Activity */}
+                  {activeFilterSection === 'ACTIVITY' && (
                     <View style={styles.filterOptionsGrid}>
                       {ACTIVITY_OPTIONS.map((act) => {
                         const isSelected = selectedActivityFilter === act.id;
@@ -869,11 +907,10 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                         );
                       })}
                     </View>
-                  </View>
+                  )}
 
-                  {/* 3. State / Origin Location */}
-                  <View>
-                    <Text style={styles.filterGroupTitle}>📍 State / Region Origin:</Text>
+                  {/* Category 3: State & Region */}
+                  {activeFilterSection === 'REGION' && (
                     <View style={styles.filterOptionsGrid}>
                       {['ALL', ...STUDENT_LOCATIONS].map((loc) => {
                         const isSelected = selectedLocationFilter === loc;
@@ -894,7 +931,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                                 isSelected && styles.filterOptionTextSelected,
                               ]}
                             >
-                              {loc === 'ALL' ? 'All Regions' : loc}
+                              {loc === 'ALL' ? 'All Regions (Campus-wide)' : loc}
                             </Text>
                             {isSelected ? (
                               <Ionicons name="checkmark-circle" size={18} color="#4338CA" />
@@ -903,7 +940,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                         );
                       })}
                     </View>
-                  </View>
+                  )}
                 </ScrollView>
 
                 {/* Bottom Footer Actions */}
@@ -1500,11 +1537,46 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#0F172A',
   },
-  filterGroupTitle: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginBottom: 8,
+  categorySwitcherBar: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingTop: 4,
+  },
+  categorySwitcherTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderBottomWidth: 2.5,
+    borderBottomColor: 'transparent',
+    position: 'relative',
+  },
+  categorySwitcherTabActive: {
+    borderBottomColor: '#4338CA',
+    backgroundColor: '#FFFFFF',
+  },
+  categorySwitcherText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  categorySwitcherTextActive: {
+    color: '#4338CA',
+    fontWeight: '900',
+  },
+  tabSelectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#15803D',
+    position: 'absolute',
+    top: 6,
+    right: 8,
   },
   filterOptionsGrid: {
     gap: 6,
@@ -1514,7 +1586,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#F8FAFC',
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1.5,

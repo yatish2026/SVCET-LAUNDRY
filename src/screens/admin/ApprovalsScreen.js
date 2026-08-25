@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,19 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
 import { useLaundry } from '../../context/LaundryContext';
-import { ACADEMIC_YEARS } from '../../constants/schedule';
+import { ACADEMIC_COURSES } from '../../constants/schedule';
 import ImagePreviewModal from '../../components/ImagePreviewModal';
+
+export const APPROVAL_FILTER_SECTIONS = [
+  { id: 'COURSE', label: 'Course & Year', icon: 'school' },
+  { id: 'HOSTEL', label: 'Hostel & Gender', icon: 'home' },
+  { id: 'VOLUME', label: 'Clothes Volume', icon: 'shirt' },
+];
 
 export const ApprovalsScreen = ({ onSelectBooking }) => {
   const {
@@ -28,6 +35,10 @@ export const ApprovalsScreen = ({ onSelectBooking }) => {
   const [processingAll, setProcessingAll] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState('ALL');
+  const [selectedGender, setSelectedGender] = useState('ALL'); // 'ALL' | 'male' | 'female'
+  const [selectedVolume, setSelectedVolume] = useState('ALL'); // 'ALL' | 'STANDARD' | 'HEAVY'
+  const [showFilterPickerModal, setShowFilterPickerModal] = useState(false);
+  const [activeFilterSection, setActiveFilterSection] = useState('COURSE');
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -36,32 +47,70 @@ export const ApprovalsScreen = ({ onSelectBooking }) => {
   };
 
   // Filter only pending approval bookings
-  const pendingBookings = bookings.filter(
-    (b) => b.status === 'pending_approval' || b.status === 'dropoff_scheduled'
-  );
+  const pendingBookings = useMemo(() => {
+    return bookings.filter(
+      (b) => b.status === 'pending_approval' || b.status === 'dropoff_scheduled'
+    );
+  }, [bookings]);
 
-  // Apply search query and academic year filters
-  const filteredApprovals = pendingBookings.filter((b) => {
-    // 1. Year Filter
-    if (selectedYear !== 'ALL' && b.academic_year !== selectedYear) {
-      return false;
-    }
+  // Active filters count
+  const activeFiltersCount = useMemo(() => {
+    let cnt = 0;
+    if (selectedYear !== 'ALL') cnt++;
+    if (selectedGender !== 'ALL') cnt++;
+    if (selectedVolume !== 'ALL') cnt++;
+    return cnt;
+  }, [selectedYear, selectedGender, selectedVolume]);
 
-    // 2. Search Query (matches name, roll ID, token, phone, block, room)
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const matchName = b.student_name?.toLowerCase().includes(q);
-      const matchId = b.student_id?.toLowerCase().includes(q);
-      const matchToken = b.pickup_token?.toLowerCase().includes(q);
-      const matchPhone = b.phone_number?.includes(q);
-      const matchBlock = b.hostel_block?.toLowerCase().includes(q);
-      const matchRoom = String(b.room_number || '').toLowerCase().includes(q);
+  const handleResetFilters = () => {
+    setSelectedYear('ALL');
+    setSelectedGender('ALL');
+    setSelectedVolume('ALL');
+    setSearchQuery('');
+  };
 
-      return matchName || matchId || matchToken || matchPhone || matchBlock || matchRoom;
-    }
+  // Apply search query and multi-facet filters
+  const filteredApprovals = useMemo(() => {
+    return pendingBookings.filter((b) => {
+      // 1. Year Filter
+      if (selectedYear !== 'ALL') {
+        const bYr = (b.academic_year || '').toLowerCase();
+        const selYr = selectedYear.toLowerCase();
+        if (!bYr.includes(selYr) && !selYr.includes(bYr)) return false;
+      }
 
-    return true;
-  });
+      // 2. Gender / Hostel Filter
+      if (selectedGender !== 'ALL') {
+        const isGirl =
+          b.gender === 'female' ||
+          (b.hostel_block &&
+            (b.hostel_block.toLowerCase().includes('girl') ||
+              b.hostel_block.toLowerCase().includes('women') ||
+              b.hostel_block.toLowerCase().includes('kaveri')));
+        if (selectedGender === 'female' && !isGirl) return false;
+        if (selectedGender === 'male' && isGirl) return false;
+      }
+
+      // 3. Clothes Volume Filter
+      if (selectedVolume === 'STANDARD' && (b.total_items || 1) > 6) return false;
+      if (selectedVolume === 'HEAVY' && (b.total_items || 1) <= 6) return false;
+
+      // 4. Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchName = b.student_name?.toLowerCase().includes(q);
+        const matchId = b.student_id?.toLowerCase().includes(q);
+        const matchToken = b.pickup_token?.toLowerCase().includes(q);
+        const matchPhone = b.phone_number?.includes(q);
+        const matchBlock = b.hostel_block?.toLowerCase().includes(q);
+        const matchRoom = String(b.room_number || '').toLowerCase().includes(q);
+
+        return matchName || matchId || matchToken || matchPhone || matchBlock || matchRoom;
+      }
+
+      return true;
+    });
+  }, [pendingBookings, selectedYear, selectedGender, selectedVolume, searchQuery]);
 
   const handleApprove = async (bookingId, studentName) => {
     try {
@@ -100,7 +149,7 @@ export const ApprovalsScreen = ({ onSelectBooking }) => {
       {/* Top Banner with Accept All Requests */}
       <View style={styles.topBanner}>
         <View style={styles.bannerInfo}>
-          <Text style={styles.bannerTitle}>Pending Approvals</Text>
+          <Text style={styles.bannerTitle}>Pending Intake Approvals</Text>
           <Text style={styles.bannerSub}>
             {filteredApprovals.length} of {pendingBookings.length} {pendingBookings.length === 1 ? 'request' : 'requests'} shown
           </Text>
@@ -118,51 +167,76 @@ export const ApprovalsScreen = ({ onSelectBooking }) => {
         )}
       </View>
 
-      {/* 🔍 Search Bar Component */}
+      {/* 🔍 Search & Modern Filter Bar */}
       <View style={styles.searchBarWrap}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color="#64748B" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by student name, roll no, token (#LND), room..."
-            placeholderTextColor="#94A3B8"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
-              <Ionicons name="close-circle" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-          ) : null}
+        <View style={styles.searchRow}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color="#64748B" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by student, roll no, #LND, room..."
+              placeholderTextColor="#94A3B8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+            />
+            {searchQuery ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
+                <Ionicons name="close-circle" size={18} color="#94A3B8" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* ⚙️ Modern Filter Button */}
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              activeFiltersCount > 0 && styles.filterButtonActive,
+            ]}
+            onPress={() => setShowFilterPickerModal(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="options-outline"
+              size={18}
+              color={activeFiltersCount > 0 ? '#FFF' : '#2563EB'}
+            />
+            <Text
+              style={[
+                styles.filterButtonText,
+                activeFiltersCount > 0 && styles.filterButtonTextActive,
+              ]}
+            >
+              Filter
+            </Text>
+            {activeFiltersCount > 0 ? (
+              <View style={styles.filterBadgeCircle}>
+                <Text style={styles.filterBadgeCircleText}>{activeFiltersCount}</Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
         </View>
 
-        {/* Academic Year Filter Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.yearChipsScroll}
-        >
-          {['ALL', ...ACADEMIC_YEARS].map((yr) => {
-            const isSelected = selectedYear === yr;
-            const count = yr === 'ALL'
-              ? pendingBookings.length
-              : pendingBookings.filter((b) => b.academic_year === yr).length;
-
-            return (
-              <TouchableOpacity
-                key={yr}
-                style={[styles.yearChip, isSelected && styles.yearChipActive]}
-                onPress={() => setSelectedYear(yr)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.yearChipText, isSelected && styles.yearChipTextActive]}>
-                  {yr === 'ALL' ? 'All Years' : yr} ({count})
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {/* Active Filter Chips Bar */}
+        {activeFiltersCount > 0 || searchQuery ? (
+          <View style={styles.activeFiltersBar}>
+            <View style={styles.activeFilterPill}>
+              <Text style={styles.activeFilterPillText} numberOfLines={1}>
+                Filtered: {selectedYear !== 'ALL' ? selectedYear : 'All Courses'}
+                {selectedGender !== 'ALL' ? ` • ${selectedGender === 'female' ? 'Girls Hostel' : 'Boys Hostel'}` : ''}
+                {selectedVolume !== 'ALL' ? ` • ${selectedVolume}` : ''}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleResetFilters}
+              style={styles.clearFiltersBtn}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={14} color="#DC2626" />
+              <Text style={styles.clearFiltersBtnText}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </View>
 
       <ScrollView
@@ -181,124 +255,106 @@ export const ApprovalsScreen = ({ onSelectBooking }) => {
             </Text>
             <Text style={styles.emptySub}>
               {searchQuery
-                ? `No pending approvals found matching "${searchQuery}". Try clearing your search.`
-                : 'There are no pending student laundry requests to approve right now.'}
+                ? 'No pending laundry drop-offs match your search or filter.'
+                : 'No pending student laundry drop-offs awaiting intake approval right now.'}
             </Text>
-            {searchQuery ? (
+            {activeFiltersCount > 0 && (
               <TouchableOpacity
-                style={styles.resetSearchBtn}
-                onPress={() => {
-                  setSearchQuery('');
-                  setSelectedYear('ALL');
-                }}
+                style={styles.emptyResetBtn}
+                onPress={handleResetFilters}
+                activeOpacity={0.8}
               >
-                <Text style={styles.resetSearchBtnText}>Reset Search & Filters</Text>
+                <Text style={styles.emptyResetBtnText}>Reset Filters</Text>
               </TouchableOpacity>
-            ) : null}
+            )}
           </View>
         ) : (
           filteredApprovals.map((b) => {
-            const rawPhotos = b.photos || [];
-            const photosList = Array.isArray(rawPhotos)
-              ? rawPhotos
-              : typeof rawPhotos === 'string'
-              ? JSON.parse(rawPhotos || '[]')
-              : [];
-
-            const itemsObj = typeof b.items === 'object' ? b.items : {};
-            const itemsEntries = Object.entries(itemsObj || {});
+            const itemsList = Object.entries(b.items || {})
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(' • ');
 
             return (
-              <View key={b.id} style={styles.approvalCard}>
-                {/* Header Row */}
+              <TouchableOpacity
+                key={b.id}
+                style={styles.requestCard}
+                onPress={() => onSelectBooking && onSelectBooking(b)}
+                activeOpacity={0.9}
+              >
+                {/* Card Top: Token & Student Info */}
                 <View style={styles.cardHeader}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={styles.studentName}>{b.student_name}</Text>
-                      <View style={styles.yearTag}>
-                        <Text style={styles.yearTagText}>{b.academic_year || '1st Year'}</Text>
-                      </View>
-                    </View>
+                  <View style={styles.tokenBox}>
+                    <Text style={styles.tokenText}>#{b.pickup_token}</Text>
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.studentName}>{b.student_name}</Text>
                     <Text style={styles.studentMeta}>
-                      Roll ID: <Text style={{ fontWeight: '700', color: '#1E293B' }}>{b.student_id || 'N/A'}</Text> • {b.hostel_block?.split(' ')[0]} (Rm {b.room_number})
+                      {b.student_id} • {b.academic_year || '1st Year'}
                     </Text>
                   </View>
-
-                  <View style={styles.tokenPill}>
-                    <Text style={styles.tokenPillText}>#{b.pickup_token}</Text>
+                  <View style={styles.pendingBadge}>
+                    <Text style={styles.pendingBadgeText}>Pending Intake</Text>
                   </View>
                 </View>
 
-                {/* Clothes Count & Summary */}
-                <View style={styles.clothesSummaryRow}>
-                  <View style={styles.clothesCountBox}>
-                    <Text style={styles.clothesCountNum}>{b.total_items}</Text>
-                    <Text style={styles.clothesCountLabel}>Total Clothes</Text>
+                {/* Location & Contact Meta */}
+                <View style={styles.metaRow}>
+                  <View style={styles.metaCol}>
+                    <Ionicons name="business-outline" size={13} color="#64748B" />
+                    <Text style={styles.metaColText}>
+                      {b.hostel_block || 'Hostel'} Rm {b.room_number || 'N/A'}
+                    </Text>
                   </View>
+                  <View style={styles.metaCol}>
+                    <Ionicons name="call-outline" size={13} color="#64748B" />
+                    <Text style={styles.metaColText}>{b.phone_number || 'No Phone'}</Text>
+                  </View>
+                </View>
 
-                  <View style={styles.itemsPillsWrap}>
-                    {itemsEntries.map(([k, v]) => (
-                      <View key={k} style={styles.itemMiniPill}>
-                        <Text style={styles.itemMiniPillText}>
-                          {k.replace(/_/g, ' ')}: <Text style={{ fontWeight: '800' }}>{v}</Text>
-                        </Text>
-                      </View>
+                {/* Clothes Count & Item Breakdown */}
+                <View style={styles.clothesSummaryBox}>
+                  <View style={styles.clothesHeaderRow}>
+                    <Ionicons name="shirt-outline" size={15} color="#2563EB" />
+                    <Text style={styles.clothesCountText}>
+                      Total Clothes: {b.total_items || 1}
+                    </Text>
+                  </View>
+                  <Text style={styles.itemsBreakdownText} numberOfLines={2}>
+                    {itemsList || 'Regular mix clothes'}
+                  </Text>
+                </View>
+
+                {/* Special Instructions Note */}
+                {b.special_instructions ? (
+                  <View style={styles.notesBox}>
+                    <Text style={styles.notesText}>💬 {b.special_instructions}</Text>
+                  </View>
+                ) : null}
+
+                {/* Photos Thumbnail Preview */}
+                {Array.isArray(b.photos) && b.photos.length > 0 && (
+                  <View style={styles.photosRow}>
+                    {b.photos.map((uri, idx) => (
+                      <TouchableOpacity
+                        key={idx}
+                        onPress={() => setPreviewPhotoUri(uri)}
+                        activeOpacity={0.8}
+                      >
+                        <Image source={{ uri }} style={styles.thumbnailImg} />
+                      </TouchableOpacity>
                     ))}
                   </View>
-                </View>
+                )}
 
-                {/* 📸 Attached Photos Gallery Section */}
-                <View style={styles.photosSection}>
-                  <Text style={styles.photosSectionTitle}>
-                    📸 Attached Clothes Photos ({photosList.length})
-                  </Text>
-
-                  {photosList.length === 0 ? (
-                    <Text style={styles.noPhotosText}>No photos uploaded</Text>
-                  ) : (
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.photosScroll}
-                    >
-                      {photosList.map((photoUri, idx) => (
-                        <TouchableOpacity
-                          key={idx}
-                          style={styles.photoThumbWrap}
-                          onPress={() => setPreviewPhotoUri(photoUri)}
-                          activeOpacity={0.8}
-                        >
-                          <Image
-                            source={{ uri: photoUri }}
-                            style={styles.photoThumb}
-                            resizeMode="cover"
-                          />
-                          <View style={styles.photoIndexBadge}>
-                            <Text style={styles.photoIndexBadgeText}>#{idx + 1}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  )}
-                </View>
-
-                {/* Drop-off / Scheduled Info */}
-                <View style={styles.slotInfoRow}>
-                  <Ionicons name="time-outline" size={14} color="#64748B" />
-                  <Text style={styles.slotInfoText}>
-                    Slot: {b.dropoff_slot_time || 'Regular Schedule'} • Phone: {b.phone_number || 'N/A'}
-                  </Text>
-                </View>
-
-                {/* Action Buttons: Accept & Wash vs Reject */}
-                <View style={styles.actionsRow}>
+                {/* Approve / Reject Buttons */}
+                <View style={styles.actionButtonsRow}>
                   <TouchableOpacity
                     style={styles.rejectBtn}
                     onPress={() => handleReject(b.id, b.student_name)}
-                    activeOpacity={0.85}
+                    activeOpacity={0.8}
                   >
                     <Ionicons name="close-circle-outline" size={16} color="#DC2626" />
-                    <Text style={styles.rejectBtnText}>Reject</Text>
+                    <Text style={styles.rejectBtnText}>Decline</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -307,19 +363,222 @@ export const ApprovalsScreen = ({ onSelectBooking }) => {
                     activeOpacity={0.85}
                   >
                     <Ionicons name="checkmark-circle" size={16} color="#FFF" />
-                    <Text style={styles.approveBtnText}>Accept & Start Wash</Text>
+                    <Text style={styles.approveBtnText}>Accept & Wash</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
       </ScrollView>
 
-      {/* Full-Screen Image Preview Modal */}
+      {/* 🎛️ Filter Bottom Sheet Modal with Top Segmented Switcher */}
+      <Modal
+        visible={showFilterPickerModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowFilterPickerModal(false)}
+      >
+        <View style={styles.filterModalOverlay}>
+          <View style={styles.filterModalSheet}>
+            {/* Modal Header */}
+            <View style={styles.filterModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="options" size={20} color="#2563EB" />
+                <Text style={styles.filterModalTitle}>Filter Pending Approvals</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowFilterPickerModal(false)} style={{ padding: 4 }}>
+                <Ionicons name="close" size={22} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* 🧭 Top Segmented Category Switcher Header */}
+            <View style={styles.categorySwitcherBar}>
+              {APPROVAL_FILTER_SECTIONS.map((sec) => {
+                const isSecActive = activeFilterSection === sec.id;
+                const hasSelection =
+                  (sec.id === 'COURSE' && selectedYear !== 'ALL') ||
+                  (sec.id === 'HOSTEL' && selectedGender !== 'ALL') ||
+                  (sec.id === 'VOLUME' && selectedVolume !== 'ALL');
+
+                return (
+                  <TouchableOpacity
+                    key={sec.id}
+                    style={[
+                      styles.categorySwitcherTab,
+                      isSecActive && styles.categorySwitcherTabActive,
+                    ]}
+                    onPress={() => setActiveFilterSection(sec.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={sec.icon}
+                      size={14}
+                      color={isSecActive ? '#2563EB' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.categorySwitcherText,
+                        isSecActive && styles.categorySwitcherTextActive,
+                      ]}
+                    >
+                      {sec.label}
+                    </Text>
+                    {hasSelection ? <View style={styles.tabSelectionDot} /> : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Options List for Active Category */}
+            <ScrollView
+              style={{ maxHeight: '68%' }}
+              contentContainerStyle={{ padding: 18, gap: 10 }}
+              showsVerticalScrollIndicator={true}
+            >
+              {/* Category 1: Course & Year */}
+              {activeFilterSection === 'COURSE' && (
+                <View style={styles.filterOptionsGrid}>
+                  {['ALL', ...ACADEMIC_COURSES].map((yr) => {
+                    const isSelected = selectedYear === yr;
+                    const count = yr === 'ALL'
+                      ? pendingBookings.length
+                      : pendingBookings.filter((b) => (b.academic_year || '').toLowerCase().includes(yr.toLowerCase())).length;
+
+                    return (
+                      <TouchableOpacity
+                        key={yr}
+                        style={[
+                          styles.filterOptionItem,
+                          isSelected && styles.filterOptionItemSelected,
+                        ]}
+                        onPress={() => setSelectedYear(yr)}
+                        activeOpacity={0.75}
+                      >
+                        <Text
+                          style={[
+                            styles.filterOptionText,
+                            isSelected && styles.filterOptionTextSelected,
+                          ]}
+                        >
+                          {yr === 'ALL' ? 'All Academic Courses' : yr}
+                        </Text>
+                        <View
+                          style={[
+                            styles.countBadgePill,
+                            isSelected && { backgroundColor: '#2563EB' },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.countBadgePillText,
+                              isSelected && { color: '#FFF' },
+                            ]}
+                          >
+                            {count}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Category 2: Hostel & Gender */}
+              {activeFilterSection === 'HOSTEL' && (
+                <View style={styles.filterOptionsGrid}>
+                  {[
+                    { id: 'ALL', label: 'All Hostels & Blocks' },
+                    { id: 'male', label: '👦 Boys Hostel Blocks' },
+                    { id: 'female', label: '👧 Girls Hostel (Kaveri / Meenakshi)' },
+                  ].map((g) => (
+                    <TouchableOpacity
+                      key={g.id}
+                      style={[
+                        styles.filterOptionItem,
+                        selectedGender === g.id && styles.filterOptionItemSelected,
+                      ]}
+                      onPress={() => setSelectedGender(g.id)}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        style={[
+                          styles.filterOptionText,
+                          selectedGender === g.id && styles.filterOptionTextSelected,
+                        ]}
+                      >
+                        {g.label}
+                      </Text>
+                      {selectedGender === g.id ? (
+                        <Ionicons name="checkmark-circle" size={18} color="#2563EB" />
+                      ) : null}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* Category 3: Volume */}
+              {activeFilterSection === 'VOLUME' && (
+                <View style={styles.filterOptionsGrid}>
+                  {[
+                    { id: 'ALL', label: 'All Bag Sizes' },
+                    { id: 'STANDARD', label: '🧺 Standard Bags (1 - 6 Clothes)' },
+                    { id: 'HEAVY', label: '🔥 Heavy Bags (7+ Clothes)' },
+                  ].map((vol) => (
+                    <TouchableOpacity
+                      key={vol.id}
+                      style={[
+                        styles.filterOptionItem,
+                        selectedVolume === vol.id && styles.filterOptionItemSelected,
+                      ]}
+                      onPress={() => setSelectedVolume(vol.id)}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        style={[
+                          styles.filterOptionText,
+                          selectedVolume === vol.id && styles.filterOptionTextSelected,
+                        ]}
+                      >
+                        {vol.label}
+                      </Text>
+                      {selectedVolume === vol.id ? (
+                        <Ionicons name="checkmark-circle" size={18} color="#2563EB" />
+                      ) : null}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Bottom Footer Actions */}
+            <View style={styles.filterModalFooter}>
+              <TouchableOpacity
+                style={styles.modalResetBtn}
+                onPress={handleResetFilters}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalResetBtnText}>Reset All</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalApplyBtn}
+                onPress={() => setShowFilterPickerModal(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalApplyBtnText}>
+                  Apply Filters ({filteredApprovals.length} Results)
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Image Preview Modal */}
       <ImagePreviewModal
         visible={!!previewPhotoUri}
-        imageUri={previewPhotoUri}
+        photoUri={previewPhotoUri}
         onClose={() => setPreviewPhotoUri(null)}
       />
     </View>
@@ -332,22 +591,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   topBanner: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E2E8F0',
   },
   bannerInfo: {
     flex: 1,
   },
   bannerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '900',
     color: '#0F172A',
   },
   bannerSub: {
@@ -358,33 +616,43 @@ const styles = StyleSheet.create({
   acceptAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     backgroundColor: '#059669',
     paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderRadius: 10,
-    gap: 6,
+    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)',
   },
   acceptAllBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
   },
   searchBarWrap: {
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 10,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#F1F5F9',
+    gap: 8,
   },
-  searchBar: {
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
+    gap: 10,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 42,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     gap: 8,
-    marginTop: 2,
   },
   searchInput: {
     flex: 1,
@@ -392,268 +660,412 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   clearBtn: {
-    padding: 4,
+    padding: 2,
   },
-  yearChipsScroll: {
+  filterButton: {
     flexDirection: 'row',
-    gap: 8,
-    paddingTop: 10,
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 14,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
   },
-  yearChip: {
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+  filterButtonActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  filterButtonText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
+  filterButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  filterBadgeCircle: {
+    backgroundColor: '#FFFFFF',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBadgeCircleText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#2563EB',
+  },
+  activeFiltersBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  yearChipActive: {
-    backgroundColor: '#4338CA',
-    borderColor: '#4338CA',
+  activeFilterPill: {
+    flex: 1,
+    marginRight: 8,
   },
-  yearChipText: {
-    fontSize: 11.5,
+  activeFilterPillText: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: '#334155',
   },
-  yearChipTextActive: {
-    color: '#FFFFFF',
+  clearFiltersBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  clearFiltersBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#DC2626',
   },
   listArea: {
     flex: 1,
   },
   listContent: {
     padding: 16,
-    gap: 14,
-    paddingBottom: 40,
+    gap: 12,
+    paddingBottom: 110,
   },
-  emptyCard: {
+  requestCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    marginTop: 20,
+    gap: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
   },
-  emptyIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#ECFDF5',
+  cardHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 6,
-  },
-  emptySub: {
-    fontSize: 13,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  resetSearchBtn: {
-    marginTop: 16,
+  tokenBox: {
     backgroundColor: '#EEF2FF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#C7D2FE',
   },
-  resetSearchBtnText: {
-    color: '#4338CA',
-    fontSize: 12.5,
-    fontWeight: '700',
-  },
-  approvalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+  tokenText: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#2563EB',
   },
   studentName: {
-    fontSize: 16,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#0F172A',
   },
-  yearTag: {
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  yearTagText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#4338CA',
-  },
   studentMeta: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
-    marginTop: 3,
+    fontWeight: '600',
+    marginTop: 1,
   },
-  tokenPill: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
+  pendingBadge: {
+    backgroundColor: '#FEF3C7',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
-  tokenPillText: {
+  pendingBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  metaCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metaColText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  clothesSummaryBox: {
+    backgroundColor: '#F8FAFC',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 4,
+  },
+  clothesHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  clothesCountText: {
     fontSize: 12,
     fontWeight: '800',
     color: '#1E293B',
   },
-  clothesSummaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#F8FAFC',
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  clothesCountBox: {
-    alignItems: 'center',
-    paddingRight: 10,
-    borderRightWidth: 1,
-    borderRightColor: '#E2E8F0',
-    minWidth: 70,
-  },
-  clothesCountNum: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#4338CA',
-  },
-  clothesCountLabel: {
-    fontSize: 10,
+  itemsBreakdownText: {
+    fontSize: 11,
     color: '#64748B',
+  },
+  notesBox: {
+    backgroundColor: '#FFFBEB',
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  notesText: {
+    fontSize: 11,
+    color: '#B45309',
     fontWeight: '600',
   },
-  itemsPillsWrap: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  itemMiniPill: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  itemMiniPillText: {
-    fontSize: 11,
-    color: '#334155',
-  },
-  photosSection: {
-    marginBottom: 10,
-  },
-  photosSectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#475569',
-    marginBottom: 6,
-  },
-  photosScroll: {
+  photosRow: {
     flexDirection: 'row',
     gap: 8,
   },
-  photoThumbWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 10,
-    overflow: 'hidden',
+  thumbnailImg: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    position: 'relative',
-    backgroundColor: '#F1F5F9',
   },
-  photoThumb: {
-    width: '100%',
-    height: '100%',
-  },
-  photoIndexBadge: {
-    position: 'absolute',
-    bottom: 2,
-    left: 2,
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
-    paddingHorizontal: 4,
-    borderRadius: 4,
-  },
-  photoIndexBadgeText: {
-    color: '#FFF',
-    fontSize: 8,
-    fontWeight: '800',
-  },
-  noPhotosText: {
-    fontSize: 11.5,
-    color: '#94A3B8',
-    fontStyle: 'italic',
-  },
-  slotInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
-  },
-  slotInfoText: {
-    fontSize: 11.5,
-    color: '#64748B',
-  },
-  actionsRow: {
+  actionButtonsRow: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 4,
   },
   rejectBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1.5,
-    borderColor: '#FECACA',
+    gap: 6,
+    backgroundColor: '#FEE2E2',
     paddingVertical: 10,
     borderRadius: 10,
-    gap: 6,
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
   rejectBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
     color: '#DC2626',
-    fontSize: 13,
-    fontWeight: '700',
   },
   approveBtn: {
     flex: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4338CA',
+    gap: 6,
+    backgroundColor: '#059669',
     paddingVertical: 10,
     borderRadius: 10,
-    gap: 6,
+    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)',
   },
   approveBtnText: {
-    color: '#FFFFFF',
     fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    marginTop: 20,
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  emptySub: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  emptyResetBtn: {
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    marginTop: 14,
+  },
+  emptyResetBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
+
+  /* 🎛️ Filter Bottom Sheet Modal Styles */
+  filterModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  filterModalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '85%',
+    overflow: 'hidden',
+  },
+  filterModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  filterModalTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  categorySwitcherBar: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingTop: 4,
+  },
+  categorySwitcherTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderBottomWidth: 2.5,
+    borderBottomColor: 'transparent',
+    position: 'relative',
+  },
+  categorySwitcherTabActive: {
+    borderBottomColor: '#2563EB',
+    backgroundColor: '#FFFFFF',
+  },
+  categorySwitcherText: {
+    fontSize: 11.5,
     fontWeight: '700',
+    color: '#64748B',
+  },
+  categorySwitcherTextActive: {
+    color: '#2563EB',
+    fontWeight: '900',
+  },
+  tabSelectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#15803D',
+    position: 'absolute',
+    top: 6,
+    right: 8,
+  },
+  filterOptionsGrid: {
+    gap: 6,
+  },
+  filterOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  filterOptionItemSelected: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#2563EB',
+  },
+  filterOptionText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  filterOptionTextSelected: {
+    color: '#2563EB',
+    fontWeight: '900',
+  },
+  countBadgePill: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  countBadgePillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#475569',
+  },
+  filterModalFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+  },
+  modalResetBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
+  },
+  modalResetBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  modalApplyBtn: {
+    flex: 1,
+    backgroundColor: '#2563EB',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalApplyBtnText: {
+    fontSize: 13.5,
+    fontWeight: '900',
+    color: '#FFFFFF',
   },
 });
 

@@ -15,12 +15,18 @@ import THEME from '../../constants/theme';
 import { useLaundry } from '../../context/LaundryContext';
 import { ACADEMIC_COURSES } from '../../constants/schedule';
 
+export const REPORT_FILTER_SECTIONS = [
+  { id: 'TIMEFRAME', label: 'Time Period', icon: 'calendar' },
+  { id: 'COURSE', label: 'Course & Year', icon: 'school' },
+  { id: 'STATUS', label: 'Order Status', icon: 'sync' },
+];
+
 export const STATUS_OPTIONS = [
-  { id: 'ALL', label: 'All Statuses' },
+  { id: 'ALL', label: 'All Statuses (Completed & Active)' },
   { id: 'completed', label: 'Completed / Delivered' },
   { id: 'ready_for_pickup', label: 'Ready for Pickup' },
-  { id: 'in_wash', label: 'In Washing' },
-  { id: 'drying_ironing', label: 'Drying / Ironing' },
+  { id: 'in_wash', label: 'In Washing Machine' },
+  { id: 'drying_ironing', label: 'Drying & Steam Press' },
   { id: 'pending_approval', label: 'Pending Intake' },
 ];
 
@@ -36,6 +42,7 @@ export const ReportsExportScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [showFilterPickerModal, setShowFilterPickerModal] = useState(false);
+  const [activeFilterSection, setActiveFilterSection] = useState('TIMEFRAME');
 
   // Available months extracted from bookings
   const availableMonths = useMemo(() => {
@@ -404,7 +411,7 @@ export const ReportsExportScreen = () => {
         )}
       </View>
 
-      {/* 🎛️ Clean Dropdown / Modal Filter Sheet */}
+      {/* 🎛️ Filter Bottom Sheet Modal with Top Segmented Switcher */}
       <Modal
         visible={showFilterPickerModal}
         animationType="slide"
@@ -413,6 +420,7 @@ export const ReportsExportScreen = () => {
       >
         <View style={styles.filterModalOverlay}>
           <View style={styles.filterModalSheet}>
+            {/* Modal Header */}
             <View style={styles.filterModalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="options" size={20} color="#059669" />
@@ -423,103 +431,141 @@ export const ReportsExportScreen = () => {
               </TouchableOpacity>
             </View>
 
+            {/* 🧭 Top Segmented Category Switcher Header */}
+            <View style={styles.categorySwitcherBar}>
+              {REPORT_FILTER_SECTIONS.map((sec) => {
+                const isSecActive = activeFilterSection === sec.id;
+                const hasSelection =
+                  (sec.id === 'TIMEFRAME' && timeframeMode !== 'ALL') ||
+                  (sec.id === 'COURSE' && selectedYear !== 'ALL') ||
+                  (sec.id === 'STATUS' && selectedStatus !== 'ALL');
+
+                return (
+                  <TouchableOpacity
+                    key={sec.id}
+                    style={[
+                      styles.categorySwitcherTab,
+                      isSecActive && styles.categorySwitcherTabActive,
+                    ]}
+                    onPress={() => setActiveFilterSection(sec.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={sec.icon}
+                      size={14}
+                      color={isSecActive ? '#059669' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.categorySwitcherText,
+                        isSecActive && styles.categorySwitcherTextActive,
+                      ]}
+                    >
+                      {sec.label}
+                    </Text>
+                    {hasSelection ? <View style={styles.tabSelectionDot} /> : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             <ScrollView
-              style={{ maxHeight: '75%' }}
-              contentContainerStyle={{ padding: 18, gap: 16 }}
+              style={{ maxHeight: '68%' }}
+              contentContainerStyle={{ padding: 18, gap: 12 }}
               showsVerticalScrollIndicator={true}
             >
-              {/* 1. Timeframe Selection */}
-              <View>
-                <Text style={styles.filterGroupTitle}>📅 Timeframe Period:</Text>
-                <View style={styles.filterOptionsGrid}>
-                  {[
-                    { id: 'ALL', label: 'All-Time Records' },
-                    { id: 'DAY', label: 'Specific Day / Date' },
-                    { id: 'MONTH', label: 'Monthly Summary' },
-                  ].map((mode) => (
-                    <TouchableOpacity
-                      key={mode.id}
-                      style={[
-                        styles.filterOptionItem,
-                        timeframeMode === mode.id && styles.filterOptionItemSelected,
-                      ]}
-                      onPress={() => setTimeframeMode(mode.id)}
-                      activeOpacity={0.75}
-                    >
-                      <Text
-                        style={[
-                          styles.filterOptionText,
-                          timeframeMode === mode.id && styles.filterOptionTextSelected,
-                        ]}
-                      >
-                        {mode.label}
-                      </Text>
-                      {timeframeMode === mode.id ? (
-                        <Ionicons name="checkmark-circle" size={18} color="#059669" />
-                      ) : null}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {/* Day Date input */}
-              {timeframeMode === 'DAY' && (
-                <View style={styles.dateInputBox}>
-                  <Text style={styles.dateInputLabel}>Enter Date (YYYY-MM-DD):</Text>
-                  <TextInput
-                    style={styles.customDateInput}
-                    value={selectedDate}
-                    onChangeText={setSelectedDate}
-                    placeholder="YYYY-MM-DD"
-                  />
-                </View>
-              )}
-
-              {/* Month selector */}
-              {timeframeMode === 'MONTH' && (
-                <View>
-                  <Text style={styles.filterGroupTitle}>Select Month:</Text>
+              {/* Category 1: Timeframe Selection */}
+              {activeFilterSection === 'TIMEFRAME' && (
+                <View style={{ gap: 10 }}>
                   <View style={styles.filterOptionsGrid}>
-                    {availableMonths.map((m) => {
-                      const dateObj = new Date(`${m}-01T00:00:00Z`);
-                      const monthLabel = dateObj.toLocaleDateString('en-US', {
-                        month: 'short',
-                        year: 'numeric',
-                        timeZone: 'UTC',
-                      });
-                      const isSelected = selectedMonth === m;
-
-                      return (
-                        <TouchableOpacity
-                          key={m}
+                    {[
+                      { id: 'ALL', label: 'All-Time Records' },
+                      { id: 'DAY', label: 'Specific Day / Date' },
+                      { id: 'MONTH', label: 'Monthly Summary' },
+                    ].map((mode) => (
+                      <TouchableOpacity
+                        key={mode.id}
+                        style={[
+                          styles.filterOptionItem,
+                          timeframeMode === mode.id && styles.filterOptionItemSelected,
+                        ]}
+                        onPress={() => setTimeframeMode(mode.id)}
+                        activeOpacity={0.75}
+                      >
+                        <Text
                           style={[
-                            styles.filterOptionItem,
-                            isSelected && styles.filterOptionItemSelected,
+                            styles.filterOptionText,
+                            timeframeMode === mode.id && styles.filterOptionTextSelected,
                           ]}
-                          onPress={() => setSelectedMonth(m)}
-                          activeOpacity={0.75}
                         >
-                          <Text
-                            style={[
-                              styles.filterOptionText,
-                              isSelected && styles.filterOptionTextSelected,
-                            ]}
-                          >
-                            {monthLabel}
-                          </Text>
-                          {isSelected ? (
-                            <Ionicons name="checkmark-circle" size={18} color="#059669" />
-                          ) : null}
-                        </TouchableOpacity>
-                      );
-                    })}
+                          {mode.label}
+                        </Text>
+                        {timeframeMode === mode.id ? (
+                          <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                        ) : null}
+                      </TouchableOpacity>
+                    ))}
                   </View>
+
+                  {/* Day Date input */}
+                  {timeframeMode === 'DAY' && (
+                    <View style={styles.dateInputBox}>
+                      <Text style={styles.dateInputLabel}>Enter Date (YYYY-MM-DD):</Text>
+                      <TextInput
+                        style={styles.customDateInput}
+                        value={selectedDate}
+                        onChangeText={setSelectedDate}
+                        placeholder="YYYY-MM-DD"
+                      />
+                    </View>
+                  )}
+
+                  {/* Month selector */}
+                  {timeframeMode === 'MONTH' && (
+                    <View style={{ gap: 8 }}>
+                      <Text style={styles.dateInputLabel}>Choose Month:</Text>
+                      <View style={styles.filterOptionsGrid}>
+                        {availableMonths.map((m) => {
+                          const dateObj = new Date(`${m}-01T00:00:00Z`);
+                          const monthLabel = dateObj.toLocaleDateString('en-US', {
+                            month: 'short',
+                            year: 'numeric',
+                            timeZone: 'UTC',
+                          });
+                          const isSelected = selectedMonth === m;
+
+                          return (
+                            <TouchableOpacity
+                              key={m}
+                              style={[
+                                styles.filterOptionItem,
+                                isSelected && styles.filterOptionItemSelected,
+                              ]}
+                              onPress={() => setSelectedMonth(m)}
+                              activeOpacity={0.75}
+                            >
+                              <Text
+                                style={[
+                                  styles.filterOptionText,
+                                  isSelected && styles.filterOptionTextSelected,
+                                ]}
+                              >
+                                {monthLabel}
+                              </Text>
+                              {isSelected ? (
+                                <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                              ) : null}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
                 </View>
               )}
 
-              {/* 2. Academic Course & Year */}
-              <View>
-                <Text style={styles.filterGroupTitle}>🎓 Course & Academic Year:</Text>
+              {/* Category 2: Academic Course & Year */}
+              {activeFilterSection === 'COURSE' && (
                 <View style={styles.filterOptionsGrid}>
                   {['ALL', ...ACADEMIC_COURSES].map((yr) => {
                     const isSelected = selectedYear === yr;
@@ -549,11 +595,10 @@ export const ReportsExportScreen = () => {
                     );
                   })}
                 </View>
-              </View>
+              )}
 
-              {/* 3. Status Selection */}
-              <View>
-                <Text style={styles.filterGroupTitle}>🧺 Order Status:</Text>
+              {/* Category 3: Status Selection */}
+              {activeFilterSection === 'STATUS' && (
                 <View style={styles.filterOptionsGrid}>
                   {STATUS_OPTIONS.map((st) => {
                     const isSelected = selectedStatus === st.id;
@@ -583,7 +628,7 @@ export const ReportsExportScreen = () => {
                     );
                   })}
                 </View>
-              </View>
+              )}
             </ScrollView>
 
             {/* Bottom Footer Actions */}
@@ -957,11 +1002,46 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#0F172A',
   },
-  filterGroupTitle: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginBottom: 8,
+  categorySwitcherBar: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingTop: 4,
+  },
+  categorySwitcherTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderBottomWidth: 2.5,
+    borderBottomColor: 'transparent',
+    position: 'relative',
+  },
+  categorySwitcherTabActive: {
+    borderBottomColor: '#059669',
+    backgroundColor: '#FFFFFF',
+  },
+  categorySwitcherText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  categorySwitcherTextActive: {
+    color: '#059669',
+    fontWeight: '900',
+  },
+  tabSelectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#15803D',
+    position: 'absolute',
+    top: 6,
+    right: 8,
   },
   filterOptionsGrid: {
     gap: 6,
@@ -971,7 +1051,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#F8FAFC',
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1.5,

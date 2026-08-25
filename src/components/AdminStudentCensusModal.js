@@ -22,6 +22,12 @@ import apiService from '../services/apiService';
 
 const { width } = Dimensions.get('window');
 
+export const CENSUS_FILTER_SECTIONS = [
+  { id: 'USAGE', label: 'Dhobi Usage', icon: 'basket' },
+  { id: 'GENDER', label: 'Gender / Hostel', icon: 'people' },
+  { id: 'COURSE', label: 'Course & Year', icon: 'school' },
+];
+
 export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => {
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,6 +36,7 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
   const [filterYear, setFilterYear] = useState('ALL');
   const [filterLocation, setFilterLocation] = useState('ALL');
   const [showFilterPickerModal, setShowFilterPickerModal] = useState(false);
+  const [activeFilterSection, setActiveFilterSection] = useState('USAGE'); // 'USAGE' | 'GENDER' | 'COURSE'
   const [activeTab, setActiveTab] = useState('OVERVIEW'); // 'OVERVIEW' | 'ROSTER'
 
   // Fetch registered users census from backend on open
@@ -413,7 +420,7 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
                 </View>
               </View>
 
-              {/* 3. 🌍 State & International Region Breakdown */}
+              {/* 3. 🌍 State & Regional Breakdown */}
               <View style={styles.sectionCard}>
                 <Text style={styles.sectionCardTitle}>🏔️ State & Regional Demographics</Text>
                 <View style={styles.barsList}>
@@ -613,7 +620,7 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
             </View>
           )}
 
-          {/* 🎛️ Filter Bottom Sheet Modal */}
+          {/* 🎛️ Filter Bottom Sheet Modal with Top Segmented Switcher */}
           <Modal
             visible={showFilterPickerModal}
             animationType="slide"
@@ -622,6 +629,7 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
           >
             <View style={styles.filterModalOverlay}>
               <View style={styles.filterModalSheet}>
+                {/* Modal Header */}
                 <View style={styles.filterModalHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Ionicons name="options" size={20} color="#2563EB" />
@@ -632,14 +640,51 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
                   </TouchableOpacity>
                 </View>
 
+                {/* 🧭 Top Segmented Category Switcher Header */}
+                <View style={styles.categorySwitcherBar}>
+                  {CENSUS_FILTER_SECTIONS.map((sec) => {
+                    const isSecActive = activeFilterSection === sec.id;
+                    const hasSelection =
+                      (sec.id === 'USAGE' && filterUsage !== 'ALL') ||
+                      (sec.id === 'GENDER' && filterGender !== 'ALL') ||
+                      (sec.id === 'COURSE' && filterYear !== 'ALL');
+
+                    return (
+                      <TouchableOpacity
+                        key={sec.id}
+                        style={[
+                          styles.categorySwitcherTab,
+                          isSecActive && styles.categorySwitcherTabActive,
+                        ]}
+                        onPress={() => setActiveFilterSection(sec.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons
+                          name={sec.icon}
+                          size={14}
+                          color={isSecActive ? '#2563EB' : '#64748B'}
+                        />
+                        <Text
+                          style={[
+                            styles.categorySwitcherText,
+                            isSecActive && styles.categorySwitcherTextActive,
+                          ]}
+                        >
+                          {sec.label}
+                        </Text>
+                        {hasSelection ? <View style={styles.tabSelectionDot} /> : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
                 <ScrollView
-                  style={{ maxHeight: '75%' }}
-                  contentContainerStyle={{ padding: 18, gap: 16 }}
+                  style={{ maxHeight: '68%' }}
+                  contentContainerStyle={{ padding: 18, gap: 10 }}
                   showsVerticalScrollIndicator={true}
                 >
-                  {/* 1. Dhobi Usage Filter */}
-                  <View>
-                    <Text style={styles.filterGroupTitle}>🧺 Dhobi Service Usage:</Text>
+                  {/* Category 1: Dhobi Usage Filter */}
+                  {activeFilterSection === 'USAGE' && (
                     <View style={styles.filterOptionsGrid}>
                       {[
                         { id: 'ALL', label: 'All Registered Students' },
@@ -669,11 +714,10 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
                         </TouchableOpacity>
                       ))}
                     </View>
-                  </View>
+                  )}
 
-                  {/* 2. Gender & Hostel Filter */}
-                  <View>
-                    <Text style={styles.filterGroupTitle}>🚻 Gender & Hostel:</Text>
+                  {/* Category 2: Gender & Hostel Filter */}
+                  {activeFilterSection === 'GENDER' && (
                     <View style={styles.filterOptionsGrid}>
                       {[
                         { id: 'ALL', label: 'All Genders (Campus-wide)' },
@@ -703,11 +747,10 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
                         </TouchableOpacity>
                       ))}
                     </View>
-                  </View>
+                  )}
 
-                  {/* 3. Academic Year & Course */}
-                  <View>
-                    <Text style={styles.filterGroupTitle}>🎓 Course & Academic Year:</Text>
+                  {/* Category 3: Academic Year & Course */}
+                  {activeFilterSection === 'COURSE' && (
                     <View style={styles.filterOptionsGrid}>
                       {['ALL', ...ACADEMIC_COURSES].map((yr) => (
                         <TouchableOpacity
@@ -733,7 +776,7 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
                         </TouchableOpacity>
                       ))}
                     </View>
-                  </View>
+                  )}
                 </ScrollView>
 
                 {/* Bottom Footer Actions */}
@@ -1200,7 +1243,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
-  /* 🎛️ Filter Bottom Sheet Modal Styles */
+  /* 🎛️ Filter Modal Styles */
   filterModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.65)',
@@ -1227,11 +1270,46 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#0F172A',
   },
-  filterGroupTitle: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginBottom: 8,
+  categorySwitcherBar: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingTop: 4,
+  },
+  categorySwitcherTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderBottomWidth: 2.5,
+    borderBottomColor: 'transparent',
+    position: 'relative',
+  },
+  categorySwitcherTabActive: {
+    borderBottomColor: '#2563EB',
+    backgroundColor: '#FFFFFF',
+  },
+  categorySwitcherText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  categorySwitcherTextActive: {
+    color: '#2563EB',
+    fontWeight: '900',
+  },
+  tabSelectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#15803D',
+    position: 'absolute',
+    top: 6,
+    right: 8,
   },
   filterOptionsGrid: {
     gap: 6,
@@ -1241,7 +1319,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#F8FAFC',
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1.5,
