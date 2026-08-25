@@ -342,6 +342,32 @@ export const apiService = {
 
     return { success: true, message: 'Password reset request processed.' };
   },
+
+  // 12. Fetch All Registered Student Accounts for Admin Census
+  async getStudentsCensus() {
+    try {
+      const response = await fetch(API_ENDPOINTS.GET_STUDENTS_CENSUS, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+      const data = await response.json();
+      if (response.ok && data.success && Array.isArray(data.users)) {
+        return data.users;
+      }
+    } catch (e) {
+      // Backend not reached or fallback
+    }
+
+    // Fallback: Read from local AsyncStorage registry
+    try {
+      const stored = await AsyncStorage.getItem('@vastra_registered_users');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {}
+
+    return [];
+  },
 };
 
 export default apiService;

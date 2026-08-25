@@ -561,6 +561,18 @@ try {
             echo json_encode(["success" => true, "message" => "Ticket updated successfully."]);
             break;
 
+        case 'get_students_census':
+            // Verify laundry_users table exists and ensure gender, location, branch columns exist
+            $conn->exec("ALTER TABLE laundry_users ADD COLUMN IF NOT EXISTS gender VARCHAR(20) DEFAULT 'male';");
+            $conn->exec("ALTER TABLE laundry_users ADD COLUMN IF NOT EXISTS location VARCHAR(100) DEFAULT 'Andhra Pradesh';");
+            $conn->exec("ALTER TABLE laundry_users ADD COLUMN IF NOT EXISTS branch VARCHAR(60) DEFAULT 'CSE';");
+
+            $stmt = $conn->query("SELECT id, email, full_name, role, student_id, academic_year, hostel_block, room_number, phone_number, gender, location, branch, created_at FROM laundry_users ORDER BY created_at DESC");
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode(["success" => true, "users" => $users]);
+            break;
+
         case 'reset_password':
             if ($method !== 'POST') {
                 http_response_code(405);

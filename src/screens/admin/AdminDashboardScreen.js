@@ -19,6 +19,7 @@ import { ACADEMIC_YEARS, getYearConfig } from '../../constants/schedule';
 import QRScannerModal from '../../components/QRScannerModal';
 import AdminCalendarAnalyticsModal from '../../components/AdminCalendarAnalyticsModal';
 import StudentAuditLedgerModal from '../../components/StudentAuditLedgerModal';
+import AdminStudentCensusModal from '../../components/AdminStudentCensusModal';
 
 export const AdminDashboardScreen = ({
   onNavigateToApprovals,
@@ -40,6 +41,7 @@ export const AdminDashboardScreen = ({
   const [showYearModal, setShowYearModal] = React.useState(false);
   const [showCalendarModal, setShowCalendarModal] = React.useState(false);
   const [showStudentAuditModal, setShowStudentAuditModal] = React.useState(false);
+  const [showCensusModal, setShowCensusModal] = React.useState(false);
   const [selectedTicket, setSelectedTicket] = React.useState(null);
   const [ticketFilter, setTicketFilter] = React.useState('all'); // 'all' | 'open' | 'resolved'
 
@@ -303,6 +305,26 @@ export const AdminDashboardScreen = ({
             </View>
             <Text style={styles.advancedToolSub}>
               Search student or roll no to check weekly, monthly & total submissions
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Card 3: Student Census & Login Demographics */}
+        <TouchableOpacity
+          style={[styles.advancedToolCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
+          onPress={() => setShowCensusModal(true)}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.advancedToolIconBox, { backgroundColor: '#2563EB' }]}>
+            <Ionicons name="pie-chart" size={20} color="#FFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={styles.advancedToolTitle}>Student Census & Logins</Text>
+              <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+            </View>
+            <Text style={styles.advancedToolSub}>
+              Total logins vs used Dhobi, boys & girls, Nepal, Andhra & batches
             </Text>
           </View>
         </TouchableOpacity>
@@ -665,6 +687,13 @@ export const AdminDashboardScreen = ({
       <StudentAuditLedgerModal
         visible={showStudentAuditModal}
         onClose={() => setShowStudentAuditModal(false)}
+        bookings={bookings}
+      />
+
+      {/* 👥 Student Census & Demographics Modal */}
+      <AdminStudentCensusModal
+        visible={showCensusModal}
+        onClose={() => setShowCensusModal(false)}
         bookings={bookings}
       />
     </ScrollView>

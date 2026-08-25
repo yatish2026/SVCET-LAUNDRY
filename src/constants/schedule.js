@@ -44,6 +44,22 @@ export const ACADEMIC_COURSES = [
   'Other Courses',
 ];
 
+export const STUDENT_BRANCHES = [
+  'CSE (Computer Science)',
+  'ECE (Electronics & Comm)',
+  'AI & DS (Artificial Intelligence)',
+  'IT (Information Tech)',
+  'Mechanical Engineering',
+  'Civil Engineering',
+  'EEE (Electrical & Electronics)',
+  'MBA (Management)',
+  'MCA (Computer Apps)',
+  'B.Pharmacy',
+  'B.Sc Nursing',
+  'Bio-Technology',
+  'General / Other',
+];
+
 export const ACADEMIC_YEARS = ACADEMIC_COURSES;
 
 /**
