@@ -8,11 +8,21 @@ import {
   StyleSheet,
   Alert,
   Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
 import { useLaundry } from '../../context/LaundryContext';
-import { ACADEMIC_YEARS } from '../../constants/schedule';
+import { ACADEMIC_COURSES } from '../../constants/schedule';
+
+export const STATUS_OPTIONS = [
+  { id: 'ALL', label: 'All Statuses' },
+  { id: 'completed', label: 'Completed / Delivered' },
+  { id: 'ready_for_pickup', label: 'Ready for Pickup' },
+  { id: 'in_wash', label: 'In Washing' },
+  { id: 'drying_ironing', label: 'Drying / Ironing' },
+  { id: 'pending_approval', label: 'Pending Intake' },
+];
 
 export const ReportsExportScreen = () => {
   const { bookings } = useLaundry();
@@ -21,10 +31,11 @@ export const ReportsExportScreen = () => {
   const [timeframeMode, setTimeframeMode] = useState('ALL'); // 'ALL' | 'DAY' | 'MONTH'
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10)); // 'YYYY-MM-DD'
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7)); // 'YYYY-MM'
-  const [selectedYear, setSelectedYear] = useState('ALL'); // 'ALL' | '1st Year' ...
-  const [selectedStatus, setSelectedStatus] = useState('ALL'); // 'ALL' | 'completed' | 'in_wash' ...
+  const [selectedYear, setSelectedYear] = useState('ALL'); // 'ALL' | 'B.Tech 1st Year' ...
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [showFilterPickerModal, setShowFilterPickerModal] = useState(false);
 
   // Available months extracted from bookings
   const availableMonths = useMemo(() => {
@@ -39,6 +50,22 @@ export const ReportsExportScreen = () => {
     return Array.from(set).sort().reverse();
   }, [bookings]);
 
+  // Active filters count
+  const activeFiltersCount = useMemo(() => {
+    let cnt = 0;
+    if (timeframeMode !== 'ALL') cnt++;
+    if (selectedYear !== 'ALL') cnt++;
+    if (selectedStatus !== 'ALL') cnt++;
+    return cnt;
+  }, [timeframeMode, selectedYear, selectedStatus]);
+
+  const handleResetFilters = () => {
+    setTimeframeMode('ALL');
+    setSelectedYear('ALL');
+    setSelectedStatus('ALL');
+    setSearchQuery('');
+  };
+
   // Filtered dataset
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {
@@ -52,8 +79,10 @@ export const ReportsExportScreen = () => {
       }
 
       // 2. Academic Year Filter
-      if (selectedYear !== 'ALL' && b.academic_year !== selectedYear) {
-        return false;
+      if (selectedYear !== 'ALL') {
+        const bYr = (b.academic_year || '').toLowerCase();
+        const selYr = selectedYear.toLowerCase();
+        if (!bYr.includes(selYr) && !selYr.includes(bYr)) return false;
       }
 
       // 3. Status Filter
@@ -150,196 +179,129 @@ export const ReportsExportScreen = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
+        setDownloadSuccess(true);
+        setTimeout(() => setDownloadSuccess(false), 4000);
+      } else {
+        Alert.alert(
+          'Export Successful',
+          `Generated ${filteredBookings.length} laundry records for download (${filename}).`
+        );
       }
-
-      setDownloadSuccess(true);
-      setTimeout(() => setDownloadSuccess(false), 4000);
-
-      Alert.alert(
-        'Report Exported! 📥',
-        `Generated ${filename} with ${filteredBookings.length} records (${totalClothes} clothes total).`
-      );
-    } catch (e) {
-      console.error('Export error:', e);
-      Alert.alert('Export Error', 'Failed to generate report file.');
-    }
-  };
-
-  const getStatusBadgeColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return { bg: '#DCFCE7', text: '#15803D', label: 'Completed' };
-      case 'ready_for_pickup':
-        return { bg: '#FEF3C7', text: '#B45309', label: 'Ready for Pickup' };
-      case 'in_wash':
-        return { bg: '#DBEAFE', text: '#1E40AF', label: 'In Washing' };
-      case 'drying_ironing':
-        return { bg: '#F3E8FF', text: '#6B21A8', label: 'Drying & Iron' };
-      case 'pending_approval':
-      case 'dropoff_scheduled':
-        return { bg: '#F1F5F9', text: '#475569', label: 'Pending Intake' };
-      case 'cancelled':
-        return { bg: '#FEE2E2', text: '#991B1B', label: 'Cancelled' };
-      default:
-        return { bg: '#F1F5F9', text: '#475569', label: status };
+    } catch (err) {
+      Alert.alert('Export Error', 'Failed to generate CSV export file.');
     }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Header Banner */}
-      <View style={styles.header}>
-        <View style={styles.headerTextWrap}>
-          <Text style={styles.headerTitle}>📊 Reports & Data Export</Text>
-          <Text style={styles.headerSub}>Export day-wise, month-wise, and complete archive laundry logs</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Top Banner & Quick Download Action */}
+      <View style={styles.headerCard}>
+        <View style={styles.headerInfoRow}>
+          <View style={styles.headerIconBox}>
+            <Ionicons name="document-text" size={26} color="#059669" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.headerTitle}>Official Laundry Reports</Text>
+            <Text style={styles.headerSub}>Export daily, monthly, batch & student records</Text>
+          </View>
         </View>
 
         <TouchableOpacity
-          style={[styles.downloadBtn, downloadSuccess && styles.downloadBtnSuccess]}
+          style={styles.exportActionBtn}
           onPress={handleDownloadCSV}
           activeOpacity={0.85}
         >
-          <Ionicons
-            name={downloadSuccess ? 'checkmark-circle' : 'download-outline'}
-            size={19}
-            color="#FFF"
-          />
-          <Text style={styles.downloadBtnText}>
-            {downloadSuccess ? 'Report Exported Successfully!' : 'Download CSV Report'}
+          <Ionicons name="download" size={18} color="#FFF" />
+          <Text style={styles.exportActionBtnText}>
+            Export CSV ({filteredBookings.length} Records)
           </Text>
         </TouchableOpacity>
+
+        {downloadSuccess && (
+          <View style={styles.successBanner}>
+            <Ionicons name="checkmark-circle" size={16} color="#059669" />
+            <Text style={styles.successBannerText}>CSV Report downloaded successfully!</Text>
+          </View>
+        )}
       </View>
 
-      {/* 1. Timeframe Selection Bar */}
+      {/* 🔍 Search & Filter Action Bar */}
       <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>📅 1. Select Report Timeframe</Text>
-        <View style={styles.timeframeTabs}>
-          {[
-            { id: 'ALL', label: 'Complete Archive', icon: 'albums-outline' },
-            { id: 'DAY', label: 'Day-Wise', icon: 'today-outline' },
-            { id: 'MONTH', label: 'Month-Wise', icon: 'calendar-outline' },
-          ].map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[styles.timeframeTab, timeframeMode === tab.id && styles.timeframeTabActive]}
-              onPress={() => setTimeframeMode(tab.id)}
-              activeOpacity={0.8}
+        <View style={styles.searchRow}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color="#64748B" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by student, roll no, room..."
+              placeholderTextColor="#94A3B8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color="#94A3B8" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* ⚙️ Modern Filter Button */}
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              activeFiltersCount > 0 && styles.filterButtonActive,
+            ]}
+            onPress={() => setShowFilterPickerModal(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="options-outline"
+              size={18}
+              color={activeFiltersCount > 0 ? '#FFF' : '#059669'}
+            />
+            <Text
+              style={[
+                styles.filterButtonText,
+                activeFiltersCount > 0 && styles.filterButtonTextActive,
+              ]}
             >
-              <Ionicons
-                name={tab.icon}
-                size={16}
-                color={timeframeMode === tab.id ? '#4338CA' : '#64748B'}
-              />
-              <Text style={[styles.timeframeTabText, timeframeMode === tab.id && styles.timeframeTabTextActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+              Filter
+            </Text>
+            {activeFiltersCount > 0 ? (
+              <View style={styles.filterBadgeCircle}>
+                <Text style={styles.filterBadgeCircleText}>{activeFiltersCount}</Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
         </View>
 
-        {/* Day-Wise Date Chooser */}
-        {timeframeMode === 'DAY' && (
-          <View style={styles.pickerSubRow}>
-            <Text style={styles.pickerLabel}>Pick Date:</Text>
-            <View style={styles.quickDatesRow}>
-              <TouchableOpacity
-                style={[styles.quickDateBtn, selectedDate === new Date().toISOString().slice(0, 10) && styles.quickDateBtnActive]}
-                onPress={() => setSelectedDate(new Date().toISOString().slice(0, 10))}
-              >
-                <Text style={[styles.quickDateText, selectedDate === new Date().toISOString().slice(0, 10) && styles.quickDateTextActive]}>
-                  Today
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.quickDateBtn, selectedDate === new Date(Date.now() - 86400000).toISOString().slice(0, 10) && styles.quickDateBtnActive]}
-                onPress={() => setSelectedDate(new Date(Date.now() - 86400000).toISOString().slice(0, 10))}
-              >
-                <Text style={[styles.quickDateText, selectedDate === new Date(Date.now() - 86400000).toISOString().slice(0, 10) && styles.quickDateTextActive]}>
-                  Yesterday
-                </Text>
-              </TouchableOpacity>
-
-              <TextInput
-                style={styles.customDateInput}
-                value={selectedDate}
-                onChangeText={setSelectedDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#94A3B8"
-              />
+        {/* Active Filters Summary */}
+        {activeFiltersCount > 0 || searchQuery ? (
+          <View style={styles.activeFiltersBar}>
+            <View style={styles.activeFilterPill}>
+              <Text style={styles.activeFilterPillText} numberOfLines={1}>
+                Filters: {timeframeMode !== 'ALL' ? timeframeMode : 'All Time'}
+                {selectedYear !== 'ALL' ? ` • ${selectedYear}` : ''}
+                {selectedStatus !== 'ALL' ? ` • ${selectedStatus}` : ''}
+              </Text>
             </View>
+            <TouchableOpacity
+              onPress={handleResetFilters}
+              style={styles.clearFiltersBtn}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={14} color="#DC2626" />
+              <Text style={styles.clearFiltersBtnText}>Reset</Text>
+            </TouchableOpacity>
           </View>
-        )}
-
-        {/* Month-Wise Month Chooser */}
-        {timeframeMode === 'MONTH' && (
-          <View style={styles.pickerSubRow}>
-            <Text style={styles.pickerLabel}>Select Month:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              {availableMonths.map((m) => {
-                const dateObj = new Date(`${m}-01T00:00:00Z`);
-                const monthLabel = dateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-                const isSelected = selectedMonth === m;
-
-                return (
-                  <TouchableOpacity
-                    key={m}
-                    style={[styles.quickDateBtn, isSelected && styles.quickDateBtnActive]}
-                    onPress={() => setSelectedMonth(m)}
-                  >
-                    <Text style={[styles.quickDateText, isSelected && styles.quickDateTextActive]}>
-                      {monthLabel}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
+        ) : null}
       </View>
 
-      {/* 2. Secondary Filter Chips (Academic Year & Status) */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>🎓 2. Filter by Academic Year & Status</Text>
-
-        {/* Academic Year Chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipsRow}>
-          {['ALL', ...ACADEMIC_YEARS].map((yr) => (
-            <TouchableOpacity
-              key={yr}
-              style={[styles.filterChip, selectedYear === yr && styles.filterChipActive]}
-              onPress={() => setSelectedYear(yr)}
-            >
-              <Text style={[styles.filterChipText, selectedYear === yr && styles.filterChipTextActive]}>
-                {yr === 'ALL' ? 'All Years' : yr}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Status Filter Chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filterChipsRow, { marginTop: 8 }]}>
-          {[
-            { id: 'ALL', label: 'All Statuses' },
-            { id: 'completed', label: 'Completed' },
-            { id: 'ready_for_pickup', label: 'Ready for Pickup' },
-            { id: 'in_wash', label: 'In Washing' },
-            { id: 'pending_approval', label: 'Pending Intake' },
-          ].map((st) => (
-            <TouchableOpacity
-              key={st.id}
-              style={[styles.filterChip, selectedStatus === st.id && styles.filterChipActiveIndigo]}
-              onPress={() => setSelectedStatus(st.id)}
-            >
-              <Text style={[styles.filterChipText, selectedStatus === st.id && styles.filterChipTextActive]}>
-                {st.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* 3. Summary Statistics Cards */}
+      {/* Summary Statistics Cards */}
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
           <Text style={styles.statNum}>{filteredBookings.length}</Text>
@@ -362,7 +324,7 @@ export const ReportsExportScreen = () => {
         </View>
       </View>
 
-      {/* 4. Live Data Table Preview */}
+      {/* Live Data Table Preview */}
       <View style={styles.sectionCard}>
         <View style={styles.previewHeaderRow}>
           <Text style={styles.sectionTitle}>
@@ -378,75 +340,275 @@ export const ReportsExportScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* In-Report Search Bar */}
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={16} color="#64748B" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search within report (student name, roll no, token, room)..."
-            placeholderTextColor="#94A3B8"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={16} color="#94A3B8" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
         {filteredBookings.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Ionicons name="document-text-outline" size={36} color="#94A3B8" />
-            <Text style={styles.emptyBoxTitle}>No Records Found</Text>
-            <Text style={styles.emptyBoxSub}>No laundry requests match your active filters.</Text>
+          <View style={styles.emptyState}>
+            <Ionicons name="folder-open-outline" size={40} color="#94A3B8" />
+            <Text style={styles.emptyTitle}>No matching records found</Text>
+            <Text style={styles.emptySub}>Adjust your filters to see data</Text>
           </View>
         ) : (
-          <View style={styles.tableList}>
-            {filteredBookings.map((b, idx) => {
-              const badge = getStatusBadgeColor(b.status);
-              const itemsList = Object.entries(b.items || {})
-                .map(([k, v]) => `${k}: ${v}`)
-                .join(', ');
+          <View style={styles.tableWrap}>
+            {/* Table Header */}
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.th, { width: 60 }]}>Token</Text>
+              <Text style={[styles.th, { flex: 1 }]}>Student</Text>
+              <Text style={[styles.th, { width: 55, textAlign: 'center' }]}>Clothes</Text>
+              <Text style={[styles.th, { width: 85, textAlign: 'right' }]}>Status</Text>
+            </View>
+
+            {/* Table Rows */}
+            {filteredBookings.slice(0, 50).map((b, idx) => {
+              const isCompleted = b.status === 'completed';
 
               return (
                 <View key={b.id || idx} style={styles.tableRow}>
-                  <View style={styles.rowTop}>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={styles.rowName}>{b.student_name || 'Student'}</Text>
-                        <Text style={styles.rowRoll}>({b.student_id || 'ID: N/A'})</Text>
-                      </View>
-                      <Text style={styles.rowMeta}>
-                        {b.academic_year} • {b.hostel_block} (Rm {b.room_number})
-                      </Text>
-                    </View>
-
-                    <View style={styles.rowRight}>
-                      <Text style={styles.rowToken}>#{b.pickup_token}</Text>
-                      <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-                        <Text style={[styles.statusBadgeText, { color: badge.text }]}>
-                          {badge.label}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.rowBottom}>
-                    <Text style={styles.rowClothesCount}>
-                      🧺 <Text style={{ fontWeight: '800' }}>{b.total_items}</Text> Clothes: {itemsList || 'Mixed Wash'}
+                  <Text style={[styles.tdToken, { width: 60 }]}>#{b.pickup_token}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.tdName} numberOfLines={1}>
+                      {b.student_name}
                     </Text>
-                    <Text style={styles.rowDate}>
-                      {b.created_at ? b.created_at.slice(0, 10) : ''}
+                    <Text style={styles.tdMeta}>
+                      {b.student_id} • {b.academic_year || '1st Year'}
+                    </Text>
+                  </View>
+                  <Text style={[styles.tdCount, { width: 55 }]}>
+                    {b.total_items || 1} pcs
+                  </Text>
+                  <View
+                    style={[
+                      styles.statusPill,
+                      isCompleted ? styles.statusCompleted : styles.statusActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusPillText,
+                        isCompleted ? styles.statusCompletedText : styles.statusActiveText,
+                      ]}
+                    >
+                      {isCompleted ? 'Done' : 'Active'}
                     </Text>
                   </View>
                 </View>
               );
             })}
+
+            {filteredBookings.length > 50 && (
+              <View style={styles.tableFooterHint}>
+                <Text style={styles.tableFooterText}>
+                  Showing first 50 of {filteredBookings.length} records. Download CSV for the complete report dataset.
+                </Text>
+              </View>
+            )}
           </View>
         )}
       </View>
+
+      {/* 🎛️ Clean Dropdown / Modal Filter Sheet */}
+      <Modal
+        visible={showFilterPickerModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowFilterPickerModal(false)}
+      >
+        <View style={styles.filterModalOverlay}>
+          <View style={styles.filterModalSheet}>
+            <View style={styles.filterModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="options" size={20} color="#059669" />
+                <Text style={styles.filterModalTitle}>Filter Reports Data</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowFilterPickerModal(false)} style={{ padding: 4 }}>
+                <Ionicons name="close" size={22} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={{ maxHeight: '75%' }}
+              contentContainerStyle={{ padding: 18, gap: 16 }}
+              showsVerticalScrollIndicator={true}
+            >
+              {/* 1. Timeframe Selection */}
+              <View>
+                <Text style={styles.filterGroupTitle}>📅 Timeframe Period:</Text>
+                <View style={styles.filterOptionsGrid}>
+                  {[
+                    { id: 'ALL', label: 'All-Time Records' },
+                    { id: 'DAY', label: 'Specific Day / Date' },
+                    { id: 'MONTH', label: 'Monthly Summary' },
+                  ].map((mode) => (
+                    <TouchableOpacity
+                      key={mode.id}
+                      style={[
+                        styles.filterOptionItem,
+                        timeframeMode === mode.id && styles.filterOptionItemSelected,
+                      ]}
+                      onPress={() => setTimeframeMode(mode.id)}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        style={[
+                          styles.filterOptionText,
+                          timeframeMode === mode.id && styles.filterOptionTextSelected,
+                        ]}
+                      >
+                        {mode.label}
+                      </Text>
+                      {timeframeMode === mode.id ? (
+                        <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                      ) : null}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Day Date input */}
+              {timeframeMode === 'DAY' && (
+                <View style={styles.dateInputBox}>
+                  <Text style={styles.dateInputLabel}>Enter Date (YYYY-MM-DD):</Text>
+                  <TextInput
+                    style={styles.customDateInput}
+                    value={selectedDate}
+                    onChangeText={setSelectedDate}
+                    placeholder="YYYY-MM-DD"
+                  />
+                </View>
+              )}
+
+              {/* Month selector */}
+              {timeframeMode === 'MONTH' && (
+                <View>
+                  <Text style={styles.filterGroupTitle}>Select Month:</Text>
+                  <View style={styles.filterOptionsGrid}>
+                    {availableMonths.map((m) => {
+                      const dateObj = new Date(`${m}-01T00:00:00Z`);
+                      const monthLabel = dateObj.toLocaleDateString('en-US', {
+                        month: 'short',
+                        year: 'numeric',
+                        timeZone: 'UTC',
+                      });
+                      const isSelected = selectedMonth === m;
+
+                      return (
+                        <TouchableOpacity
+                          key={m}
+                          style={[
+                            styles.filterOptionItem,
+                            isSelected && styles.filterOptionItemSelected,
+                          ]}
+                          onPress={() => setSelectedMonth(m)}
+                          activeOpacity={0.75}
+                        >
+                          <Text
+                            style={[
+                              styles.filterOptionText,
+                              isSelected && styles.filterOptionTextSelected,
+                            ]}
+                          >
+                            {monthLabel}
+                          </Text>
+                          {isSelected ? (
+                            <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                          ) : null}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+
+              {/* 2. Academic Course & Year */}
+              <View>
+                <Text style={styles.filterGroupTitle}>🎓 Course & Academic Year:</Text>
+                <View style={styles.filterOptionsGrid}>
+                  {['ALL', ...ACADEMIC_COURSES].map((yr) => {
+                    const isSelected = selectedYear === yr;
+
+                    return (
+                      <TouchableOpacity
+                        key={yr}
+                        style={[
+                          styles.filterOptionItem,
+                          isSelected && styles.filterOptionItemSelected,
+                        ]}
+                        onPress={() => setSelectedYear(yr)}
+                        activeOpacity={0.75}
+                      >
+                        <Text
+                          style={[
+                            styles.filterOptionText,
+                            isSelected && styles.filterOptionTextSelected,
+                          ]}
+                        >
+                          {yr === 'ALL' ? 'All Academic Courses' : yr}
+                        </Text>
+                        {isSelected ? (
+                          <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                        ) : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* 3. Status Selection */}
+              <View>
+                <Text style={styles.filterGroupTitle}>🧺 Order Status:</Text>
+                <View style={styles.filterOptionsGrid}>
+                  {STATUS_OPTIONS.map((st) => {
+                    const isSelected = selectedStatus === st.id;
+
+                    return (
+                      <TouchableOpacity
+                        key={st.id}
+                        style={[
+                          styles.filterOptionItem,
+                          isSelected && styles.filterOptionItemSelected,
+                        ]}
+                        onPress={() => setSelectedStatus(st.id)}
+                        activeOpacity={0.75}
+                      >
+                        <Text
+                          style={[
+                            styles.filterOptionText,
+                            isSelected && styles.filterOptionTextSelected,
+                          ]}
+                        >
+                          {st.label}
+                        </Text>
+                        {isSelected ? (
+                          <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                        ) : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Bottom Footer Actions */}
+            <View style={styles.filterModalFooter}>
+              <TouchableOpacity
+                style={styles.modalResetBtn}
+                onPress={handleResetFilters}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalResetBtnText}>Reset All</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalApplyBtn}
+                onPress={() => setShowFilterPickerModal(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalApplyBtnText}>
+                  Apply Filters ({filteredBookings.length} Results)
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -458,320 +620,432 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    gap: 14,
     paddingBottom: 115,
+    gap: 14,
   },
-  header: {
+  headerCard: {
     backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: 18,
-    borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
     gap: 14,
-    boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
-    elevation: 2,
+    ...THEME.shadows.md,
   },
-  headerTextWrap: {
-    width: '100%',
+  headerInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#ECFDF5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#A7F3D0',
   },
   headerTitle: {
-    fontSize: 19,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  headerSub: {
-    fontSize: 12.5,
-    color: '#64748B',
-    marginTop: 4,
-    lineHeight: 18,
-    fontWeight: '600',
-  },
-  downloadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#059669',
-    paddingVertical: 13,
-    paddingHorizontal: 20,
-    borderRadius: 14,
-    gap: 8,
-    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.28)',
-    elevation: 3,
-  },
-  downloadBtnSuccess: {
-    backgroundColor: '#15803D',
-  },
-  downloadBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginBottom: 12,
-  },
-  timeframeTabs: {
-    flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    padding: 4,
-    gap: 4,
-  },
-  timeframeTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 5,
-  },
-  timeframeTabActive: {
-    backgroundColor: '#FFFFFF',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  },
-  timeframeTabText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  timeframeTabTextActive: {
-    color: '#4338CA',
-  },
-  pickerSubRow: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  pickerLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#475569',
-    marginBottom: 8,
-  },
-  quickDatesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  quickDateBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  quickDateBtnActive: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#6366F1',
-  },
-  quickDateText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  quickDateTextActive: {
-    color: '#4338CA',
-  },
-  customDateInput: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1E293B',
-    minWidth: 110,
-  },
-  filterChipsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  filterChip: {
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  filterChipActive: {
-    backgroundColor: '#0F172A',
-    borderColor: '#0F172A',
-  },
-  filterChipActiveIndigo: {
-    backgroundColor: '#4338CA',
-    borderColor: '#4338CA',
-  },
-  filterChipText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  filterChipTextActive: {
-    color: '#FFFFFF',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  statNum: {
     fontSize: 18,
     fontWeight: '900',
     color: '#0F172A',
   },
-  statLabel: {
-    fontSize: 10,
+  headerSub: {
+    fontSize: 12,
     color: '#64748B',
-    fontWeight: '700',
     marginTop: 2,
-    textAlign: 'center',
+  },
+  exportActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#059669',
+    paddingVertical: 13,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.28)',
+  },
+  exportActionBtnText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  successBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  successBannerText: {
+    fontSize: 12,
+    color: '#059669',
+    fontWeight: '700',
+  },
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    gap: 12,
+    ...THEME.shadows.sm,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 42,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#0F172A',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 14,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#A7F3D0',
+  },
+  filterButtonActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  filterButtonText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  filterButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  filterBadgeCircle: {
+    backgroundColor: '#FFFFFF',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBadgeCircleText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#059669',
+  },
+  activeFiltersBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  activeFilterPill: {
+    flex: 1,
+    marginRight: 8,
+  },
+  activeFilterPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  clearFiltersBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  clearFiltersBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  statCard: {
+    width: '48.5%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  statNum: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    marginTop: 2,
   },
   previewHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#0F172A',
   },
   tableQuickExportBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     backgroundColor: '#ECFDF5',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#A7F3D0',
   },
   tableQuickExportText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '800',
     color: '#059669',
   },
-  searchBar: {
+  tableWrap: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+  },
+  tableHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 8,
     paddingHorizontal: 10,
-    height: 38,
+  },
+  th: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+  },
+  tdToken: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#059669',
+  },
+  tdName: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  tdMeta: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  tdCount: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#334155',
+    textAlign: 'center',
+  },
+  statusPill: {
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+  },
+  statusCompleted: {
+    backgroundColor: '#DCFCE7',
+  },
+  statusActive: {
+    backgroundColor: '#FEF3C7',
+  },
+  statusPillText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  statusCompletedText: {
+    color: '#15803D',
+  },
+  statusActiveText: {
+    color: '#B45309',
+  },
+  tableFooterHint: {
+    backgroundColor: '#F8FAFC',
+    padding: 8,
+    alignItems: 'center',
+  },
+  tableFooterText: {
+    fontSize: 10.5,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  emptyState: {
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#475569',
+    marginTop: 8,
+  },
+  emptySub: {
+    fontSize: 11.5,
+    color: '#94A3B8',
+  },
+
+  /* 🎛️ Filter Bottom Sheet Modal Styles */
+  filterModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  filterModalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '85%',
+    overflow: 'hidden',
+  },
+  filterModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  filterModalTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  filterGroupTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 8,
+  },
+  filterOptionsGrid: {
+    gap: 6,
+  },
+  filterOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  filterOptionItemSelected: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#059669',
+  },
+  filterOptionText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  filterOptionTextSelected: {
+    color: '#059669',
+    fontWeight: '900',
+  },
+  dateInputBox: {
+    backgroundColor: '#F8FAFC',
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     gap: 6,
-    marginBottom: 12,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 12.5,
-    color: '#0F172A',
-  },
-  tableList: {
-    gap: 10,
-  },
-  tableRow: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  rowTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  rowName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  rowRoll: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  rowMeta: {
+  dateInputLabel: {
     fontSize: 11.5,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  rowRight: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  rowToken: {
-    fontSize: 12,
     fontWeight: '800',
-    color: '#1E293B',
+    color: '#334155',
   },
-  statusBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
+  customDateInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 13,
+    color: '#0F172A',
   },
-  statusBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  rowBottom: {
+  filterModalFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 8,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: '#EEF2FF',
+    borderTopColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
   },
-  rowClothesCount: {
-    fontSize: 11.5,
-    color: '#334155',
+  modalResetBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
+  },
+  modalResetBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  modalApplyBtn: {
     flex: 1,
-  },
-  rowDate: {
-    fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '600',
-  },
-  emptyBox: {
+    backgroundColor: '#059669',
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 32,
   },
-  emptyBoxTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginTop: 8,
-  },
-  emptyBoxSub: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+  modalApplyBtnText: {
+    fontSize: 13.5,
+    fontWeight: '900',
+    color: '#FFFFFF',
   },
 });
 

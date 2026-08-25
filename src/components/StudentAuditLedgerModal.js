@@ -13,26 +13,27 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
 import apiService from '../services/apiService';
+import { STUDENT_LOCATIONS } from '../constants/schedule';
 
 const { width } = Dimensions.get('window');
 
-export const AUDIT_CATEGORY_FILTERS = [
+export const AUDIT_CATEGORY_OPTIONS = [
   { id: 'ALL', label: 'All Courses & Batches', icon: 'apps' },
-  { id: '1ST_YEAR', label: '1st Year (All)', icon: 'school' },
-  { id: '2ND_YEAR', label: '2nd Year (All)', icon: 'school' },
+  { id: '1ST_YEAR', label: '1st Year (B.Tech & Diploma)', icon: 'school' },
+  { id: '2ND_YEAR', label: '2nd Year (B.Tech & Diploma)', icon: 'school' },
   { id: '3RD_YEAR', label: '3rd Year B.Tech', icon: 'school' },
-  { id: '4TH_YEAR', label: '4th Year B.Tech', icon: 'school' },
-  { id: 'DIPLOMA', label: 'Diploma (1st & 2nd)', icon: 'construct' },
+  { id: '4TH_YEAR', label: '4th Year B.Tech (Final Year)', icon: 'school' },
+  { id: 'DIPLOMA', label: 'Diploma (1st & 2nd Year)', icon: 'construct' },
   { id: 'MBA_MCA', label: 'MBA / MCA Postgrad', icon: 'briefcase' },
   { id: 'PHARMACY_NURSING', label: 'Pharmacy & Nursing', icon: 'medkit' },
-  { id: 'GIRLS_HOSTEL', label: 'Girls Hostel (All)', icon: 'woman' },
-  { id: 'NEPAL_INTL', label: 'Nepal & International', icon: 'globe' },
+  { id: 'GIRLS_HOSTEL', label: 'Girls Hostel (All Branches)', icon: 'woman' },
+  { id: 'NEPAL_INTL', label: 'Nepal & International Batch', icon: 'globe' },
   { id: 'BIHAR_STATE', label: 'Bihar State Batch', icon: 'leaf' },
 ];
 
-export const ACTIVITY_FILTERS = [
+export const ACTIVITY_OPTIONS = [
   { id: 'ALL', label: 'All Activity' },
-  { id: 'ACTIVE', label: '🧺 Active (Submitted)' },
+  { id: 'ACTIVE', label: '🧺 Active (Submitted Clothes)' },
   { id: 'HIGH_VOLUME', label: '🔥 High Volume (>10 Clothes)' },
   { id: 'ZERO', label: '💤 0 Submissions' },
 ];
@@ -42,9 +43,12 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('ALL');
   const [selectedActivityFilter, setSelectedActivityFilter] = useState('ALL');
+  const [selectedLocationFilter, setSelectedLocationFilter] = useState('ALL');
+  const [selectedGenderFilter, setSelectedGenderFilter] = useState('ALL');
+  const [showFilterPickerModal, setShowFilterPickerModal] = useState(false);
   const [selectedStudentKey, setSelectedStudentKey] = useState(null); // Key of student opened in dossier
 
-  // Fetch registered users on modal open to ensure all registered students appear
+  // Fetch registered users on modal open
   useEffect(() => {
     if (visible) {
       const fetchCensus = async () => {
@@ -128,7 +132,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
       }
     });
 
-    // 2. Process all registered users (ensuring students with 0 bookings are also listed)
+    // 2. Process all registered users
     registeredUsers.forEach((u) => {
       const key = (u.student_id || u.full_name || u.email || 'unknown').trim().toLowerCase();
 
@@ -176,7 +180,7 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
   // Compute counts per category filter
   const categoryCounts = useMemo(() => {
     const counts = {};
-    AUDIT_CATEGORY_FILTERS.forEach((f) => (counts[f.id] = 0));
+    AUDIT_CATEGORY_OPTIONS.forEach((f) => (counts[f.id] = 0));
 
     studentDirectory.forEach((st) => {
       counts.ALL++;
@@ -227,7 +231,26 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
     return counts;
   }, [studentDirectory]);
 
-  // Filtered Students list based on search, category & activity
+  // Active filter count
+  const activeFiltersCount = useMemo(() => {
+    let cnt = 0;
+    if (selectedCategoryFilter !== 'ALL') cnt++;
+    if (selectedActivityFilter !== 'ALL') cnt++;
+    if (selectedLocationFilter !== 'ALL') cnt++;
+    if (selectedGenderFilter !== 'ALL') cnt++;
+    return cnt;
+  }, [selectedCategoryFilter, selectedActivityFilter, selectedLocationFilter, selectedGenderFilter]);
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setSelectedCategoryFilter('ALL');
+    setSelectedActivityFilter('ALL');
+    setSelectedLocationFilter('ALL');
+    setSelectedGenderFilter('ALL');
+    setSearchQuery('');
+  };
+
+  // Filtered Students list
   const filteredStudents = useMemo(() => {
     return studentDirectory.filter((st) => {
       const q = searchQuery.trim().toLowerCase();
@@ -305,9 +328,28 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
           matchActivity = true;
       }
 
-      return matchSearch && matchCat && matchActivity;
+      // Location matching
+      let matchLocation = true;
+      if (selectedLocationFilter !== 'ALL') {
+        matchLocation = (st.location || '').toLowerCase().includes(selectedLocationFilter.toLowerCase());
+      }
+
+      // Gender matching
+      let matchGender = true;
+      if (selectedGenderFilter !== 'ALL') {
+        matchGender = st.gender === selectedGenderFilter;
+      }
+
+      return matchSearch && matchCat && matchActivity && matchLocation && matchGender;
     });
-  }, [studentDirectory, searchQuery, selectedCategoryFilter, selectedActivityFilter]);
+  }, [
+    studentDirectory,
+    searchQuery,
+    selectedCategoryFilter,
+    selectedActivityFilter,
+    selectedLocationFilter,
+    selectedGenderFilter,
+  ]);
 
   // Current student selected for full dossier view
   const activeStudent = useMemo(() => {
@@ -329,6 +371,11 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
         return { label: 'Pending Intake', color: '#475569', bg: '#F1F5F9' };
     }
   };
+
+  const selectedCategoryLabel = useMemo(() => {
+    const found = AUDIT_CATEGORY_OPTIONS.find((c) => c.id === selectedCategoryFilter);
+    return found ? found.label : 'All Courses';
+  }, [selectedCategoryFilter]);
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
@@ -550,92 +597,76 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
           ) : (
             /* Student Directory & Search View */
             <View style={{ flex: 1 }}>
-              {/* Search Bar */}
+              {/* Search & Filter Bar */}
               <View style={styles.searchSection}>
-                <View style={styles.searchBar}>
-                  <Ionicons name="search" size={18} color="#64748B" />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search student name, roll ID, room, block, email..."
-                    placeholderTextColor="#94A3B8"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                  />
-                  {searchQuery ? (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                      <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                <View style={styles.searchRow}>
+                  {/* Search Input */}
+                  <View style={styles.searchBar}>
+                    <Ionicons name="search" size={18} color="#64748B" />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="Search student name, roll ID, room, email..."
+                      placeholderTextColor="#94A3B8"
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                    />
+                    {searchQuery ? (
+                      <TouchableOpacity onPress={() => setSearchQuery('')}>
+                        <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+
+                  {/* ⚙️ Modern Filter Button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.filterButton,
+                      activeFiltersCount > 0 && styles.filterButtonActive,
+                    ]}
+                    onPress={() => setShowFilterPickerModal(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="options-outline"
+                      size={18}
+                      color={activeFiltersCount > 0 ? '#FFF' : '#4338CA'}
+                    />
+                    <Text
+                      style={[
+                        styles.filterButtonText,
+                        activeFiltersCount > 0 && styles.filterButtonTextActive,
+                      ]}
+                    >
+                      Filter
+                    </Text>
+                    {activeFiltersCount > 0 ? (
+                      <View style={styles.filterBadgeCircle}>
+                        <Text style={styles.filterBadgeCircleText}>{activeFiltersCount}</Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                </View>
+
+                {/* Active Filter Chips / Summary Bar */}
+                {activeFiltersCount > 0 || searchQuery ? (
+                  <View style={styles.activeFiltersBar}>
+                    <View style={styles.activeFilterPill}>
+                      <Text style={styles.activeFilterPillText} numberOfLines={1}>
+                        Filtered: {selectedCategoryLabel}
+                        {selectedActivityFilter !== 'ALL' ? ` • ${selectedActivityFilter}` : ''}
+                        {selectedLocationFilter !== 'ALL' ? ` • ${selectedLocationFilter}` : ''}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={handleResetFilters}
+                      style={styles.clearFiltersBtn}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="close" size={14} color="#DC2626" />
+                      <Text style={styles.clearFiltersBtnText}>Reset</Text>
                     </TouchableOpacity>
-                  ) : null}
-                </View>
-
-                {/* 1. Academic Batch / Year Filter Chips */}
-                <View>
-                  <Text style={styles.filterSectionLabel}>🎓 Select Batch / Course:</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.yearChipsRow}
-                  >
-                    {AUDIT_CATEGORY_FILTERS.map((f) => {
-                      const count = categoryCounts[f.id] || 0;
-                      const isSelected = selectedCategoryFilter === f.id;
-
-                      return (
-                        <TouchableOpacity
-                          key={f.id}
-                          style={[styles.yearChip, isSelected && styles.yearChipActive]}
-                          onPress={() => setSelectedCategoryFilter(f.id)}
-                          activeOpacity={0.8}
-                        >
-                          <Ionicons
-                            name={f.icon}
-                            size={13}
-                            color={isSelected ? '#FFF' : '#4338CA'}
-                          />
-                          <Text
-                            style={[
-                              styles.yearChipText,
-                              isSelected && styles.yearChipTextActive,
-                            ]}
-                          >
-                            {f.label} ({count})
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-
-                {/* 2. Activity / Submission Volume Filter Chips */}
-                <View style={{ marginTop: 2 }}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.activityChipsRow}
-                  >
-                    {ACTIVITY_FILTERS.map((act) => {
-                      const isSelected = selectedActivityFilter === act.id;
-
-                      return (
-                        <TouchableOpacity
-                          key={act.id}
-                          style={[styles.activityChip, isSelected && styles.activityChipActive]}
-                          onPress={() => setSelectedActivityFilter(act.id)}
-                          activeOpacity={0.8}
-                        >
-                          <Text
-                            style={[
-                              styles.activityChipText,
-                              isSelected && styles.activityChipTextActive,
-                            ]}
-                          >
-                            {act.label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
+                  </View>
+                ) : null}
               </View>
 
               {/* Student Cards List */}
@@ -656,8 +687,15 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
                     <Ionicons name="people-outline" size={36} color="#94A3B8" />
                     <Text style={styles.emptyDirectoryTitle}>No Students in this Filter</Text>
                     <Text style={styles.emptyDirectorySub}>
-                      No registered students found for {selectedCategoryFilter}. Tap 'All Courses & Batches' to view all.
+                      No registered students found matching your filter selection.
                     </Text>
+                    <TouchableOpacity
+                      style={styles.emptyResetBtn}
+                      onPress={handleResetFilters}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.emptyResetBtnText}>Reset All Filters</Text>
+                    </TouchableOpacity>
                   </View>
                 ) : (
                   filteredStudents.map((st) => (
@@ -720,6 +758,177 @@ export const StudentAuditLedgerModal = ({ visible, onClose, bookings = [] }) => 
               </ScrollView>
             </View>
           )}
+
+          {/* 🎛️ Clean Dropdown / Modal Filter Sheet */}
+          <Modal
+            visible={showFilterPickerModal}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setShowFilterPickerModal(false)}
+          >
+            <View style={styles.filterModalOverlay}>
+              <View style={styles.filterModalSheet}>
+                <View style={styles.filterModalHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="options" size={20} color="#4338CA" />
+                    <Text style={styles.filterModalTitle}>Filter Students</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setShowFilterPickerModal(false)} style={{ padding: 4 }}>
+                    <Ionicons name="close" size={22} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView
+                  style={{ maxHeight: '75%' }}
+                  contentContainerStyle={{ padding: 18, gap: 16 }}
+                  showsVerticalScrollIndicator={true}
+                >
+                  {/* 1. Academic Batch / Year Selection */}
+                  <View>
+                    <Text style={styles.filterGroupTitle}>🎓 Select Academic Batch / Course:</Text>
+                    <View style={styles.filterOptionsGrid}>
+                      {AUDIT_CATEGORY_OPTIONS.map((opt) => {
+                        const count = categoryCounts[opt.id] || 0;
+                        const isSelected = selectedCategoryFilter === opt.id;
+
+                        return (
+                          <TouchableOpacity
+                            key={opt.id}
+                            style={[
+                              styles.filterOptionItem,
+                              isSelected && styles.filterOptionItemSelected,
+                            ]}
+                            onPress={() => setSelectedCategoryFilter(opt.id)}
+                            activeOpacity={0.75}
+                          >
+                            <Ionicons
+                              name={opt.icon}
+                              size={16}
+                              color={isSelected ? '#4338CA' : '#64748B'}
+                            />
+                            <View style={{ flex: 1, marginLeft: 8 }}>
+                              <Text
+                                style={[
+                                  styles.filterOptionText,
+                                  isSelected && styles.filterOptionTextSelected,
+                                ]}
+                              >
+                                {opt.label}
+                              </Text>
+                            </View>
+                            <View
+                              style={[
+                                styles.countBadgePill,
+                                isSelected && { backgroundColor: '#4338CA' },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.countBadgePillText,
+                                  isSelected && { color: '#FFF' },
+                                ]}
+                              >
+                                {count}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* 2. Submission Activity */}
+                  <View>
+                    <Text style={styles.filterGroupTitle}>🧺 Submission Activity:</Text>
+                    <View style={styles.filterOptionsGrid}>
+                      {ACTIVITY_OPTIONS.map((act) => {
+                        const isSelected = selectedActivityFilter === act.id;
+
+                        return (
+                          <TouchableOpacity
+                            key={act.id}
+                            style={[
+                              styles.filterOptionItem,
+                              isSelected && styles.filterOptionItemSelected,
+                            ]}
+                            onPress={() => setSelectedActivityFilter(act.id)}
+                            activeOpacity={0.75}
+                          >
+                            <Text
+                              style={[
+                                styles.filterOptionText,
+                                isSelected && styles.filterOptionTextSelected,
+                              ]}
+                            >
+                              {act.label}
+                            </Text>
+                            {isSelected ? (
+                              <Ionicons name="checkmark-circle" size={18} color="#4338CA" />
+                            ) : null}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* 3. State / Origin Location */}
+                  <View>
+                    <Text style={styles.filterGroupTitle}>📍 State / Region Origin:</Text>
+                    <View style={styles.filterOptionsGrid}>
+                      {['ALL', ...STUDENT_LOCATIONS].map((loc) => {
+                        const isSelected = selectedLocationFilter === loc;
+
+                        return (
+                          <TouchableOpacity
+                            key={loc}
+                            style={[
+                              styles.filterOptionItem,
+                              isSelected && styles.filterOptionItemSelected,
+                            ]}
+                            onPress={() => setSelectedLocationFilter(loc)}
+                            activeOpacity={0.75}
+                          >
+                            <Text
+                              style={[
+                                styles.filterOptionText,
+                                isSelected && styles.filterOptionTextSelected,
+                              ]}
+                            >
+                              {loc === 'ALL' ? 'All Regions' : loc}
+                            </Text>
+                            {isSelected ? (
+                              <Ionicons name="checkmark-circle" size={18} color="#4338CA" />
+                            ) : null}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                </ScrollView>
+
+                {/* Bottom Footer Actions */}
+                <View style={styles.filterModalFooter}>
+                  <TouchableOpacity
+                    style={styles.modalResetBtn}
+                    onPress={handleResetFilters}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.modalResetBtnText}>Reset All</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.modalApplyBtn}
+                    onPress={() => setShowFilterPickerModal(false)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.modalApplyBtnText}>
+                      Apply Filters ({filteredStudents.length} Results)
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </View>
       </View>
     </Modal>
@@ -782,12 +991,18 @@ const styles = StyleSheet.create({
   searchSection: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
     gap: 8,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
@@ -803,67 +1018,71 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#0F172A',
   },
-  filterSectionLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#475569',
-    marginBottom: 6,
-    marginTop: 2,
-  },
-  yearChipsRow: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingBottom: 4,
-  },
-  yearChip: {
+  filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    gap: 6,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 14,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#C7D2FE',
   },
-  yearChipActive: {
+  filterButtonActive: {
     backgroundColor: '#4338CA',
     borderColor: '#4338CA',
   },
-  yearChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  yearChipTextActive: {
-    color: '#FFFFFF',
+  filterButtonText: {
+    fontSize: 12.5,
     fontWeight: '800',
+    color: '#4338CA',
   },
-  activityChipsRow: {
+  filterButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  filterBadgeCircle: {
+    backgroundColor: '#FFFFFF',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBadgeCircleText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#4338CA',
+  },
+  activeFiltersBar: {
     flexDirection: 'row',
-    gap: 6,
-    paddingBottom: 4,
-  },
-  activityChip: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#F8FAFC',
+    paddingVertical: 6,
     paddingHorizontal: 10,
-    paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  activityChipActive: {
-    backgroundColor: '#059669',
-    borderColor: '#059669',
+  activeFilterPill: {
+    flex: 1,
+    marginRight: 8,
   },
-  activityChipText: {
-    fontSize: 10.5,
+  activeFilterPillText: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: '#334155',
   },
-  activityChipTextActive: {
-    color: '#FFFFFF',
+  clearFiltersBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  clearFiltersBtnText: {
+    fontSize: 11,
     fontWeight: '800',
+    color: '#DC2626',
   },
   modalScroll: {
     flex: 1,
@@ -991,6 +1210,20 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     textAlign: 'center',
     marginTop: 3,
+    marginBottom: 14,
+  },
+  emptyResetBtn: {
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  emptyResetBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#4338CA',
   },
 
   /* Dossier Styles */
@@ -1238,6 +1471,112 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     color: '#B45309',
     fontWeight: '600',
+  },
+
+  /* 🎛️ Filter Bottom Sheet Modal Styles */
+  filterModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  filterModalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '85%',
+    overflow: 'hidden',
+  },
+  filterModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  filterModalTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  filterGroupTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 8,
+  },
+  filterOptionsGrid: {
+    gap: 6,
+  },
+  filterOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  filterOptionItemSelected: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#4338CA',
+  },
+  filterOptionText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  filterOptionTextSelected: {
+    color: '#4338CA',
+    fontWeight: '900',
+  },
+  countBadgePill: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  countBadgePillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#475569',
+  },
+  filterModalFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+  },
+  modalResetBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
+  },
+  modalResetBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  modalApplyBtn: {
+    flex: 1,
+    backgroundColor: '#4338CA',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalApplyBtnText: {
+    fontSize: 13.5,
+    fontWeight: '900',
+    color: '#FFFFFF',
   },
 });
 

@@ -29,6 +29,7 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
   const [filterGender, setFilterGender] = useState('ALL'); // 'ALL' | 'male' | 'female'
   const [filterYear, setFilterYear] = useState('ALL');
   const [filterLocation, setFilterLocation] = useState('ALL');
+  const [showFilterPickerModal, setShowFilterPickerModal] = useState(false);
   const [activeTab, setActiveTab] = useState('OVERVIEW'); // 'OVERVIEW' | 'ROSTER'
 
   // Fetch registered users census from backend on open
@@ -79,7 +80,7 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
       map[key].usedDhobi = true;
     });
 
-    // 2. Process all registered accounts from backend (including those who haven't made a booking yet)
+    // 2. Process all registered accounts from backend
     registeredUsers.forEach((u) => {
       const key = (u.student_id || u.full_name || u.email || 'unknown').trim().toLowerCase();
 
@@ -102,48 +103,86 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
           created_at: u.created_at || new Date().toISOString(),
         };
       } else {
-        // Enrich existing entry with registered details
-        if (u.email) map[key].student_email = u.email;
+        if (u.email && !map[key].student_email) map[key].student_email = u.email;
         if (u.gender) map[key].gender = u.gender.toLowerCase();
         if (u.location) map[key].location = u.location;
         if (u.branch) map[key].branch = u.branch;
+        if (u.academic_year) map[key].academic_year = u.academic_year;
       }
     });
 
     return Object.values(map);
   }, [bookings, registeredUsers]);
 
-  // Aggregate Demographic Analytics Calculations
+  // Global Census Metrics Calculations
   const stats = useMemo(() => {
     const totalStudents = studentCensusList.length;
-    const activeDhobiUsers = studentCensusList.filter((s) => s.usedDhobi).length;
-    const inactiveUsers = totalStudents - activeDhobiUsers;
-    const totalClothesWashed = studentCensusList.reduce((sum, s) => sum + s.totalClothes, 0);
+    let activeDhobiUsers = 0;
+    let inactiveUsers = 0;
+    let totalClothesWashed = 0;
+    let boysCount = 0;
+    let girlsCount = 0;
 
-    // Gender breakdown
-    const boysCount = studentCensusList.filter((s) => s.gender === 'male').length;
-    const girlsCount = studentCensusList.filter((s) => s.gender === 'female').length;
+    const locationCounts = {
+      'Andhra Pradesh': 0,
+      'Tamil Nadu': 0,
+      'Kerala': 0,
+      'Bihar': 0,
+      'Nepal': 0,
+      'Andaman & Nicobar': 0,
+      'Other States / International': 0,
+    };
 
-    // Academic Year breakdown
-    const yearCounts = {};
-    ACADEMIC_COURSES.forEach((yr) => (yearCounts[yr] = 0));
-    studentCensusList.forEach((s) => {
-      const match = ACADEMIC_COURSES.find((yr) => s.academic_year.includes(yr.split(' ')[0])) || s.academic_year;
-      yearCounts[match] = (yearCounts[match] || 0) + 1;
-    });
+    const yearCounts = {
+      '1st Year': 0,
+      '2nd Year': 0,
+      '3rd Year': 0,
+      '4th Year': 0,
+      'Diploma': 0,
+      'MBA/MCA': 0,
+      'Pharmacy/Nursing': 0,
+      'Other': 0,
+    };
 
-    // Location / Region breakdown
-    const locationCounts = {};
-    STUDENT_LOCATIONS.forEach((loc) => (locationCounts[loc] = 0));
-    studentCensusList.forEach((s) => {
-      const loc = s.location || 'Andhra Pradesh';
-      locationCounts[loc] = (locationCounts[loc] || 0) + 1;
-    });
-
-    // Branch breakdown
     const branchCounts = {};
-    studentCensusList.forEach((s) => {
-      const br = s.branch || 'CSE';
+
+    studentCensusList.forEach((st) => {
+      if (st.usedDhobi) {
+        activeDhobiUsers++;
+        totalClothesWashed += st.totalClothes;
+      } else {
+        inactiveUsers++;
+      }
+
+      if (st.gender === 'female') {
+        girlsCount++;
+      } else {
+        boysCount++;
+      }
+
+      // Location classification
+      const loc = st.location || '';
+      if (loc.includes('Nepal')) locationCounts['Nepal']++;
+      else if (loc.includes('Andhra')) locationCounts['Andhra Pradesh']++;
+      else if (loc.includes('Tamil')) locationCounts['Tamil Nadu']++;
+      else if (loc.includes('Kerala')) locationCounts['Kerala']++;
+      else if (loc.includes('Bihar')) locationCounts['Bihar']++;
+      else if (loc.includes('Andaman')) locationCounts['Andaman & Nicobar']++;
+      else locationCounts['Other States / International']++;
+
+      // Year classification
+      const yr = (st.academic_year || '').toLowerCase();
+      if (yr.includes('1st') || yr.includes('first')) yearCounts['1st Year']++;
+      else if (yr.includes('2nd') || yr.includes('second')) yearCounts['2nd Year']++;
+      else if (yr.includes('3rd') || yr.includes('third')) yearCounts['3rd Year']++;
+      else if (yr.includes('4th') || yr.includes('fourth') || yr.includes('final')) yearCounts['4th Year']++;
+      else if (yr.includes('diploma')) yearCounts['Diploma']++;
+      else if (yr.includes('mba') || yr.includes('mca')) yearCounts['MBA/MCA']++;
+      else if (yr.includes('pharmacy') || yr.includes('nursing')) yearCounts['Pharmacy/Nursing']++;
+      else yearCounts['Other']++;
+
+      // Branch classification
+      const br = st.branch || 'General';
       branchCounts[br] = (branchCounts[br] || 0) + 1;
     });
 
@@ -154,17 +193,35 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
       totalClothesWashed,
       boysCount,
       girlsCount,
-      yearCounts,
       locationCounts,
+      yearCounts,
       branchCounts,
     };
   }, [studentCensusList]);
 
-  // Filtered Student List
+  // Active filters count
+  const activeFiltersCount = useMemo(() => {
+    let cnt = 0;
+    if (filterUsage !== 'ALL') cnt++;
+    if (filterGender !== 'ALL') cnt++;
+    if (filterYear !== 'ALL') cnt++;
+    if (filterLocation !== 'ALL') cnt++;
+    return cnt;
+  }, [filterUsage, filterGender, filterYear, filterLocation]);
+
+  const handleResetFilters = () => {
+    setFilterUsage('ALL');
+    setFilterGender('ALL');
+    setFilterYear('ALL');
+    setFilterLocation('ALL');
+    setSearchQuery('');
+  };
+
+  // Filtered roster for search tab
   const filteredStudents = useMemo(() => {
     return studentCensusList.filter((st) => {
       const q = searchQuery.trim().toLowerCase();
-      const matchQuery =
+      const matchSearch =
         !q ||
         st.student_name.toLowerCase().includes(q) ||
         st.student_id.toLowerCase().includes(q) ||
@@ -180,16 +237,23 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
         (filterUsage === 'ACTIVE' && st.usedDhobi) ||
         (filterUsage === 'INACTIVE' && !st.usedDhobi);
 
-      const matchGender =
-        filterGender === 'ALL' || st.gender === filterGender;
+      const matchGender = filterGender === 'ALL' || st.gender === filterGender;
 
-      const matchYear =
-        filterYear === 'ALL' || st.academic_year.includes(filterYear.split(' ')[0]);
+      let matchYear = true;
+      if (filterYear !== 'ALL') {
+        const yLower = (st.academic_year || '').toLowerCase();
+        const fLower = filterYear.toLowerCase();
+        matchYear = yLower.includes(fLower);
+      }
 
-      const matchLocation =
-        filterLocation === 'ALL' || st.location === filterLocation;
+      let matchLocation = true;
+      if (filterLocation !== 'ALL') {
+        const lLower = (st.location || '').toLowerCase();
+        const fLower = filterLocation.toLowerCase();
+        matchLocation = lLower.includes(fLower);
+      }
 
-      return matchQuery && matchUsage && matchGender && matchYear && matchLocation;
+      return matchSearch && matchUsage && matchGender && matchYear && matchLocation;
     });
   }, [studentCensusList, searchQuery, filterUsage, filterGender, filterYear, filterLocation]);
 
@@ -204,9 +268,9 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
                 <Ionicons name="pie-chart" size={13} color="#2563EB" />
                 <Text style={styles.headerTagText}>STUDENT CENSUS & DEMOGRAPHICS</Text>
               </View>
-              <Text style={styles.headerTitle}>Student Demographics & Login Hub</Text>
+              <Text style={styles.headerTitle}>Student Census & Login Hub</Text>
               <Text style={styles.headerSub}>
-                Calculations on logins, active Dhobi users, years, Nepal, Andhra, boys & girls
+                Total logins, Dhobi adoption, Nepal, Andhra, boys & girls
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
@@ -214,314 +278,487 @@ export const AdminStudentCensusModal = ({ visible, onClose, bookings = [] }) => 
             </TouchableOpacity>
           </View>
 
-          {/* Mode Tabs: Overview Analytics vs Full Student Roster */}
-          <View style={styles.topTabsBar}>
+          {/* Navigation Tabs (Overview vs Full Roster) */}
+          <View style={styles.navTabsRow}>
             <TouchableOpacity
-              style={[styles.topTab, activeTab === 'OVERVIEW' && styles.topTabActive]}
+              style={[styles.navTab, activeTab === 'OVERVIEW' && styles.navTabActive]}
               onPress={() => setActiveTab('OVERVIEW')}
+              activeOpacity={0.8}
             >
               <Ionicons
-                name="bar-chart"
+                name="analytics-outline"
                 size={16}
                 color={activeTab === 'OVERVIEW' ? '#2563EB' : '#64748B'}
               />
-              <Text style={[styles.topTabText, activeTab === 'OVERVIEW' && styles.topTabTextActive]}>
+              <Text
+                style={[
+                  styles.navTabText,
+                  activeTab === 'OVERVIEW' && styles.navTabTextActive,
+                ]}
+              >
                 Demographic Overview
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.topTab, activeTab === 'ROSTER' && styles.topTabActive]}
+              style={[styles.navTab, activeTab === 'ROSTER' && styles.navTabActive]}
               onPress={() => setActiveTab('ROSTER')}
+              activeOpacity={0.8}
             >
               <Ionicons
-                name="people"
+                name="people-outline"
                 size={16}
                 color={activeTab === 'ROSTER' ? '#2563EB' : '#64748B'}
               />
-              <Text style={[styles.topTabText, activeTab === 'ROSTER' && styles.topTabTextActive]}>
-                Student Roster ({filteredStudents.length})
+              <Text
+                style={[
+                  styles.navTabText,
+                  activeTab === 'ROSTER' && styles.navTabTextActive,
+                ]}
+              >
+                Student Roster ({studentCensusList.length})
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Scrollable Content */}
-          <ScrollView
-            style={styles.modalScroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {activeTab === 'OVERVIEW' ? (
-              /* ==================================================== */
-              /* 📊 DEMOGRAPHIC OVERVIEW & CALCULATIONS VIEW          */
-              /* ==================================================== */
-              <View style={styles.overviewContainer}>
-                {/* 1. Master Usage Cards */}
-                <View style={styles.masterMetricsGrid}>
-                  {/* Total Logged-in Students */}
-                  <View style={[styles.masterCard, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-                    <View style={styles.masterCardTop}>
-                      <Ionicons name="person-add" size={20} color="#4338CA" />
-                      <Text style={[styles.masterCardNum, { color: '#4338CA' }]}>
-                        {stats.totalStudents}
-                      </Text>
-                    </View>
-                    <Text style={styles.masterCardLabel}>Total Registered Students</Text>
-                    <Text style={styles.masterCardSub}>Logged in to VASTRA Portal</Text>
-                  </View>
-
-                  {/* Active Dhobi Users */}
-                  <View style={[styles.masterCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-                    <View style={styles.masterCardTop}>
-                      <Ionicons name="shirt" size={20} color="#15803D" />
-                      <Text style={[styles.masterCardNum, { color: '#15803D' }]}>
-                        {stats.activeDhobiUsers}
-                      </Text>
-                    </View>
-                    <Text style={styles.masterCardLabel}>Used Dhobi Service</Text>
-                    <Text style={styles.masterCardSub}>
-                      {((stats.activeDhobiUsers / (stats.totalStudents || 1)) * 100).toFixed(0)}% Adoption Rate
+          {/* Tab 1: Demographic Overview */}
+          {activeTab === 'OVERVIEW' ? (
+            <ScrollView
+              style={styles.modalScroll}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* 1. Master Metric Overview Cards */}
+              <View style={styles.masterMetricsGrid}>
+                {/* Total Logged In */}
+                <View style={[styles.masterCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+                  <View style={styles.masterCardTop}>
+                    <Ionicons name="people" size={20} color="#2563EB" />
+                    <Text style={[styles.masterCardNum, { color: '#2563EB' }]}>
+                      {stats.totalStudents}
                     </Text>
                   </View>
+                  <Text style={styles.masterCardLabel}>Total Logged In</Text>
+                  <Text style={styles.masterCardSub}>Registered accounts</Text>
+                </View>
 
-                  {/* Inactive Students */}
-                  <View style={[styles.masterCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-                    <View style={styles.masterCardTop}>
-                      <Ionicons name="hourglass-outline" size={20} color="#B45309" />
-                      <Text style={[styles.masterCardNum, { color: '#B45309' }]}>
-                        {stats.inactiveUsers}
+                {/* Used Dhobi */}
+                <View style={[styles.masterCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+                  <View style={styles.masterCardTop}>
+                    <Ionicons name="checkmark-done-circle" size={20} color="#15803D" />
+                    <Text style={[styles.masterCardNum, { color: '#15803D' }]}>
+                      {stats.activeDhobiUsers}
+                    </Text>
+                  </View>
+                  <Text style={styles.masterCardLabel}>Used Dhobi Service</Text>
+                  <Text style={styles.masterCardSub}>
+                    {((stats.activeDhobiUsers / (stats.totalStudents || 1)) * 100).toFixed(0)}% Adoption Rate
+                  </Text>
+                </View>
+
+                {/* Inactive Students */}
+                <View style={[styles.masterCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+                  <View style={styles.masterCardTop}>
+                    <Ionicons name="hourglass-outline" size={20} color="#B45309" />
+                    <Text style={[styles.masterCardNum, { color: '#B45309' }]}>
+                      {stats.inactiveUsers}
+                    </Text>
+                  </View>
+                  <Text style={styles.masterCardLabel}>Not Used Yet</Text>
+                  <Text style={styles.masterCardSub}>Registered but 0 drop-offs</Text>
+                </View>
+
+                {/* Total Clothes Washed */}
+                <View style={[styles.masterCard, { backgroundColor: '#FAF5FF', borderColor: '#E9D5FF' }]}>
+                  <View style={styles.masterCardTop}>
+                    <Ionicons name="water" size={20} color="#7C3AED" />
+                    <Text style={[styles.masterCardNum, { color: '#7C3AED' }]}>
+                      {stats.totalClothesWashed}
+                    </Text>
+                  </View>
+                  <Text style={styles.masterCardLabel}>Total Clothes Washed</Text>
+                  <Text style={styles.masterCardSub}>Across all hostel blocks</Text>
+                </View>
+              </View>
+
+              {/* 2. 👦 Boys vs 👧 Girls Demographics */}
+              <View style={styles.sectionCard}>
+                <Text style={styles.sectionCardTitle}>🚻 Gender & Hostel Demographics</Text>
+                <View style={styles.genderRow}>
+                  <View style={[styles.genderCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+                    <Text style={styles.genderIcon}>👦</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.genderTitle}>Boys (Male Hostel)</Text>
+                      <Text style={[styles.genderCount, { color: '#1D4ED8' }]}>
+                        {stats.boysCount} Students
+                      </Text>
+                      <Text style={styles.genderPercent}>
+                        {((stats.boysCount / (stats.totalStudents || 1)) * 100).toFixed(1)}% of campus
                       </Text>
                     </View>
-                    <Text style={styles.masterCardLabel}>Not Used Yet</Text>
-                    <Text style={styles.masterCardSub}>Registered but 0 drop-offs</Text>
                   </View>
 
-                  {/* Total Clothes Washed */}
-                  <View style={[styles.masterCard, { backgroundColor: '#FAF5FF', borderColor: '#E9D5FF' }]}>
-                    <View style={styles.masterCardTop}>
-                      <Ionicons name="water" size={20} color="#7C3AED" />
-                      <Text style={[styles.masterCardNum, { color: '#7C3AED' }]}>
-                        {stats.totalClothesWashed}
+                  <View style={[styles.genderCard, { backgroundColor: '#FDF2F8', borderColor: '#FBCFE8' }]}>
+                    <Text style={styles.genderIcon}>👧</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.genderTitle}>Girls (Female Hostel)</Text>
+                      <Text style={[styles.genderCount, { color: '#BE185D' }]}>
+                        {stats.girlsCount} Students
+                      </Text>
+                      <Text style={styles.genderPercent}>
+                        {((stats.girlsCount / (stats.totalStudents || 1)) * 100).toFixed(1)}% of campus
                       </Text>
                     </View>
-                    <Text style={styles.masterCardLabel}>Total Clothes Washed</Text>
-                    <Text style={styles.masterCardSub}>Across all hostel blocks</Text>
-                  </View>
-                </View>
-
-                {/* 2. 👦 Boys vs 👧 Girls Demographics */}
-                <View style={styles.sectionCard}>
-                  <Text style={styles.sectionCardTitle}>🚻 Gender & Hostel Demographics</Text>
-                  <View style={styles.genderRow}>
-                    <View style={[styles.genderCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-                      <Text style={styles.genderIcon}>👦</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.genderTitle}>Boys (Male Hostel)</Text>
-                        <Text style={[styles.genderCount, { color: '#1D4ED8' }]}>
-                          {stats.boysCount} Students
-                        </Text>
-                        <Text style={styles.genderPercent}>
-                          {((stats.boysCount / (stats.totalStudents || 1)) * 100).toFixed(1)}% of campus
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={[styles.genderCard, { backgroundColor: '#FDF2F8', borderColor: '#FBCFE8' }]}>
-                      <Text style={styles.genderIcon}>👧</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.genderTitle}>Girls (Female Hostel)</Text>
-                        <Text style={[styles.genderCount, { color: '#BE185D' }]}>
-                          {stats.girlsCount} Students
-                        </Text>
-                        <Text style={styles.genderPercent}>
-                          {((stats.girlsCount / (stats.totalStudents || 1)) * 100).toFixed(1)}% of campus
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-
-                {/* 3. 🌍 State & International Region Breakdown (Nepal, Andhra, Tamil Nadu, Bihar, etc.) */}
-                <View style={styles.sectionCard}>
-                  <Text style={styles.sectionCardTitle}>🏔️ State & Regional Demographics</Text>
-                  <View style={styles.barsList}>
-                    {Object.entries(stats.locationCounts).map(([loc, count]) => {
-                      const pct = ((count / (stats.totalStudents || 1)) * 100).toFixed(0);
-                      const isNepal = loc.includes('Nepal');
-                      const isAndhra = loc.includes('Andhra');
-
-                      return (
-                        <View key={loc} style={styles.barItem}>
-                          <View style={styles.barItemHeader}>
-                            <Text style={styles.barItemLabel}>
-                              {isNepal ? '🏔️ ' : isAndhra ? '🌴 ' : '📍 '}
-                              {loc}
-                            </Text>
-                            <Text style={styles.barItemValue}>
-                              {count} Students ({pct}%)
-                            </Text>
-                          </View>
-                          <View style={styles.progressBarTrack}>
-                            <View
-                              style={[
-                                styles.progressBarFill,
-                                {
-                                  width: `${Math.max(4, Number(pct))}%`,
-                                  backgroundColor: isNepal ? '#EA580C' : isAndhra ? '#16A34A' : '#2563EB',
-                                },
-                              ]}
-                            />
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-
-                {/* 4. 🎓 Academic Year & Course Demographics */}
-                <View style={styles.sectionCard}>
-                  <Text style={styles.sectionCardTitle}>🎓 Academic Year & Batch Distribution</Text>
-                  <View style={styles.yearsGrid}>
-                    {Object.entries(stats.yearCounts).map(([yr, count]) => (
-                      <View key={yr} style={styles.yearPillBox}>
-                        <Text style={styles.yearPillNum}>{count}</Text>
-                        <Text style={styles.yearPillLabel}>{yr}</Text>
-                      </View>
-                    ))}
                   </View>
                 </View>
               </View>
-            ) : (
-              /* ==================================================== */
-              /* 👥 FULL STUDENT ROSTER & SEARCH DIRECTORY            */
-              /* ==================================================== */
-              <View style={styles.rosterContainer}>
-                {/* Search Bar */}
-                <View style={styles.searchBar}>
-                  <Ionicons name="search" size={18} color="#64748B" />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search by name, roll no, email, phone, branch, room..."
-                    placeholderTextColor="#94A3B8"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                  />
-                  {searchQuery ? (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                      <Ionicons name="close-circle" size={18} color="#94A3B8" />
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
 
-                {/* Filter Chips Bar */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipsRow}>
-                  {/* Usage Filter */}
-                  {[
-                    { id: 'ALL', label: 'All Students' },
-                    { id: 'ACTIVE', label: '🧺 Used Dhobi' },
-                    { id: 'INACTIVE', label: '💤 Not Used' },
-                  ].map((f) => (
-                    <TouchableOpacity
-                      key={f.id}
-                      style={[styles.filterChip, filterUsage === f.id && styles.filterChipActive]}
-                      onPress={() => setFilterUsage(f.id)}
-                    >
-                      <Text style={[styles.filterChipText, filterUsage === f.id && styles.filterChipTextActive]}>
-                        {f.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+              {/* 3. 🌍 State & International Region Breakdown */}
+              <View style={styles.sectionCard}>
+                <Text style={styles.sectionCardTitle}>🏔️ State & Regional Demographics</Text>
+                <View style={styles.barsList}>
+                  {Object.entries(stats.locationCounts).map(([loc, count]) => {
+                    const pct = ((count / (stats.totalStudents || 1)) * 100).toFixed(0);
+                    const isNepal = loc.includes('Nepal');
+                    const isAndhra = loc.includes('Andhra');
 
-                  {/* Gender Filter */}
-                  {[
-                    { id: 'ALL', label: 'All Genders' },
-                    { id: 'male', label: '👦 Boys Hostel' },
-                    { id: 'female', label: '👧 Girls Hostel' },
-                  ].map((g) => (
-                    <TouchableOpacity
-                      key={g.id}
-                      style={[styles.filterChip, filterGender === g.id && styles.filterChipActive]}
-                      onPress={() => setFilterGender(g.id)}
-                    >
-                      <Text style={[styles.filterChipText, filterGender === g.id && styles.filterChipTextActive]}>
-                        {g.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-
-                {/* Student Cards */}
-                <View style={styles.studentCardsList}>
-                  {filteredStudents.length === 0 ? (
-                    <View style={styles.emptyCard}>
-                      <Ionicons name="people-outline" size={36} color="#94A3B8" />
-                      <Text style={styles.emptyTitle}>No Students Found</Text>
-                      <Text style={styles.emptySub}>Try adjusting your search filters.</Text>
-                    </View>
-                  ) : (
-                    filteredStudents.map((st) => (
-                      <View key={st.key} style={styles.studentRosterCard}>
-                        <View style={styles.rosterTop}>
-                          <View style={styles.avatarWrap}>
-                            <Text style={styles.avatarIcon}>{st.gender === 'female' ? '👧' : '👦'}</Text>
-                          </View>
-
-                          <View style={{ flex: 1, marginLeft: 10 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <Text style={styles.rosterName}>{st.student_name}</Text>
-                              <View style={styles.rollBadge}>
-                                <Text style={styles.rollBadgeText}>{st.student_id}</Text>
-                              </View>
-                            </View>
-                            <Text style={styles.rosterCourse}>
-                              {st.academic_year} • {st.branch || 'CSE'}
-                            </Text>
-                            <Text style={styles.rosterBlock}>
-                              🏢 {st.hostel_block} • Room {st.room_number} (📍 {st.location})
-                            </Text>
-                          </View>
-
-                          {/* Used Dhobi Badge */}
+                    return (
+                      <View key={loc} style={styles.barItem}>
+                        <View style={styles.barItemHeader}>
+                          <Text style={styles.barItemLabel}>
+                            {isNepal ? '🏔️ ' : isAndhra ? '🌴 ' : '📍 '}
+                            {loc}
+                          </Text>
+                          <Text style={styles.barItemValue}>
+                            {count} Students ({pct}%)
+                          </Text>
+                        </View>
+                        <View style={styles.progressBarTrack}>
                           <View
                             style={[
-                              styles.dhobiStatusBadge,
-                              { backgroundColor: st.usedDhobi ? '#DCFCE7' : '#F1F5F9' },
+                              styles.progressBarFill,
+                              {
+                                width: `${Math.max(4, Number(pct))}%`,
+                                backgroundColor: isNepal ? '#EA580C' : isAndhra ? '#16A34A' : '#2563EB',
+                              },
                             ]}
-                          >
-                            <Text
-                              style={[
-                                styles.dhobiStatusText,
-                                { color: st.usedDhobi ? '#15803D' : '#64748B' },
-                              ]}
-                            >
-                              {st.usedDhobi ? `🧺 ${st.totalBookings} Orders` : '💤 Not Used'}
-                            </Text>
-                          </View>
-                        </View>
-
-                        {/* Contact Meta */}
-                        <View style={styles.rosterContactRow}>
-                          {st.phone_number ? (
-                            <Text style={styles.rosterContactText}>📞 {st.phone_number}</Text>
-                          ) : null}
-                          {st.student_email ? (
-                            <Text style={styles.rosterContactText} numberOfLines={1}>
-                              ✉️ {st.student_email}
-                            </Text>
-                          ) : null}
-                          {st.usedDhobi ? (
-                            <Text style={[styles.rosterContactText, { color: '#4338CA', fontWeight: '800' }]}>
-                              👕 {st.totalClothes} Clothes Washed
-                            </Text>
-                          ) : null}
+                          />
                         </View>
                       </View>
-                    ))
-                  )}
+                    );
+                  })}
                 </View>
               </View>
-            )}
-          </ScrollView>
+
+              {/* 4. 🎓 Academic Year & Course Demographics */}
+              <View style={styles.sectionCard}>
+                <Text style={styles.sectionCardTitle}>🎓 Academic Year & Batch Distribution</Text>
+                <View style={styles.yearsGrid}>
+                  {Object.entries(stats.yearCounts).map(([yr, count]) => (
+                    <View key={yr} style={styles.yearPillBox}>
+                      <Text style={styles.yearPillNum}>{count}</Text>
+                      <Text style={styles.yearPillLabel}>{yr}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+          ) : (
+            /* Tab 2: Full Student Roster & Search Directory */
+            <View style={styles.rosterContainer}>
+              {/* Search & Filter Bar */}
+              <View style={styles.searchSection}>
+                <View style={styles.searchRow}>
+                  {/* Search Bar */}
+                  <View style={styles.searchBar}>
+                    <Ionicons name="search" size={18} color="#64748B" />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="Search name, roll ID, email, branch..."
+                      placeholderTextColor="#94A3B8"
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                    />
+                    {searchQuery ? (
+                      <TouchableOpacity onPress={() => setSearchQuery('')}>
+                        <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+
+                  {/* ⚙️ Filter Button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.filterButton,
+                      activeFiltersCount > 0 && styles.filterButtonActive,
+                    ]}
+                    onPress={() => setShowFilterPickerModal(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="options-outline"
+                      size={18}
+                      color={activeFiltersCount > 0 ? '#FFF' : '#2563EB'}
+                    />
+                    <Text
+                      style={[
+                        styles.filterButtonText,
+                        activeFiltersCount > 0 && styles.filterButtonTextActive,
+                      ]}
+                    >
+                      Filter
+                    </Text>
+                    {activeFiltersCount > 0 ? (
+                      <View style={styles.filterBadgeCircle}>
+                        <Text style={styles.filterBadgeCircleText}>{activeFiltersCount}</Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                </View>
+
+                {/* Active Filter summary */}
+                {activeFiltersCount > 0 || searchQuery ? (
+                  <View style={styles.activeFiltersBar}>
+                    <View style={styles.activeFilterPill}>
+                      <Text style={styles.activeFilterPillText} numberOfLines={1}>
+                        Filtered: {filterUsage !== 'ALL' ? filterUsage : 'All Usage'}
+                        {filterGender !== 'ALL' ? ` • ${filterGender === 'male' ? 'Boys' : 'Girls'}` : ''}
+                        {filterYear !== 'ALL' ? ` • ${filterYear}` : ''}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={handleResetFilters}
+                      style={styles.clearFiltersBtn}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="close" size={14} color="#DC2626" />
+                      <Text style={styles.clearFiltersBtnText}>Reset</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+
+              {/* Student Cards */}
+              <ScrollView
+                style={styles.modalScroll}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {filteredStudents.length === 0 ? (
+                  <View style={styles.emptyCard}>
+                    <Ionicons name="people-outline" size={36} color="#94A3B8" />
+                    <Text style={styles.emptyTitle}>No Students Found</Text>
+                    <Text style={styles.emptySub}>Try adjusting your filter selection.</Text>
+                  </View>
+                ) : (
+                  filteredStudents.map((st) => (
+                    <View key={st.key} style={styles.studentRosterCard}>
+                      <View style={styles.rosterTop}>
+                        <View style={styles.avatarWrap}>
+                          <Text style={styles.avatarIcon}>{st.gender === 'female' ? '👧' : '👦'}</Text>
+                        </View>
+
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <Text style={styles.rosterName}>{st.student_name}</Text>
+                            <View style={styles.rollBadge}>
+                              <Text style={styles.rollBadgeText}>{st.student_id}</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.rosterCourse}>
+                            {st.academic_year} • {st.branch || 'CSE'}
+                          </Text>
+                          <Text style={styles.rosterBlock}>
+                            🏢 {st.hostel_block} • Room {st.room_number} (📍 {st.location})
+                          </Text>
+                        </View>
+
+                        <View
+                          style={[
+                            styles.usageBadge,
+                            st.usedDhobi ? styles.usageActive : styles.usageInactive,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.usageBadgeText,
+                              st.usedDhobi ? styles.usageActiveText : styles.usageInactiveText,
+                            ]}
+                          >
+                            {st.usedDhobi ? 'Used Dhobi' : 'Not Used'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Contact and clothes details */}
+                      <View style={styles.rosterMetaRow}>
+                        <View style={styles.metaItem}>
+                          <Ionicons name="mail-outline" size={13} color="#64748B" />
+                          <Text style={styles.metaText} numberOfLines={1}>
+                            {st.student_email || 'No email'}
+                          </Text>
+                        </View>
+
+                        <View style={styles.metaItem}>
+                          <Ionicons name="shirt-outline" size={13} color="#2563EB" />
+                          <Text style={[styles.metaText, { color: '#2563EB', fontWeight: '800' }]}>
+                            {st.totalClothes} Clothes ({st.totalBookings} Bags)
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* 🎛️ Filter Bottom Sheet Modal */}
+          <Modal
+            visible={showFilterPickerModal}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setShowFilterPickerModal(false)}
+          >
+            <View style={styles.filterModalOverlay}>
+              <View style={styles.filterModalSheet}>
+                <View style={styles.filterModalHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="options" size={20} color="#2563EB" />
+                    <Text style={styles.filterModalTitle}>Filter Student Roster</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setShowFilterPickerModal(false)} style={{ padding: 4 }}>
+                    <Ionicons name="close" size={22} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView
+                  style={{ maxHeight: '75%' }}
+                  contentContainerStyle={{ padding: 18, gap: 16 }}
+                  showsVerticalScrollIndicator={true}
+                >
+                  {/* 1. Dhobi Usage Filter */}
+                  <View>
+                    <Text style={styles.filterGroupTitle}>🧺 Dhobi Service Usage:</Text>
+                    <View style={styles.filterOptionsGrid}>
+                      {[
+                        { id: 'ALL', label: 'All Registered Students' },
+                        { id: 'ACTIVE', label: '🧺 Used Dhobi Service' },
+                        { id: 'INACTIVE', label: '💤 Not Used (0 Drop-offs)' },
+                      ].map((opt) => (
+                        <TouchableOpacity
+                          key={opt.id}
+                          style={[
+                            styles.filterOptionItem,
+                            filterUsage === opt.id && styles.filterOptionItemSelected,
+                          ]}
+                          onPress={() => setFilterUsage(opt.id)}
+                          activeOpacity={0.75}
+                        >
+                          <Text
+                            style={[
+                              styles.filterOptionText,
+                              filterUsage === opt.id && styles.filterOptionTextSelected,
+                            ]}
+                          >
+                            {opt.label}
+                          </Text>
+                          {filterUsage === opt.id ? (
+                            <Ionicons name="checkmark-circle" size={18} color="#2563EB" />
+                          ) : null}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* 2. Gender & Hostel Filter */}
+                  <View>
+                    <Text style={styles.filterGroupTitle}>🚻 Gender & Hostel:</Text>
+                    <View style={styles.filterOptionsGrid}>
+                      {[
+                        { id: 'ALL', label: 'All Genders (Campus-wide)' },
+                        { id: 'male', label: '👦 Boys Hostel (Male Students)' },
+                        { id: 'female', label: '👧 Girls Hostel (Female Students)' },
+                      ].map((opt) => (
+                        <TouchableOpacity
+                          key={opt.id}
+                          style={[
+                            styles.filterOptionItem,
+                            filterGender === opt.id && styles.filterOptionItemSelected,
+                          ]}
+                          onPress={() => setFilterGender(opt.id)}
+                          activeOpacity={0.75}
+                        >
+                          <Text
+                            style={[
+                              styles.filterOptionText,
+                              filterGender === opt.id && styles.filterOptionTextSelected,
+                            ]}
+                          >
+                            {opt.label}
+                          </Text>
+                          {filterGender === opt.id ? (
+                            <Ionicons name="checkmark-circle" size={18} color="#2563EB" />
+                          ) : null}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* 3. Academic Year & Course */}
+                  <View>
+                    <Text style={styles.filterGroupTitle}>🎓 Course & Academic Year:</Text>
+                    <View style={styles.filterOptionsGrid}>
+                      {['ALL', ...ACADEMIC_COURSES].map((yr) => (
+                        <TouchableOpacity
+                          key={yr}
+                          style={[
+                            styles.filterOptionItem,
+                            filterYear === yr && styles.filterOptionItemSelected,
+                          ]}
+                          onPress={() => setFilterYear(yr)}
+                          activeOpacity={0.75}
+                        >
+                          <Text
+                            style={[
+                              styles.filterOptionText,
+                              filterYear === yr && styles.filterOptionTextSelected,
+                            ]}
+                          >
+                            {yr === 'ALL' ? 'All Academic Courses' : yr}
+                          </Text>
+                          {filterYear === yr ? (
+                            <Ionicons name="checkmark-circle" size={18} color="#2563EB" />
+                          ) : null}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                </ScrollView>
+
+                {/* Bottom Footer Actions */}
+                <View style={styles.filterModalFooter}>
+                  <TouchableOpacity
+                    style={styles.modalResetBtn}
+                    onPress={handleResetFilters}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.modalResetBtnText}>Reset All</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.modalApplyBtn}
+                    onPress={() => setShowFilterPickerModal(false)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.modalApplyBtnText}>
+                      Apply Filters ({filteredStudents.length} Results)
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </View>
       </View>
     </Modal>
@@ -581,35 +818,31 @@ const styles = StyleSheet.create({
   closeBtn: {
     padding: 4,
   },
-  topTabsBar: {
+  navTabsRow: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
+    backgroundColor: '#F8FAFC',
   },
-  topTab: {
+  navTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 10,
     gap: 6,
+    paddingVertical: 12,
   },
-  topTabActive: {
+  navTabActive: {
     backgroundColor: '#FFFFFF',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
-    elevation: 2,
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#2563EB',
   },
-  topTabText: {
-    fontSize: 12,
+  navTabText: {
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#64748B',
   },
-  topTabTextActive: {
+  navTabTextActive: {
     color: '#2563EB',
     fontWeight: '800',
   },
@@ -621,9 +854,6 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingBottom: 40,
   },
-  overviewContainer: {
-    gap: 14,
-  },
   masterMetricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -632,7 +862,7 @@ const styles = StyleSheet.create({
   masterCard: {
     width: '48.5%',
     borderRadius: 16,
-    padding: 12,
+    padding: 14,
     borderWidth: 1.5,
   },
   masterCardTop: {
@@ -646,30 +876,29 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   masterCardLabel: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '800',
     color: '#1E293B',
-    marginTop: 2,
   },
   masterCardSub: {
-    fontSize: 9.5,
+    fontSize: 10,
     color: '#64748B',
     fontWeight: '600',
     marginTop: 2,
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 16,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
     gap: 12,
   },
   sectionCardTitle: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '900',
     color: '#0F172A',
+    letterSpacing: 0.5,
   },
   genderRow: {
     flexDirection: 'row',
@@ -679,23 +908,23 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
     borderRadius: 14,
+    padding: 12,
     borderWidth: 1.5,
     gap: 10,
   },
   genderIcon: {
-    fontSize: 28,
+    fontSize: 26,
   },
   genderTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#334155',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
   },
   genderCount: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '900',
-    marginTop: 2,
+    marginTop: 1,
   },
   genderPercent: {
     fontSize: 9.5,
@@ -703,28 +932,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   barsList: {
-    gap: 10,
+    gap: 8,
   },
   barItem: {
     gap: 4,
   },
   barItemHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   barItemLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#334155',
   },
   barItemValue: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#64748B',
+    color: '#0F172A',
   },
   progressBarTrack: {
-    height: 7,
+    height: 8,
     backgroundColor: '#F1F5F9',
     borderRadius: 4,
     overflow: 'hidden',
@@ -740,17 +969,15 @@ const styles = StyleSheet.create({
   },
   yearPillBox: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     alignItems: 'center',
-    minWidth: '30%',
-    flex: 1,
   },
   yearPillNum: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '900',
     color: '#2563EB',
   },
@@ -758,15 +985,27 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: '#64748B',
-    marginTop: 2,
-    textAlign: 'center',
   },
 
   /* Roster Styles */
   rosterContainer: {
-    gap: 12,
+    flex: 1,
+  },
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    gap: 8,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
@@ -782,52 +1021,90 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#0F172A',
   },
-  filterChipsRow: {
+  filterButton: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
-    paddingBottom: 4,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 14,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
   },
-  filterChip: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  filterChipActive: {
+  filterButtonActive: {
     backgroundColor: '#2563EB',
     borderColor: '#2563EB',
   },
-  filterChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
+  filterButtonText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#2563EB',
   },
-  filterChipTextActive: {
+  filterButtonTextActive: {
     color: '#FFFFFF',
   },
-  studentCardsList: {
-    gap: 10,
+  filterBadgeCircle: {
+    backgroundColor: '#FFFFFF',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBadgeCircleText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#2563EB',
+  },
+  activeFiltersBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  activeFilterPill: {
+    flex: 1,
+    marginRight: 8,
+  },
+  activeFilterPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  clearFiltersBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  clearFiltersBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#DC2626',
   },
   studentRosterCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-    gap: 8,
+    gap: 10,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
   },
   rosterTop: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   avatarWrap: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -854,33 +1131,49 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#2563EB',
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: 1,
   },
   rosterBlock: {
-    fontSize: 10.5,
+    fontSize: 10,
     color: '#64748B',
-    marginTop: 2,
+    marginTop: 1,
   },
-  dhobiStatusBadge: {
-    paddingHorizontal: 8,
+  usageBadge: {
     paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: 8,
   },
-  dhobiStatusText: {
+  usageActive: {
+    backgroundColor: '#DCFCE7',
+  },
+  usageInactive: {
+    backgroundColor: '#FEF3C7',
+  },
+  usageBadgeText: {
     fontSize: 10,
     fontWeight: '800',
   },
-  rosterContactRow: {
+  usageActiveText: {
+    color: '#15803D',
+  },
+  usageInactiveText: {
+    color: '#B45309',
+  },
+  rosterMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
     paddingTop: 8,
-    flexWrap: 'wrap',
-    gap: 6,
   },
-  rosterContactText: {
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flex: 1,
+  },
+  metaText: {
     fontSize: 10.5,
     color: '#64748B',
     fontWeight: '600',
@@ -903,7 +1196,103 @@ const styles = StyleSheet.create({
   emptySub: {
     fontSize: 12,
     color: '#94A3B8',
+    textAlign: 'center',
     marginTop: 3,
+  },
+
+  /* 🎛️ Filter Bottom Sheet Modal Styles */
+  filterModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  filterModalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '85%',
+    overflow: 'hidden',
+  },
+  filterModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  filterModalTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  filterGroupTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 8,
+  },
+  filterOptionsGrid: {
+    gap: 6,
+  },
+  filterOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  filterOptionItemSelected: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#2563EB',
+  },
+  filterOptionText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  filterOptionTextSelected: {
+    color: '#2563EB',
+    fontWeight: '900',
+  },
+  filterModalFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+  },
+  modalResetBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
+  },
+  modalResetBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  modalApplyBtn: {
+    flex: 1,
+    backgroundColor: '#2563EB',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalApplyBtnText: {
+    fontSize: 13.5,
+    fontWeight: '900',
+    color: '#FFFFFF',
   },
 });
 
