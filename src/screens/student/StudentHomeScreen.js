@@ -217,21 +217,23 @@ export const StudentHomeScreen = ({
           activeOpacity={0.85}
         >
           <View style={[styles.iconBox, { backgroundColor: '#7C3AED' }]}>
-            <Ionicons name="bag-add" size={20} color="#FFF" />
+            <Ionicons name="bag-add" size={22} color="#FFF" />
           </View>
 
           <Text style={styles.cardMainTitle}>Book Slot</Text>
 
           <View style={styles.cardMetricRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardMetricLabel}>Capacity</Text>
-              <Text style={[styles.cardMetricVal, { color: '#5B21B6' }]}>Unlimited Wash</Text>
+              <Text style={styles.cardMetricLabel}>Assigned Day</Text>
+              <Text style={[styles.cardMetricVal, { color: '#5B21B6' }]}>
+                {yearConfig.dropoffDay}
+              </Text>
             </View>
-            <Ionicons name="add-circle" size={18} color="#7C3AED" />
+            <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
           </View>
 
           <Text style={styles.cardFooterSub}>
-            Drop: {yearConfig.dropoffDay} • Pick: {yearConfig.pickupDay}
+            Pickup: {yearConfig.pickupDay} (+2 days)
           </Text>
         </TouchableOpacity>
 
@@ -250,7 +252,7 @@ export const StudentHomeScreen = ({
           activeOpacity={0.85}
         >
           <View style={[styles.iconBox, { backgroundColor: '#0284C7' }]}>
-            <Ionicons name="qr-code" size={20} color="#FFF" />
+            <Ionicons name="qr-code" size={22} color="#FFF" />
           </View>
 
           <Text style={styles.cardMainTitle}>Pickup Tokens</Text>
@@ -258,21 +260,21 @@ export const StudentHomeScreen = ({
           <View style={styles.cardMetricRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardMetricLabel}>Pass Token</Text>
-              <Text style={styles.cardMetricVal} numberOfLines={1}>
+              <Text style={[styles.cardMetricVal, { color: '#0369A1' }]} numberOfLines={1}>
                 {primaryActive ? `#${primaryActive.pickup_token}` : 'Ready at Desk'}
               </Text>
             </View>
-            <Ionicons name="shield-checkmark-outline" size={16} color="#0E7490" />
+            <Ionicons name="shield-checkmark-outline" size={18} color="#0284C7" />
           </View>
 
           <Text style={styles.cardFooterSub}>
-            {readyBookings.length > 0 ? '✨ 1 Bag Ready!' : 'Present at counter'}
+            Present at counter
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* 🛠️ TOOLS SECTION */}
-      <Text style={styles.sectionHeader}>TOOLS & GUIDELINES</Text>
+      <Text style={styles.sectionHeader}>TOOLS</Text>
 
       <View style={styles.toolsGrid}>
         <TouchableOpacity
@@ -412,12 +414,12 @@ const styles = StyleSheet.create({
   },
   greetingCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
+    borderRadius: 36,
+    padding: 20,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    marginBottom: 16,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+    marginBottom: 20,
+    ...THEME.shadows.md,
   },
   greetingTopRow: {
     flexDirection: 'row',
@@ -426,40 +428,41 @@ const styles = StyleSheet.create({
   },
   greetingName: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#0F172A',
     letterSpacing: -0.5,
   },
   greetingSub: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: 2,
-    fontWeight: '600',
+    marginTop: 3,
+    fontWeight: '700',
   },
   weatherBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F1F5F9',
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
   },
   weatherIcon: {
-    fontSize: 16,
+    fontSize: 18,
   },
   weatherTemp: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#334155',
+    color: '#0F172A',
   },
   weatherSub: {
     fontSize: 8.5,
     color: '#64748B',
+    fontWeight: '600',
   },
   cardDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginVertical: 12,
+    marginVertical: 14,
   },
   viewScheduleRow: {
     flexDirection: 'row',
@@ -467,59 +470,64 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   viewScheduleText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#0284C7',
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   sectionHeader: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#475569',
-    letterSpacing: 0.8,
-    marginBottom: 10,
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#1E293B',
+    letterSpacing: 1.2,
+    marginBottom: 14,
+    marginTop: 4,
   },
   essentialsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 20,
+    gap: 14,
+    marginBottom: 24,
   },
   pastelCard: {
-    width: '48%',
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    minHeight: 145,
+    width: '47.5%',
+    borderRadius: 38, // 🌟 Dramatic curved squircle edges
+    padding: 18,
+    minHeight: 165,
     justifyContent: 'space-between',
+    borderWidth: 1.5,
+    overflow: 'hidden',
+    ...THEME.shadows.md,
   },
   pastelSunset: {
-    backgroundColor: '#FFF7ED',
-    borderColor: '#FFEDD5',
+    backgroundColor: '#FFEAD5',
+    borderColor: '#FDBA74',
   },
   pastelMatcha: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#DCFCE7',
+    backgroundColor: '#DCFCE7',
+    borderColor: '#86EFAC',
   },
   pastelViolet: {
-    backgroundColor: '#FAF5FF',
-    borderColor: '#F3E8FF',
+    backgroundColor: '#F3E8FF',
+    borderColor: '#D8B4FE',
   },
   pastelSky: {
-    backgroundColor: '#F0F9FF',
-    borderColor: '#E0F2FE',
+    backgroundColor: '#E0F2FE',
+    borderColor: '#7DD3FC',
   },
   iconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+    ...THEME.shadows.sm,
   },
   cardMainTitle: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 15.5,
+    fontWeight: '900',
     color: '#0F172A',
+    marginBottom: 2,
   },
   cardMetricRow: {
     flexDirection: 'row',
@@ -528,19 +536,20 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   cardMetricLabel: {
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: '600',
+    fontSize: 11,
+    color: '#475569',
+    fontWeight: '700',
   },
   cardMetricVal: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 14.5,
+    fontWeight: '900',
+    marginTop: 2,
   },
   cardFooterSub: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#64748B',
     fontWeight: '600',
+    marginTop: 4,
   },
   usageContainer: {
     backgroundColor: '#FFFFFF',
