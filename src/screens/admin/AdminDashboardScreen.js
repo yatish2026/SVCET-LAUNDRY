@@ -17,6 +17,8 @@ import { useLaundry } from '../../context/LaundryContext';
 import { useAuth } from '../../context/AuthContext';
 import { ACADEMIC_YEARS, getYearConfig } from '../../constants/schedule';
 import QRScannerModal from '../../components/QRScannerModal';
+import AdminCalendarAnalyticsModal from '../../components/AdminCalendarAnalyticsModal';
+import StudentAuditLedgerModal from '../../components/StudentAuditLedgerModal';
 
 export const AdminDashboardScreen = ({
   onNavigateToApprovals,
@@ -36,6 +38,8 @@ export const AdminDashboardScreen = ({
   const [refreshing, setRefreshing] = React.useState(false);
   const [showQRScanner, setShowQRScanner] = React.useState(false);
   const [showYearModal, setShowYearModal] = React.useState(false);
+  const [showCalendarModal, setShowCalendarModal] = React.useState(false);
+  const [showStudentAuditModal, setShowStudentAuditModal] = React.useState(false);
   const [selectedTicket, setSelectedTicket] = React.useState(null);
   const [ticketFilter, setTicketFilter] = React.useState('all'); // 'all' | 'open' | 'resolved'
 
@@ -256,6 +260,53 @@ export const AdminDashboardScreen = ({
           </View>
         </View>
       </TouchableOpacity>
+
+      {/* 📊 ADVANCED CALENDAR & STUDENT AUDIT SECTION */}
+      <View style={styles.breakdownHeaderWrap}>
+        <Text style={styles.sectionHeader}>CALENDAR & STUDENT AUDIT</Text>
+      </View>
+
+      <View style={styles.advancedToolsContainer}>
+        {/* Card 1: Interactive Calendar & Load */}
+        <TouchableOpacity
+          style={[styles.advancedToolCard, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}
+          onPress={() => setShowCalendarModal(true)}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.advancedToolIconBox, { backgroundColor: '#4338CA' }]}>
+            <Ionicons name="calendar" size={20} color="#FFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={styles.advancedToolTitle}>Daily & Calendar Analytics</Text>
+              <Ionicons name="chevron-forward" size={16} color="#4338CA" />
+            </View>
+            <Text style={styles.advancedToolSub}>
+              Day-wise intake, weekly load & monthly interactive calendar
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Card 2: Student Fairness & History Dossier */}
+        <TouchableOpacity
+          style={[styles.advancedToolCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}
+          onPress={() => setShowStudentAuditModal(true)}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.advancedToolIconBox, { backgroundColor: '#15803D' }]}>
+            <Ionicons name="people" size={20} color="#FFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={styles.advancedToolTitle}>Student Audit & Ledger</Text>
+              <Ionicons name="chevron-forward" size={16} color="#15803D" />
+            </View>
+            <Text style={styles.advancedToolSub}>
+              Search student or roll no to check weekly, monthly & total submissions
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
 
       {/* 🎫 STUDENT COMPLAINTS & TECHNICAL ISSUES HUB */}
       <View style={styles.complaintsHeaderRow}>
@@ -602,6 +653,20 @@ export const AdminDashboardScreen = ({
         visible={showQRScanner}
         onClose={() => setShowQRScanner(false)}
       />
+
+      {/* 📅 Interactive Calendar Analytics Modal */}
+      <AdminCalendarAnalyticsModal
+        visible={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        bookings={bookings}
+      />
+
+      {/* 🔍 Student Audit Ledger & Dossier Modal */}
+      <StudentAuditLedgerModal
+        visible={showStudentAuditModal}
+        onClose={() => setShowStudentAuditModal(false)}
+        bookings={bookings}
+      />
     </ScrollView>
   );
 };
@@ -613,7 +678,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 110,
   },
   greetingCard: {
     backgroundColor: '#FFFFFF',
@@ -868,6 +933,38 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     color: '#4338CA',
+  },
+  advancedToolsContainer: {
+    gap: 12,
+    marginBottom: 24,
+  },
+  advancedToolCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    gap: 14,
+    ...THEME.shadows.sm,
+  },
+  advancedToolIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  advancedToolTitle: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  advancedToolSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 2,
+    lineHeight: 16,
   },
   yearModalSheet: {
     backgroundColor: '#FFFFFF',
