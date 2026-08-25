@@ -93,15 +93,26 @@ export const WelcomeSplashScreen = ({ onFinish }) => {
           />
         </View>
 
-        {/* University Pill Badge */}
-        <View style={styles.univBadge}>
-          <Ionicons name="school" size={13} color="#4338CA" />
-          <Text style={styles.univBadgeText}>RVS UNIVERSITY</Text>
+        {/* Colorful RVS UNIVERSITY Brand Row */}
+        <View style={styles.univBrandContainer}>
+          <View style={styles.rvsLettersRow}>
+            <Text style={styles.rvsLetterR}>R</Text>
+            <Text style={styles.rvsLetterV}>V</Text>
+            <Text style={styles.rvsLetterS}>S</Text>
+          </View>
+          <Text style={styles.rvsUnivWord}>UNIVERSITY</Text>
         </View>
 
-        {/* 3D App Name */}
-        <Text style={styles.appName}>VASTRA</Text>
-        <Text style={styles.appSub}>Smart Hostel Laundry Portal</Text>
+        {/* Colorful 3D VASTRA App Name */}
+        <View style={styles.vastraLettersRow}>
+          <Text style={[styles.vastraLetter, { color: '#4338CA' }]}>V</Text>
+          <Text style={[styles.vastraLetter, { color: '#DC2626' }]}>A</Text>
+          <Text style={[styles.vastraLetter, { color: '#D97706' }]}>S</Text>
+          <Text style={[styles.vastraLetter, { color: '#059669' }]}>T</Text>
+          <Text style={[styles.vastraLetter, { color: '#2563EB' }]}>R</Text>
+          <Text style={[styles.vastraLetter, { color: '#7C3AED' }]}>A</Text>
+        </View>
+        <Text style={styles.appSub}>🧺 Smart Hostel Laundry Portal ✨</Text>
 
         {/* 🌟 3D Feature Badges */}
         <View style={styles.featuresRow}>
@@ -199,29 +210,54 @@ const styles = StyleSheet.create({
     borderRadius: 55,
     transform: [{ scale: 1.15 }],
   },
-  univBadge: {
+  univBrandContainer: {
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  rvsLettersRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#EEF2FF',
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-    marginBottom: 8,
+    gap: 3,
   },
-  univBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#4338CA',
-    letterSpacing: 0.8,
-  },
-  appName: {
-    fontSize: 34,
+  rvsLetterR: {
+    fontSize: 32,
     fontWeight: '900',
-    color: '#0F172A',
+    color: '#DC2626',
     letterSpacing: 0.5,
+  },
+  rvsLetterV: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#7C3AED',
+    letterSpacing: 0.5,
+  },
+  rvsLetterS: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#16A34A',
+    letterSpacing: 0.5,
+  },
+  rvsUnivWord: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#2563EB',
+    letterSpacing: 2,
+    marginTop: -4,
+  },
+  vastraLettersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    marginTop: 4,
+  },
+  vastraLetter: {
+    fontSize: 36,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.08)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   appSub: {
     fontSize: 13,
