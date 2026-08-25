@@ -189,9 +189,9 @@ export const ReportsExportScreen = () => {
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* Header Banner */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Reports & Data Export</Text>
-          <Text style={styles.headerSub}>Export day-wise, month-wise, and complete laundry logs</Text>
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.headerTitle}>📊 Reports & Data Export</Text>
+          <Text style={styles.headerSub}>Export day-wise, month-wise, and complete archive laundry logs</Text>
         </View>
 
         <TouchableOpacity
@@ -201,11 +201,11 @@ export const ReportsExportScreen = () => {
         >
           <Ionicons
             name={downloadSuccess ? 'checkmark-circle' : 'download-outline'}
-            size={18}
+            size={19}
             color="#FFF"
           />
           <Text style={styles.downloadBtnText}>
-            {downloadSuccess ? 'Exported!' : 'Download CSV'}
+            {downloadSuccess ? 'Report Exported Successfully!' : 'Download CSV Report'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -368,6 +368,14 @@ export const ReportsExportScreen = () => {
           <Text style={styles.sectionTitle}>
             👁️ Live Report Preview ({filteredBookings.length} Records)
           </Text>
+          <TouchableOpacity
+            style={styles.tableQuickExportBtn}
+            onPress={handleDownloadCSV}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="download-outline" size={14} color="#059669" />
+            <Text style={styles.tableQuickExportText}>Download CSV</Text>
+          </TouchableOpacity>
         </View>
 
         {/* In-Report Search Bar */}
@@ -451,44 +459,53 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     gap: 14,
-    paddingBottom: 40,
+    paddingBottom: 115,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 16,
+    padding: 18,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    gap: 14,
+    boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+    elevation: 2,
+  },
+  headerTextWrap: {
+    width: '100%',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 19,
+    fontWeight: '900',
     color: '#0F172A',
   },
   headerSub: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: '#64748B',
-    marginTop: 2,
+    marginTop: 4,
+    lineHeight: 18,
+    fontWeight: '600',
   },
   downloadBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#059669',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    gap: 6,
+    paddingVertical: 13,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    gap: 8,
+    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.28)',
+    elevation: 3,
   },
   downloadBtnSuccess: {
     backgroundColor: '#15803D',
   },
   downloadBtnText: {
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
@@ -638,6 +655,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  tableQuickExportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  tableQuickExportText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#059669',
   },
   searchBar: {
     flexDirection: 'row',
