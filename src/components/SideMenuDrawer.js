@@ -222,14 +222,7 @@ export const SideMenuDrawer = ({
               resizeMode="contain"
             />
             <View style={{ marginLeft: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: '#4338CA' }}>V</Text>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: '#DC2626' }}>A</Text>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: '#D97706' }}>S</Text>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: '#059669' }}>T</Text>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: '#2563EB' }}>R</Text>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: '#7C3AED' }}>A</Text>
-              </View>
+              <Text style={styles.footerAppTitle}>VASTRA</Text>
               <Text style={styles.footerAppSub}>RVS University • Smart Laundry Portal</Text>
             </View>
           </View>
@@ -379,9 +372,10 @@ const styles = StyleSheet.create({
     height: 30,
   },
   footerAppTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#1E3A8A', // Deep Royal Sapphire - decent & premium
+    letterSpacing: 1,
   },
   footerAppSub: {
     fontSize: 9,

@@ -258,15 +258,10 @@ export const AuthScreen = () => {
             </View>
           </View>
 
-          {/* Bottom: Colorful VASTRA Brand Name & Subtitle */}
+          {/* Bottom: Decent Premium VASTRA Brand Name & Subtitle */}
           <View style={styles.vastraSection}>
             <View style={styles.vastraLettersRow}>
-              <Text style={[styles.vastraLetter, { color: '#4338CA' }]}>V</Text>
-              <Text style={[styles.vastraLetter, { color: '#DC2626' }]}>A</Text>
-              <Text style={[styles.vastraLetter, { color: '#D97706' }]}>S</Text>
-              <Text style={[styles.vastraLetter, { color: '#059669' }]}>T</Text>
-              <Text style={[styles.vastraLetter, { color: '#2563EB' }]}>R</Text>
-              <Text style={[styles.vastraLetter, { color: '#7C3AED' }]}>A</Text>
+              <Text style={styles.vastraMainTitle}>VASTRA</Text>
               <View style={styles.vastraSparkleBadge}>
                 <Text style={styles.vastraSparkleText}>✨ Smart Portal</Text>
               </View>
@@ -1190,13 +1185,11 @@ const styles = StyleSheet.create({
     gap: 3,
     marginBottom: 4,
   },
-  vastraLetter: {
-    fontSize: 34,
+  vastraMainTitle: {
+    fontSize: 32,
     fontWeight: '900',
-    letterSpacing: 1.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.08)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    color: '#1E3A8A', // Deep Royal Sapphire - decent, rich & premium
+    letterSpacing: 2.5,
   },
   vastraSparkleBadge: {
     backgroundColor: '#FEF3C7',

@@ -103,15 +103,8 @@ export const WelcomeSplashScreen = ({ onFinish }) => {
           <Text style={styles.rvsUnivWord}>UNIVERSITY</Text>
         </View>
 
-        {/* Colorful 3D VASTRA App Name */}
-        <View style={styles.vastraLettersRow}>
-          <Text style={[styles.vastraLetter, { color: '#4338CA' }]}>V</Text>
-          <Text style={[styles.vastraLetter, { color: '#DC2626' }]}>A</Text>
-          <Text style={[styles.vastraLetter, { color: '#D97706' }]}>S</Text>
-          <Text style={[styles.vastraLetter, { color: '#059669' }]}>T</Text>
-          <Text style={[styles.vastraLetter, { color: '#2563EB' }]}>R</Text>
-          <Text style={[styles.vastraLetter, { color: '#7C3AED' }]}>A</Text>
-        </View>
+        {/* Decent Premium VASTRA App Name */}
+        <Text style={styles.appName}>VASTRA</Text>
         <Text style={styles.appSub}>🧺 Smart Hostel Laundry Portal ✨</Text>
 
         {/* 🌟 3D Feature Badges */}
@@ -244,20 +237,12 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginTop: -4,
   },
-  vastraLettersRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 3,
-    marginTop: 4,
-  },
-  vastraLetter: {
+  appName: {
     fontSize: 36,
     fontWeight: '900',
-    letterSpacing: 1.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.08)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    color: '#1E3A8A', // Deep Royal Sapphire - decent & premium
+    letterSpacing: 3.5,
+    marginTop: 4,
   },
   appSub: {
     fontSize: 13,
