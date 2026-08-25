@@ -331,84 +331,60 @@ export const ReportsExportScreen = () => {
         </View>
       </View>
 
-      {/* Live Data Table Preview */}
+      {/* 📑 Comprehensive Export Scope & Information Card */}
       <View style={styles.sectionCard}>
-        <View style={styles.previewHeaderRow}>
-          <Text style={styles.sectionTitle}>
-            👁️ Live Report Preview ({filteredBookings.length} Records)
-          </Text>
-          <TouchableOpacity
-            style={styles.tableQuickExportBtn}
-            onPress={handleDownloadCSV}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="download-outline" size={14} color="#059669" />
-            <Text style={styles.tableQuickExportText}>Download CSV</Text>
-          </TouchableOpacity>
+        <View style={styles.exportScopeHeader}>
+          <View style={styles.scopeIconBox}>
+            <Ionicons name="grid-outline" size={20} color="#059669" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={styles.scopeTitle}>Export Summary & Dataset Details</Text>
+            <Text style={styles.scopeSub}>
+              {filteredBookings.length} records ready for spreadsheet download
+            </Text>
+          </View>
         </View>
 
-        {filteredBookings.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="folder-open-outline" size={40} color="#94A3B8" />
-            <Text style={styles.emptyTitle}>No matching records found</Text>
-            <Text style={styles.emptySub}>Adjust your filters to see data</Text>
-          </View>
-        ) : (
-          <View style={styles.tableWrap}>
-            {/* Table Header */}
-            <View style={styles.tableHeaderRow}>
-              <Text style={[styles.th, { width: 60 }]}>Token</Text>
-              <Text style={[styles.th, { flex: 1 }]}>Student</Text>
-              <Text style={[styles.th, { width: 55, textAlign: 'center' }]}>Clothes</Text>
-              <Text style={[styles.th, { width: 85, textAlign: 'right' }]}>Status</Text>
-            </View>
-
-            {/* Table Rows */}
-            {filteredBookings.slice(0, 50).map((b, idx) => {
-              const isCompleted = b.status === 'completed';
-
-              return (
-                <View key={b.id || idx} style={styles.tableRow}>
-                  <Text style={[styles.tdToken, { width: 60 }]}>#{b.pickup_token}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.tdName} numberOfLines={1}>
-                      {b.student_name}
-                    </Text>
-                    <Text style={styles.tdMeta}>
-                      {b.student_id} • {b.academic_year || '1st Year'}
-                    </Text>
-                  </View>
-                  <Text style={[styles.tdCount, { width: 55 }]}>
-                    {b.total_items || 1} pcs
-                  </Text>
-                  <View
-                    style={[
-                      styles.statusPill,
-                      isCompleted ? styles.statusCompleted : styles.statusActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusPillText,
-                        isCompleted ? styles.statusCompletedText : styles.statusActiveText,
-                      ]}
-                    >
-                      {isCompleted ? 'Done' : 'Active'}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
-
-            {filteredBookings.length > 50 && (
-              <View style={styles.tableFooterHint}>
-                <Text style={styles.tableFooterText}>
-                  Showing first 50 of {filteredBookings.length} records. Download CSV for the complete report dataset.
-                </Text>
+        {/* Breakdown of exported fields */}
+        <View style={styles.scopeDetailsBox}>
+          <Text style={styles.scopeDetailsTitle}>Included Export Columns:</Text>
+          <View style={styles.columnsTagsGrid}>
+            {[
+              'Booking ID',
+              'Pickup Token (#LND)',
+              'Submission Date',
+              'Student Name',
+              'Roll Number',
+              'Course & Year',
+              'Hostel Block',
+              'Room Number',
+              'Phone Number',
+              'Total Clothes',
+              'Items Breakdown',
+              'Current Status',
+              'Drop-off Slot',
+              'Pickup Slot',
+              'Special Notes',
+            ].map((col) => (
+              <View key={col} style={styles.colTagPill}>
+                <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                <Text style={styles.colTagText}>{col}</Text>
               </View>
-            )}
+            ))}
           </View>
-        )}
+        </View>
+
+        {/* Big Download Button */}
+        <TouchableOpacity
+          style={styles.bigDownloadBtn}
+          onPress={handleDownloadCSV}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="cloud-download-outline" size={20} color="#FFF" />
+          <Text style={styles.bigDownloadBtnText}>
+            Download {filteredBookings.length} Records (.CSV)
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* 🎛️ Filter Bottom Sheet Modal with Top Segmented Switcher */}
@@ -854,125 +830,78 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
   },
-  previewHeaderRow: {
+  exportScopeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  tableQuickExportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  scopeIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     backgroundColor: '#ECFDF5',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#A7F3D0',
   },
-  tableQuickExportText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#059669',
-  },
-  tableWrap: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    overflow: 'hidden',
-  },
-  tableHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
-  th: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#475569',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    backgroundColor: '#FFFFFF',
-  },
-  tdToken: {
-    fontSize: 11,
+  scopeTitle: {
+    fontSize: 14,
     fontWeight: '900',
-    color: '#059669',
-  },
-  tdName: {
-    fontSize: 12,
-    fontWeight: '800',
     color: '#0F172A',
   },
-  tdMeta: {
-    fontSize: 10,
+  scopeSub: {
+    fontSize: 11,
     color: '#64748B',
     marginTop: 1,
   },
-  tdCount: {
-    fontSize: 11,
+  scopeDetailsBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 8,
+  },
+  scopeDetailsTitle: {
+    fontSize: 11.5,
     fontWeight: '800',
     color: '#334155',
-    textAlign: 'center',
   },
-  statusPill: {
-    paddingVertical: 3,
-    paddingHorizontal: 6,
-    borderRadius: 6,
+  columnsTagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   },
-  statusCompleted: {
-    backgroundColor: '#DCFCE7',
-  },
-  statusActive: {
-    backgroundColor: '#FEF3C7',
-  },
-  statusPillText: {
-    fontSize: 9.5,
-    fontWeight: '800',
-  },
-  statusCompletedText: {
-    color: '#15803D',
-  },
-  statusActiveText: {
-    color: '#B45309',
-  },
-  tableFooterHint: {
-    backgroundColor: '#F8FAFC',
-    padding: 8,
+  colTagPill: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  tableFooterText: {
-    fontSize: 10.5,
-    color: '#64748B',
-    textAlign: 'center',
+  colTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#475569',
   },
-  emptyState: {
-    padding: 32,
+  bigDownloadBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#059669',
+    paddingVertical: 14,
+    borderRadius: 14,
+    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)',
   },
-  emptyTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#475569',
-    marginTop: 8,
-  },
-  emptySub: {
-    fontSize: 11.5,
-    color: '#94A3B8',
+  bigDownloadBtnText: {
+    fontSize: 13.5,
+    fontWeight: '900',
+    color: '#FFFFFF',
   },
 
   /* 🎛️ Filter Bottom Sheet Modal Styles */
