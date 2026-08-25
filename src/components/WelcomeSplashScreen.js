@@ -15,7 +15,7 @@ const { width } = Dimensions.get('window');
 
 export const WelcomeSplashScreen = ({ onFinish }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.85)).current;
+  const scaleAnim = useRef(new Animated.Value(0.88)).current;
   const floatAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -84,28 +84,39 @@ export const WelcomeSplashScreen = ({ onFinish }) => {
           },
         ]}
       >
-        {/* 🌟 3D Glowing Glass Logo Container */}
-        <View style={styles.logoCard3D}>
-          <Image
-            source={require('../../assets/rvs_logo.png')}
-            style={styles.logoImg}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Colorful RVS UNIVERSITY Brand Row */}
-        <View style={styles.univBrandContainer}>
-          <View style={styles.rvsLettersRow}>
-            <Text style={styles.rvsLetterR}>R</Text>
-            <Text style={styles.rvsLetterV}>V</Text>
-            <Text style={styles.rvsLetterS}>S</Text>
+        {/* 🌟 Brand Header: Logo + Big RVS University Beside It (matching SignIn Page) */}
+        <View style={styles.topLogoUnivRow}>
+          {/* Left: 3D Logo Emblem */}
+          <View style={styles.brandLogoContainer3D}>
+            <Image
+              source={require('../../assets/rvs_logo.png')}
+              style={styles.brandLogo}
+              resizeMode="cover"
+            />
           </View>
-          <Text style={styles.rvsUnivWord}>UNIVERSITY</Text>
+
+          {/* Right: RVS UNIVERSITY Title */}
+          <View style={styles.univTextContainer}>
+            <View style={styles.rvsLettersRow}>
+              <Text style={styles.rvsLetterR}>R</Text>
+              <Text style={styles.rvsLetterV}>V</Text>
+              <Text style={styles.rvsLetterS}>S</Text>
+            </View>
+            <Text style={styles.rvsUnivWord}>UNIVERSITY</Text>
+            <Text style={styles.univTagline}>SMART CAMPUS PORTAL</Text>
+          </View>
         </View>
 
-        {/* VASTRA App Name */}
-        <Text style={styles.appName}>VASTRA</Text>
-        <Text style={styles.appSub}>🧺 Smart Hostel Laundry Portal ✨</Text>
+        {/* Down: 3D VASTRA Brand Name & Gold Sparkle Badge */}
+        <View style={styles.vastraSection}>
+          <View style={styles.vastraLettersRow}>
+            <Text style={styles.vastraMainTitle}>VASTRA</Text>
+            <View style={styles.vastraSparkleBadge}>
+              <Text style={styles.vastraSparkleText}>✨ Smart Portal</Text>
+            </View>
+          </View>
+          <Text style={styles.brandSubtitle}>🧺 Smart Hostel Laundry Management ✨</Text>
+        </View>
 
         {/* 🌟 3D Feature Badges */}
         <View style={styles.featuresRow}>
@@ -142,7 +153,7 @@ export const WelcomeSplashScreen = ({ onFinish }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#0B1120', // Deep Obsidian Space Slate
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
@@ -151,109 +162,148 @@ const styles = StyleSheet.create({
   },
   glowAuraTop: {
     position: 'absolute',
-    top: -60,
-    right: -60,
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: 'rgba(67, 56, 202, 0.35)',
-    filter: 'blur(50px)',
-  },
-  glowAuraBottom: {
-    position: 'absolute',
-    bottom: -80,
-    left: -80,
+    top: -80,
+    right: -80,
     width: 280,
     height: 280,
     borderRadius: 140,
-    backgroundColor: 'rgba(37, 99, 235, 0.28)',
+    backgroundColor: 'rgba(67, 56, 202, 0.45)',
     filter: 'blur(60px)',
+  },
+  glowAuraBottom: {
+    position: 'absolute',
+    bottom: -100,
+    left: -100,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(37, 99, 235, 0.35)',
+    filter: 'blur(70px)',
   },
   cardWrapper: {
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 400,
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
-    borderRadius: 32,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backdropFilter: 'blur(25px)',
+    borderRadius: 36,
+    paddingVertical: 28,
+    paddingHorizontal: 22,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-    boxShadow: '0 24px 60px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(67, 56, 202, 0.2)',
-    elevation: 16,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    boxShadow: '0 24px 60px rgba(0, 0, 0, 0.4), 0 4px 20px rgba(67, 56, 202, 0.25)',
+    elevation: 20,
   },
-  logoCard3D: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: '#FFFFFF',
+  topLogoUnivRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 0,
-    overflow: 'hidden',
-    borderWidth: 3.5,
-    borderColor: '#4338CA',
-    boxShadow: '0 16px 36px rgba(67, 56, 202, 0.35)',
-    elevation: 12,
-    marginBottom: 16,
+    gap: 14,
+    marginBottom: 6,
   },
-  logoImg: {
+  brandLogoContainer3D: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: '#FFFFFF',
+    padding: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#4338CA',
+    boxShadow: '0 12px 28px rgba(67, 56, 202, 0.35)',
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  brandLogo: {
     width: '100%',
     height: '100%',
-    borderRadius: 55,
-    transform: [{ scale: 1.15 }],
+    borderRadius: 39,
+    transform: [{ scale: 1.12 }],
   },
-  univBrandContainer: {
-    alignItems: 'center',
-    marginBottom: 4,
+  univTextContainer: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   rvsLettersRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
   },
   rvsLetterR: {
-    fontSize: 32,
+    fontSize: 40,
     fontWeight: '900',
     color: '#DC2626',
     letterSpacing: 0.5,
   },
   rvsLetterV: {
-    fontSize: 32,
+    fontSize: 40,
     fontWeight: '900',
     color: '#7C3AED',
     letterSpacing: 0.5,
   },
   rvsLetterS: {
-    fontSize: 32,
+    fontSize: 40,
     fontWeight: '900',
     color: '#16A34A',
     letterSpacing: 0.5,
   },
   rvsUnivWord: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '900',
     color: '#2563EB',
-    letterSpacing: 2,
-    marginTop: -4,
+    letterSpacing: 2.2,
+    marginTop: -6,
   },
-  appName: {
-    fontSize: 36,
+  univTagline: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 1.5,
+    marginTop: 2,
+  },
+  vastraSection: {
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  vastraLettersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  vastraMainTitle: {
+    fontSize: 30,
     fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: 3,
-    marginTop: 4,
+    letterSpacing: 2,
   },
-  appSub: {
-    fontSize: 13,
+  vastraSparkleBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    marginLeft: 6,
+  },
+  vastraSparkleText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#D97706',
+  },
+  brandSubtitle: {
+    fontSize: 12,
+    color: '#475569',
     fontWeight: '700',
-    color: '#64748B',
-    marginTop: 3,
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
   featuresRow: {
     width: '100%',
-    marginVertical: 18,
+    marginVertical: 14,
     gap: 8,
   },
   featurePill: {
@@ -291,7 +341,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#94A3B8',
-    marginBottom: 16,
+    marginBottom: 14,
     textAlign: 'center',
   },
   skipBtn: {
