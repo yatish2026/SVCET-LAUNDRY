@@ -57,14 +57,21 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
             <Ionicons name="menu-outline" size={26} color="#0F172A" />
           </TouchableOpacity>
 
-          {/* Center College Emblem Logo & App Name */}
+          {/* Center College Emblem Logo & Colorful VASTRA App Name */}
           <View style={styles.logoContainer}>
             <Image
               source={require('../../assets/rvs_logo.png')}
               style={styles.collegeLogo}
               resizeMode="contain"
             />
-            <Text style={styles.headerAppName}>VASTRA</Text>
+            <View style={styles.headerVastraRow}>
+              <Text style={[styles.headerVastraLetter, { color: '#4338CA' }]}>V</Text>
+              <Text style={[styles.headerVastraLetter, { color: '#DC2626' }]}>A</Text>
+              <Text style={[styles.headerVastraLetter, { color: '#D97706' }]}>S</Text>
+              <Text style={[styles.headerVastraLetter, { color: '#059669' }]}>T</Text>
+              <Text style={[styles.headerVastraLetter, { color: '#2563EB' }]}>R</Text>
+              <Text style={[styles.headerVastraLetter, { color: '#7C3AED' }]}>A</Text>
+            </View>
           </View>
 
           {/* Right Actions: Notifications & Logout */}
@@ -158,11 +165,15 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
   },
-  headerAppName: {
-    fontSize: 19,
+  headerVastraRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 1.5,
+  },
+  headerVastraLetter: {
+    fontSize: 20,
     fontWeight: '900',
-    color: '#0F172A',
-    letterSpacing: -0.5,
+    letterSpacing: 0.5,
   },
   rightActions: {
     flexDirection: 'row',

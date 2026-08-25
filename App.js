@@ -229,7 +229,7 @@ const MainApp = () => {
                         studentTab === 'new_booking' && styles.heroOrbActive,
                       ]}
                     >
-                      <Ionicons name="add" size={26} color="#FFFFFF" />
+                      <Ionicons name="add" size={19} color="#FFFFFF" />
                     </View>
                     <Text
                       style={[
@@ -513,17 +513,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   heroOrb: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -16,
-    borderWidth: 3,
+    marginTop: -8,
+    borderWidth: 2,
     borderColor: '#FFFFFF',
-    boxShadow: '0 8px 18px rgba(37, 99, 235, 0.45)',
-    elevation: 8,
+    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)',
+    elevation: 4,
   },
   heroOrbActive: {
     backgroundColor: '#1D4ED8',
