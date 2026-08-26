@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "VASTRA",
+    "name": "VASTRA - Hostel Laundry",
     "slug": "rvsu-svcet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
@@ -20,22 +20,25 @@
       "versionCode": 1,
       "permissions": [
         "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES",
-        "READ_MEDIA_VIDEO"
+        "READ_MEDIA_IMAGES"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/icon.png"
+        "foregroundImage": "./assets/adaptive-icon.png"
       }
     },
     "plugins": [
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow VASTRA to access the camera to scan student laundry token QR codes and capture verification photos."
+        }
+      ],
+      [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you attach clothes verification photos for laundry intake.",
-          "cameraPermission": "The app accesses your camera to let you take clothes verification photos for laundry intake."
+          "photosPermission": "Allow VASTRA to access your photo library to attach clothes verification photos for laundry intake.",
+          "cameraPermission": "Allow VASTRA to access your camera to take clothes verification photos for laundry intake."
         }
       ]
     ],
