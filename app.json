@@ -2,7 +2,7 @@
   "expo": {
     "name": "VASTRA - Hostel Laundry",
     "slug": "rvsu-svcet",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,10 +17,9 @@
     },
     "android": {
       "package": "com.rvsu.vastra",
-      "versionCode": 1,
+      "versionCode": 3,
       "permissions": [
-        "CAMERA",
-        "READ_MEDIA_IMAGES"
+        "CAMERA"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
@@ -37,7 +36,6 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow VASTRA to access your photo library to attach clothes verification photos for laundry intake.",
           "cameraPermission": "Allow VASTRA to access your camera to take clothes verification photos for laundry intake."
         }
       ]
