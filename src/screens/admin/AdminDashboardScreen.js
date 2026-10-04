@@ -181,7 +181,7 @@ export const AdminDashboardScreen = ({
           <View style={styles.cardMetricRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardMetricLabel}>Format</Text>
-              <Text style={[styles.cardMetricVal, { color: '#166534' }]}>Excel .CSV</Text>
+              <Text style={[styles.cardMetricVal, { color: '#166534' }]}>Excel (.xlsx)</Text>
             </View>
             <Ionicons name="document-text-outline" size={16} color="#16A34A" />
           </View>

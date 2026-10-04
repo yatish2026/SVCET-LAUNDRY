@@ -17,6 +17,7 @@ import { useLaundry } from '../../context/LaundryContext';
 import { ACADEMIC_COURSES } from '../../constants/schedule';
 import AdminCalendarAnalyticsModal from '../../components/AdminCalendarAnalyticsModal';
 import StudentAuditLedgerModal from '../../components/StudentAuditLedgerModal';
+import AdminStudentCensusModal from '../../components/AdminStudentCensusModal';
 import AdminScheduleEditorModal from '../../components/AdminScheduleEditorModal';
 import MonthlyAnalyticsReportModal from '../../components/MonthlyAnalyticsReportModal';
 import { exportToExcel } from '../../utils/excelExporter';
