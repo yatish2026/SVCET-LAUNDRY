@@ -22,6 +22,7 @@ export const SideMenuDrawer = ({
   onOpenSchedule,
   onOpenGuidelines,
   onOpenAnalytics,
+  onOpenMonthlyReport,
 }) => {
   const { profile, role, signOut, isStaff, setRole } = useAuth();
   const { bookings } = useLaundry();
@@ -155,6 +156,18 @@ export const SideMenuDrawer = ({
                   </View>
                   <Text style={styles.menuItemText}>Export Reports (.CSV)</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleItemPress(onOpenMonthlyReport)}
+                >
+                  <View style={[styles.menuIconBox, { backgroundColor: '#EEF2FF' }]}>
+                    <Ionicons name="document-text-outline" size={18} color="#4338CA" />
+                  </View>
+                  <Text style={[styles.menuItemText, { color: '#4338CA', fontWeight: '800' }]}>
+                    📄 Monthly PDF & Census Report
+                  </Text>
+                </TouchableOpacity>
               </>
             ) : (
               /* Student Menu Options */
@@ -178,6 +191,18 @@ export const SideMenuDrawer = ({
                   </View>
                   <Text style={[styles.menuItemText, { color: '#4338CA', fontWeight: '800' }]}>
                     📊 Laundry Analytics & Wash Trends
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleItemPress(onOpenMonthlyReport)}
+                >
+                  <View style={[styles.menuIconBox, { backgroundColor: '#F0FDF4' }]}>
+                    <Ionicons name="document-text-outline" size={18} color="#059669" />
+                  </View>
+                  <Text style={[styles.menuItemText, { color: '#059669', fontWeight: '800' }]}>
+                    📄 Monthly Laundry Report
                   </Text>
                 </TouchableOpacity>
 

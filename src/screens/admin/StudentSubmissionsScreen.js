@@ -257,7 +257,7 @@ export const StudentSubmissionsScreen = ({ onSelectBooking }) => {
               <TouchableOpacity
                 key={b.id}
                 style={styles.orderCard}
-                onPress={() => onSelectBooking && onSelectBooking(b)}
+                onPress={() => onSelectBooking && onSelectBooking(b.id)}
                 activeOpacity={0.85}
               >
                 {/* Header: Token, Student Info & Status Badge */}

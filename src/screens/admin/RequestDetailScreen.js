@@ -20,7 +20,19 @@ import ImagePreviewModal from '../../components/ImagePreviewModal';
 export const RequestDetailScreen = ({ bookingId, onBack }) => {
   const { bookings, updateOrderStatus } = useLaundry();
 
-  const booking = bookings.find((b) => b.id === bookingId);
+  const targetId =
+    typeof bookingId === 'object' && bookingId !== null
+      ? bookingId.id || bookingId.booking_id || bookingId.pickup_token
+      : bookingId;
+
+  const booking = (bookings || []).find((b) => {
+    if (!b) return false;
+    if (b.id && targetId && String(b.id) === String(targetId)) return true;
+    if (b.pickup_token && targetId && String(b.pickup_token) === String(targetId)) return true;
+    if (b.id && targetId && b.id == targetId) return true;
+    return false;
+  });
+
   const [selectedCounter, setSelectedCounter] = useState('Counter 1');
   const [verifiedItems, setVerifiedItems] = useState({});
   const [previewPhotoUri, setPreviewPhotoUri] = useState(null);
@@ -28,7 +40,11 @@ export const RequestDetailScreen = ({ bookingId, onBack }) => {
   if (!booking) {
     return (
       <View style={styles.notFound}>
+        <Ionicons name="search-outline" size={48} color="#94A3B8" style={{ marginBottom: 12 }} />
         <Text style={styles.notFoundText}>Request not found</Text>
+        <Text style={{ fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 16 }}>
+          Could not locate booking details (ID: {String(targetId || 'N/A')}).
+        </Text>
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
           <Text style={styles.backBtnText}>Go Back</Text>
         </TouchableOpacity>

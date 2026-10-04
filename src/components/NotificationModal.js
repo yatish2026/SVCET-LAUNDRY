@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
 import { useLaundry } from '../context/LaundryContext';
 import { useAuth } from '../context/AuthContext';
+import { getStudentSchedule } from '../constants/schedule';
 
 export const NotificationModal = ({ visible, onClose, onSelectBooking }) => {
   const { notifications, bookings, markNotificationRead, clearAllNotifications } = useLaundry();
@@ -13,8 +14,8 @@ export const NotificationModal = ({ visible, onClose, onSelectBooking }) => {
   const studentEmail = (profile?.email || '').trim().toLowerCase();
   const studentPhone = (profile?.phone_number || '').replace(/[^0-9]/g, '');
 
-  const myBookingIds = (bookings || [])
-    .filter((b) => {
+  const myBookings = useMemo(() => {
+    return (bookings || []).filter((b) => {
       if (b.user_id && profile?.id && b.user_id === profile.id) return true;
       if (b.student_email && studentEmail && b.student_email.toLowerCase().trim() === studentEmail) return true;
       const bRoll = (b.student_id || '').trim().toLowerCase();
@@ -24,18 +25,71 @@ export const NotificationModal = ({ visible, onClose, onSelectBooking }) => {
         if (studentPhone.slice(-10) === bPhone.slice(-10)) return true;
       }
       return false;
-    })
-    .map((b) => b.id);
+    });
+  }, [bookings, profile, studentEmail, studentRollNo, studentPhone]);
 
-  const roleNotifs = notifications.filter((n) => {
-    if (isStaff) {
-      return n.recipient_role === 'staff' || n.recipient_role === 'all';
+  const myBookingIds = myBookings.map((b) => b.id);
+
+  const roleNotifs = useMemo(() => {
+    const rawNotifs = (notifications || []).filter((n) => {
+      if (isStaff) {
+        return n.recipient_role === 'staff' || n.recipient_role === 'all';
+      }
+      if (n.booking_id) {
+        return myBookingIds.includes(n.booking_id);
+      }
+      return n.recipient_role === 'student' && (!n.target_user_phone || n.target_user_phone === studentPhone);
+    });
+
+    // If student, dynamically prepend day-of-pickup & schedule alerts
+    if (!isStaff && profile) {
+      const schedule = getStudentSchedule(profile);
+      const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+      const dynamicAlerts = [];
+
+      // 1. Ready for pickup active order notification
+      const readyOrder = myBookings.find((b) => b.status === 'ready_for_pickup');
+      if (readyOrder) {
+        dynamicAlerts.push({
+          id: `dyn_pickup_${readyOrder.id}`,
+          title: '🎉 Clean Laundry Ready for Pickup!',
+          message: `Your laundry token #${readyOrder.pickup_token} is clean and waiting at ${readyOrder.counter_number || 'Counter 1'}. Present your QR code to collect!`,
+          type: 'success',
+          created_at: new Date().toISOString(),
+          booking_id: readyOrder.id,
+          read: false,
+        });
+      }
+
+      // 2. Day-of-pickup scheduled alert
+      if (currentDay.toLowerCase() === schedule.pickupDay.toLowerCase()) {
+        dynamicAlerts.push({
+          id: `dyn_pickup_day_${currentDay}`,
+          title: '🧺 Today is Your Laundry Pickup Day!',
+          message: `Today (${schedule.pickupDay}) is the official collection day for ${schedule.category}. Counter is open ${schedule.pickupSlot}.`,
+          type: 'success',
+          created_at: new Date().toISOString(),
+          read: false,
+        });
+      }
+
+      // 3. Day-of-dropoff scheduled alert
+      if (currentDay.toLowerCase() === schedule.dropoffDay.toLowerCase()) {
+        dynamicAlerts.push({
+          id: `dyn_dropoff_day_${currentDay}`,
+          title: '👕 Today is Your Laundry Drop-off Day!',
+          message: `Drop off your laundry bundle today (${schedule.dropoffDay}) between ${schedule.dropoffSlot}.`,
+          type: 'reminder',
+          created_at: new Date().toISOString(),
+          read: false,
+        });
+      }
+
+      return [...dynamicAlerts, ...rawNotifs];
     }
-    if (n.booking_id) {
-      return myBookingIds.includes(n.booking_id);
-    }
-    return n.recipient_role === 'student' && (!n.target_user_phone || n.target_user_phone === studentPhone);
-  });
+
+    return rawNotifs;
+  }, [notifications, isStaff, profile, myBookings, myBookingIds, studentPhone]);
 
   const getIcon = (type) => {
     switch (type) {

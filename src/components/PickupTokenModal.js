@@ -1,20 +1,45 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
 import StatusBadge from './StatusBadge';
 import QRCodeDisplay from './QRCodeDisplay';
+import { useLaundry } from '../context/LaundryContext';
 
 export const PickupTokenModal = ({ visible, onClose, booking }) => {
-  if (!booking) return null;
+  const { bookings, refreshData } = useLaundry();
+
+  // Fast live-polling while modal is visible so staff scan immediately reflects
+  useEffect(() => {
+    if (!visible) return;
+    refreshData();
+    const interval = setInterval(refreshData, 2500);
+    return () => clearInterval(interval);
+  }, [visible, refreshData]);
+
+  // Derive latest live booking from context
+  const liveBooking = useMemo(() => {
+    if (!booking) return null;
+    const found = (bookings || []).find(
+      (b) =>
+        (booking.id && b.id && String(b.id) === String(booking.id)) ||
+        (booking.pickup_token && b.pickup_token && String(b.pickup_token) === String(booking.pickup_token))
+    );
+    return found || booking;
+  }, [bookings, booking]);
+
+  if (!liveBooking) return null;
+
+  const isCompleted = liveBooking.status === 'completed';
 
   const qrData = {
-    token: booking.pickup_token,
-    booking_id: booking.id,
-    student_name: booking.student_name,
-    student_id: booking.student_id,
-    phone_number: booking.phone_number,
-    total_items: booking.total_items,
+    token: liveBooking.pickup_token,
+    booking_id: liveBooking.id,
+    student_name: liveBooking.student_name,
+    student_id: liveBooking.student_id,
+    phone_number: liveBooking.phone_number,
+    total_items: liveBooking.total_items,
+    status: liveBooking.status,
   };
 
   return (
@@ -25,54 +50,85 @@ export const PickupTokenModal = ({ visible, onClose, booking }) => {
             <Ionicons name="close" size={22} color={THEME.colors.textSecondary} />
           </TouchableOpacity>
 
-          <View style={styles.header}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="qr-code" size={24} color="#4338CA" />
+          {isCompleted ? (
+            /* 🎉 Live Completed Celebration State */
+            <View style={styles.completedHeader}>
+              <View style={styles.completedIconCircle}>
+                <Ionicons name="checkmark-circle" size={38} color="#16A34A" />
+              </View>
+              <Text style={styles.completedTitle}>Order Completed! 🎉</Text>
+              <Text style={styles.completedSubtitle}>
+                Your laundry has been scanned, cleaned, and handed over at the counter.
+              </Text>
             </View>
-            <Text style={styles.title}>Digital Pickup QR Pass</Text>
-            <Text style={styles.subtitle}>Present this QR code to counter staff for quick collection</Text>
-          </View>
+          ) : (
+            /* 🏷️ Active Pickup Pass Header */
+            <View style={styles.header}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="qr-code" size={24} color="#4338CA" />
+              </View>
+              <Text style={styles.title}>Digital Pickup QR Pass</Text>
+              <Text style={styles.subtitle}>Present this QR code to counter staff for instant scanning & collection</Text>
+            </View>
+          )}
 
-          {/* Dynamic Scannable QR Box */}
-          <View style={styles.qrContainer}>
-            <QRCodeDisplay
-              value={qrData}
-              size={160}
-              token={booking.pickup_token}
-              studentName={booking.student_name}
-              showTokenLabel={true}
-            />
-            <View style={{ marginTop: 8 }}>
-              <StatusBadge status={booking.status} size="sm" />
+          {/* Dynamic Scannable QR Box / Completed Verification Card */}
+          {isCompleted ? (
+            <View style={styles.completedCardBox}>
+              <View style={styles.completedBadgeWrap}>
+                <Ionicons name="shield-checkmark" size={16} color="#15803D" />
+                <Text style={styles.completedBadgeText}>VERIFIED & DELIVERED</Text>
+              </View>
+              <Text style={styles.completedTokenText}>Token #{liveBooking.pickup_token}</Text>
+              <Text style={styles.completedItemsSub}>
+                🧺 {liveBooking.total_items} items collected by {liveBooking.student_name}
+              </Text>
             </View>
-          </View>
+          ) : (
+            <View style={styles.qrContainer}>
+              <QRCodeDisplay
+                value={qrData}
+                size={160}
+                token={liveBooking.pickup_token}
+                studentName={liveBooking.student_name}
+                showTokenLabel={true}
+              />
+              <View style={{ marginTop: 8 }}>
+                <StatusBadge status={liveBooking.status} size="sm" />
+              </View>
+            </View>
+          )}
 
           {/* Booking Summary */}
           <View style={styles.summaryBox}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Student:</Text>
-              <Text style={styles.summaryValue}>{booking.student_name}</Text>
+              <Text style={styles.summaryValue}>{liveBooking.student_name}</Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Hostel / Room:</Text>
               <Text style={styles.summaryValue}>
-                {booking.hostel_block?.split(' ')[0]} - Rm {booking.room_number}
+                {liveBooking.hostel_block?.split(' ')[0]} - Rm {liveBooking.room_number}
               </Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Clothes Count:</Text>
-              <Text style={styles.summaryValue}>{booking.total_items} items</Text>
+              <Text style={styles.summaryValue}>{liveBooking.total_items} items</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Pickup Counter:</Text>
-              <Text style={[styles.summaryValue, { color: THEME.colors.primary, fontWeight: '700' }]}>
-                {booking.counter_number || 'Counter 1'}
+              <Text style={styles.summaryLabel}>Status:</Text>
+              <Text style={[styles.summaryValue, { color: isCompleted ? '#16A34A' : THEME.colors.primary, fontWeight: '700' }]}>
+                {isCompleted ? 'Completed / Delivered' : liveBooking.counter_number || 'Counter 1'}
               </Text>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.doneBtn} onPress={onClose} activeOpacity={0.8}>
-            <Text style={styles.doneBtnText}>Close Token</Text>
+          <TouchableOpacity
+            style={[styles.doneBtn, isCompleted && { backgroundColor: '#16A34A' }]}
+            onPress={onClose}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.doneBtnText}>{isCompleted ? 'Done / All Set' : 'Close Token'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -193,6 +249,70 @@ const styles = StyleSheet.create({
     color: THEME.colors.textInverse,
     fontWeight: '700',
     fontSize: THEME.typography.sizes.md,
+  },
+  completedHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  completedIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: '#86EFAC',
+  },
+  completedTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#15803D',
+  },
+  completedSubtitle: {
+    fontSize: 12,
+    color: '#475569',
+    textAlign: 'center',
+    marginTop: 4,
+    paddingHorizontal: 10,
+  },
+  completedCardBox: {
+    width: '100%',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 2,
+    borderColor: '#BBF7D0',
+    borderRadius: 18,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  completedBadgeWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  completedBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#15803D',
+    letterSpacing: 0.8,
+  },
+  completedTokenText: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#14532D',
+  },
+  completedItemsSub: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#166534',
+    marginTop: 4,
   },
 });
 

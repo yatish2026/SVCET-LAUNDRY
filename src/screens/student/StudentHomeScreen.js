@@ -114,13 +114,6 @@ export const StudentHomeScreen = ({
               {studentYear} • {dateString}
             </Text>
           </View>
-          <View style={styles.weatherBadge}>
-            <Text style={styles.weatherIcon}>⛅</Text>
-            <View style={{ marginLeft: 4 }}>
-              <Text style={styles.weatherTemp}>32° C</Text>
-              <Text style={styles.weatherSub}>Campus</Text>
-            </View>
-          </View>
         </View>
 
         <View style={styles.cardDivider} />

@@ -33,10 +33,10 @@ export const LaundryProvider = ({ children }) => {
     }
   }, []);
 
-  // Poll server every 10 seconds for real-time updates across devices
+  // Poll server every 3.5 seconds for instant real-time sync across devices
   useEffect(() => {
     refreshData();
-    const interval = setInterval(refreshData, 10000);
+    const interval = setInterval(refreshData, 3500);
     return () => clearInterval(interval);
   }, [refreshData]);
 

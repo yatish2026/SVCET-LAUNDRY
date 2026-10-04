@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
   Modal,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
@@ -18,6 +19,7 @@ import AdminCalendarAnalyticsModal from '../../components/AdminCalendarAnalytics
 import StudentAuditLedgerModal from '../../components/StudentAuditLedgerModal';
 import AdminStudentCensusModal from '../../components/AdminStudentCensusModal';
 import AdminScheduleEditorModal from '../../components/AdminScheduleEditorModal';
+import MonthlyAnalyticsReportModal from '../../components/MonthlyAnalyticsReportModal';
 
 export const REPORT_FILTER_SECTIONS = [
   { id: 'TIMEFRAME', label: 'Time Period', icon: 'calendar' },
@@ -53,6 +55,7 @@ export const ReportsExportScreen = () => {
   const [showStudentAuditModal, setShowStudentAuditModal] = useState(false);
   const [showCensusModal, setShowCensusModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showMonthlyPdfModal, setShowMonthlyPdfModal] = useState(false);
 
   // Available months extracted from bookings
   const availableMonths = useMemo(() => {
@@ -129,7 +132,7 @@ export const ReportsExportScreen = () => {
   const completedCount = filteredBookings.filter((b) => b.status === 'completed').length;
   const activeCount = filteredBookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled').length;
 
-  const handleDownloadCSV = () => {
+  const handleDownloadCSV = async () => {
     try {
       if (filteredBookings.length === 0) {
         Alert.alert('No Data', 'No records match your selected report filters.');
@@ -200,9 +203,13 @@ export const ReportsExportScreen = () => {
         setDownloadSuccess(true);
         setTimeout(() => setDownloadSuccess(false), 4000);
       } else {
+        await Share.share({
+          title: filename,
+          message: csvContent,
+        });
         Alert.alert(
-          'Export Successful',
-          `Generated ${filteredBookings.length} laundry records for download (${filename}).`
+          'File Ready to Save! 📁',
+          `Use the system share menu to select "Save to Downloads", WhatsApp, or Google Drive to store ${filename} on your phone.`
         );
       }
     } catch (err) {
@@ -228,16 +235,29 @@ export const ReportsExportScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.exportActionBtn}
-          onPress={handleDownloadCSV}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="download" size={18} color="#FFF" />
-          <Text style={styles.exportActionBtnText}>
-            Export CSV ({filteredBookings.length} Records)
-          </Text>
-        </TouchableOpacity>
+        <View style={{ gap: 8, marginTop: 4 }}>
+          <TouchableOpacity
+            style={styles.exportActionBtn}
+            onPress={handleDownloadCSV}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="download" size={18} color="#FFF" />
+            <Text style={styles.exportActionBtnText}>
+              Export CSV ({filteredBookings.length} Records)
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.exportActionBtn, { backgroundColor: '#4338CA' }]}
+            onPress={() => setShowMonthlyPdfModal(true)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="document-text" size={18} color="#FFF" />
+            <Text style={styles.exportActionBtnText}>
+              📄 View Monthly PDF Analysis & Census
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {downloadSuccess && (
           <View style={styles.successBanner}>
@@ -711,6 +731,12 @@ export const ReportsExportScreen = () => {
       <AdminScheduleEditorModal
         visible={showScheduleModal}
         onClose={() => setShowScheduleModal(false)}
+      />
+
+      {/* 📄 5. Monthly PDF & Census Report Modal */}
+      <MonthlyAnalyticsReportModal
+        visible={showMonthlyPdfModal}
+        onClose={() => setShowMonthlyPdfModal(false)}
       />
     </ScrollView>
   );

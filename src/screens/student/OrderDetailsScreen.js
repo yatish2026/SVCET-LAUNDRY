@@ -24,13 +24,27 @@ export const OrderDetailsScreen = ({ bookingId, onBack }) => {
   const [tokenModalVisible, setTokenModalVisible] = useState(false);
   const [previewPhotoUri, setPreviewPhotoUri] = useState(null);
 
-  const booking = bookings.find((b) => b.id === bookingId);
+  const targetId =
+    typeof bookingId === 'object' && bookingId !== null
+      ? bookingId.id || bookingId.booking_id || bookingId.pickup_token
+      : bookingId;
+
+  const booking = (bookings || []).find((b) => {
+    if (!b) return false;
+    if (b.id && targetId && String(b.id) === String(targetId)) return true;
+    if (b.pickup_token && targetId && String(b.pickup_token) === String(targetId)) return true;
+    if (b.id && targetId && b.id == targetId) return true;
+    return false;
+  });
 
   if (!booking) {
     return (
       <View style={styles.notFoundContainer}>
         <Ionicons name="alert-circle-outline" size={48} color={THEME.colors.textMuted} />
         <Text style={styles.notFoundText}>Booking not found</Text>
+        <Text style={{ fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 16 }}>
+          Could not find booking details for #{String(targetId || 'N/A')}.
+        </Text>
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
           <Text style={styles.backBtnText}>Go Back</Text>
         </TouchableOpacity>

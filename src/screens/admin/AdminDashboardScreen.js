@@ -79,16 +79,9 @@ export const AdminDashboardScreen = ({
       {/* 🌟 Top Greeting Card (Matching Student Curved Squircle UI) */}
       <View style={styles.greetingCard}>
         <View style={styles.greetingTopRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.greetingName}>Hi {staffName},</Text>
             <Text style={styles.greetingSub}>{currentDateStr} • Campus Laundry Staff</Text>
-          </View>
-          <View style={styles.weatherBadge}>
-            <Text style={styles.weatherIcon}>🌤️</Text>
-            <View style={{ marginLeft: 4 }}>
-              <Text style={styles.weatherTemp}>31° C</Text>
-              <Text style={styles.weatherSub}>Campus</Text>
-            </View>
           </View>
         </View>
 

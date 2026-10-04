@@ -278,7 +278,7 @@ export const ApprovalsScreen = ({ onSelectBooking }) => {
               <TouchableOpacity
                 key={b.id}
                 style={styles.requestCard}
-                onPress={() => onSelectBooking && onSelectBooking(b)}
+                onPress={() => onSelectBooking && onSelectBooking(b.id)}
                 activeOpacity={0.9}
               >
                 {/* Card Top: Token & Student Info */}

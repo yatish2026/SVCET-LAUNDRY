@@ -19,6 +19,7 @@ import Header from './src/components/Header';
 import SideMenuDrawer from './src/components/SideMenuDrawer';
 import WelcomeSplashScreen from './src/components/WelcomeSplashScreen';
 import StudentAnalyticsModal from './src/components/StudentAnalyticsModal';
+import MonthlyAnalyticsReportModal from './src/components/MonthlyAnalyticsReportModal';
 
 // Auth Screen
 import AuthScreen from './src/screens/auth/AuthScreen';
@@ -48,6 +49,7 @@ const MainApp = () => {
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [menuDrawerVisible, setMenuDrawerVisible] = useState(false);
   const [studentAnalyticsVisible, setStudentAnalyticsVisible] = useState(false);
+  const [monthlyReportVisible, setMonthlyReportVisible] = useState(false);
 
   // 📱 Android Hardware Back Button Handling
   useEffect(() => {
@@ -61,6 +63,12 @@ const MainApp = () => {
       // 1b. If student analytics modal is open, close it
       if (studentAnalyticsVisible) {
         setStudentAnalyticsVisible(false);
+        return true;
+      }
+
+      // 1c. If monthly report modal is open, close it
+      if (monthlyReportVisible) {
+        setMonthlyReportVisible(false);
         return true;
       }
 
@@ -92,11 +100,15 @@ const MainApp = () => {
     );
 
     return () => backSubscription.remove();
-  }, [menuDrawerVisible, studentAnalyticsVisible, selectedBookingId, studentTab, adminTab, isStudent, isStaff]);
+  }, [menuDrawerVisible, studentAnalyticsVisible, monthlyReportVisible, selectedBookingId, studentTab, adminTab, isStudent, isStaff]);
 
   // Helper to open details modal or screen
-  const handleSelectBooking = (bookingId) => {
-    setSelectedBookingId(bookingId);
+  const handleSelectBooking = (bookingOrId) => {
+    const id =
+      bookingOrId && typeof bookingOrId === 'object'
+        ? bookingOrId.id || bookingOrId.booking_id || bookingOrId.pickup_token
+        : bookingOrId;
+    setSelectedBookingId(id);
   };
 
   const handleBookingCreated = (bookingId) => {
@@ -174,6 +186,9 @@ const MainApp = () => {
           onOpenAnalytics={() => {
             setStudentAnalyticsVisible(true);
           }}
+          onOpenMonthlyReport={() => {
+            setMonthlyReportVisible(true);
+          }}
         />
 
         {/* 📊 Student Analytics & Wash Trends Modal */}
@@ -181,6 +196,12 @@ const MainApp = () => {
           visible={studentAnalyticsVisible}
           onClose={() => setStudentAnalyticsVisible(false)}
           onSelectBooking={handleSelectBooking}
+        />
+
+        {/* 📄 Monthly Laundry Performance Report Modal */}
+        <MonthlyAnalyticsReportModal
+          visible={monthlyReportVisible}
+          onClose={() => setMonthlyReportVisible(false)}
         />
 
         {/* Main Screen Body */}
