@@ -30,6 +30,7 @@ export const AdminDashboardScreen = ({
     yearWiseStats,
     tickets = [],
     updateTicketStatus,
+    deleteTicket,
     refreshData,
   } = useLaundry();
 
@@ -38,6 +39,37 @@ export const AdminDashboardScreen = ({
   const [showYearModal, setShowYearModal] = React.useState(false);
   const [selectedTicket, setSelectedTicket] = React.useState(null);
   const [ticketFilter, setTicketFilter] = React.useState('all'); // 'all' | 'open' | 'resolved'
+
+  const handleDeleteTicket = (ticketId, title) => {
+    const doDelete = async () => {
+      try {
+        await deleteTicket(ticketId);
+        setSelectedTicket(null);
+        if (Platform.OS === 'web') {
+          window.alert('🗑️ Complaint ticket removed.');
+        } else {
+          Alert.alert('Deleted', 'Complaint ticket has been removed.');
+        }
+      } catch (err) {
+        Alert.alert('Error', 'Failed to delete complaint ticket.');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to delete this student complaint?\n\n"${title || 'Ticket'}"`)) {
+        doDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete Complaint',
+        `Are you sure you want to permanently delete "${title || 'this complaint'}"?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: doDelete },
+        ]
+      );
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -307,9 +339,22 @@ export const AdminDashboardScreen = ({
                       {tkt.category || 'Complaint'}
                     </Text>
                   </View>
-                  <Text style={styles.ticketDate}>
-                    {new Date(tkt.created_at).toLocaleDateString()}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={styles.ticketDate}>
+                      {new Date(tkt.created_at).toLocaleDateString()}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.tktQuickDeleteBtn}
+                      onPress={(e) => {
+                        e.stopPropagation?.();
+                        handleDeleteTicket(tkt.id, tkt.title);
+                      }}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <Text style={styles.ticketTitle} numberOfLines={1}>
@@ -427,7 +472,7 @@ export const AdminDashboardScreen = ({
                   </View>
                 )}
 
-                {/* Resolution Action */}
+                {/* Resolution & Delete Actions */}
                 <View style={styles.tktActionRow}>
                   {selectedTicket.status !== 'resolved' ? (
                     <TouchableOpacity
@@ -459,6 +504,15 @@ export const AdminDashboardScreen = ({
                       <Text style={styles.reopenActionBtnText}>Re-open Ticket</Text>
                     </TouchableOpacity>
                   )}
+
+                  <TouchableOpacity
+                    style={styles.deleteTicketActionBtn}
+                    onPress={() => handleDeleteTicket(selectedTicket.id, selectedTicket.title)}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="trash-outline" size={17} color="#DC2626" />
+                    <Text style={styles.deleteTicketActionBtnText}>Delete Complaint</Text>
+                  </TouchableOpacity>
                 </View>
               </ScrollView>
             )}
@@ -1268,6 +1322,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#4338CA',
+  },
+  tktQuickDeleteBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteTicketActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    gap: 8,
+    marginTop: 10,
+  },
+  deleteTicketActionBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#DC2626',
   },
 });
 

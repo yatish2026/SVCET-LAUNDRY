@@ -266,6 +266,29 @@ export const apiService = {
     }
   },
 
+  // 10. Delete Support Ticket / Complaint (Admin & Staff)
+  async deleteTicket(ticketId) {
+    // Delete from local AsyncStorage
+    try {
+      const stored = await AsyncStorage.getItem('@vastra_support_tickets');
+      if (stored) {
+        const list = JSON.parse(stored);
+        const filtered = list.filter((t) => t.id !== ticketId);
+        await AsyncStorage.setItem('@vastra_support_tickets', JSON.stringify(filtered));
+      }
+    } catch (e) {}
+
+    // Delete on server
+    try {
+      await safeFetch(API_ENDPOINTS.DELETE_TICKET, {
+        method: 'POST',
+        body: JSON.stringify({ ticket_id: ticketId }),
+      });
+    } catch (err) {
+      console.log('Error deleting ticket on server:', err);
+    }
+  },
+
   // 10. Student Password Reset / Account Recovery
   async resetPassword({ email, student_id, new_password }) {
     try {

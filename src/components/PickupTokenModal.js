@@ -45,8 +45,20 @@ export const PickupTokenModal = ({ visible, onClose, booking }) => {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
+        {/* Tap outside backdrop to dismiss */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+
         <View style={styles.card}>
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={onClose}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            activeOpacity={0.7}
+          >
             <Ionicons name="close" size={22} color={THEME.colors.textSecondary} />
           </TouchableOpacity>
 
@@ -152,17 +164,22 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xl,
     alignItems: 'center',
     ...THEME.shadows.lg,
+    zIndex: 10,
+    elevation: 6,
   },
   closeBtn: {
     position: 'absolute',
     top: 14,
     right: 14,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: THEME.colors.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 9999,
+    elevation: 12,
+    cursor: 'pointer',
   },
   header: {
     alignItems: 'center',
@@ -241,9 +258,11 @@ const styles = StyleSheet.create({
   doneBtn: {
     width: '100%',
     backgroundColor: THEME.colors.primary,
-    paddingVertical: 13,
+    paddingVertical: 14,
     borderRadius: THEME.radius.md,
     alignItems: 'center',
+    cursor: 'pointer',
+    marginTop: 4,
   },
   doneBtnText: {
     color: THEME.colors.textInverse,

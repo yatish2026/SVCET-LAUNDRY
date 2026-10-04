@@ -118,6 +118,12 @@ export const LaundryProvider = ({ children }) => {
     await apiService.updateTicketStatus(ticketId, newStatus);
   };
 
+  // Delete Support Ticket / Complaint (Admin & Staff)
+  const deleteTicket = async (ticketId) => {
+    setTickets((prev) => prev.filter((t) => t.id !== ticketId));
+    await apiService.deleteTicket(ticketId);
+  };
+
   const markNotificationRead = (notifId) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notifId ? { ...n, is_read: 1 } : n))
@@ -170,6 +176,7 @@ export const LaundryProvider = ({ children }) => {
         cancelBooking,
         createTicket,
         updateTicketStatus,
+        deleteTicket,
         markNotificationRead,
         clearAllNotifications,
       }}

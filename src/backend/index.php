@@ -589,6 +589,26 @@ try {
             echo json_encode(["success" => true, "message" => "Ticket updated successfully."]);
             break;
 
+        case 'delete_ticket':
+            if ($method !== 'POST') {
+                http_response_code(405);
+                echo json_encode(["success" => false, "error" => "Method not allowed"]);
+                exit();
+            }
+
+            $tId = $body['ticket_id'] ?? '';
+            if (empty($tId)) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "error" => "Ticket ID required."]);
+                exit();
+            }
+
+            $del = $conn->prepare("DELETE FROM laundry_tickets WHERE id = ?");
+            $del->execute([$tId]);
+
+            echo json_encode(["success" => true, "message" => "Ticket deleted successfully."]);
+            break;
+
         case 'reset_password':
             if ($method !== 'POST') {
                 http_response_code(405);
