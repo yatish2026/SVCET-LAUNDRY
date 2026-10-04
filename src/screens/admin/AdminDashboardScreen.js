@@ -108,142 +108,100 @@ export const AdminDashboardScreen = ({
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      {/* 🌟 Top Greeting Card (Matching Student Curved Squircle UI) */}
-      <View style={styles.greetingCard}>
-        <View style={styles.greetingTopRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greetingName}>Hi {staffName},</Text>
-            <Text style={styles.greetingSub}>{currentDateStr} • Campus Laundry Staff</Text>
+      {/* 🌿 1. TOP HERO GREETING SECTION */}
+      <View style={styles.heroSection}>
+        <View style={styles.heroTextContainer}>
+          <Text style={styles.greetingTitle}>Hi {staffName.split(' ')[0]},</Text>
+          <Text style={styles.greetingSubtitle}>Clean campus,{"\n"}smooth flow!</Text>
+        </View>
+
+        {/* Botanical Organic Illustration Badge */}
+        <View style={styles.heroDecorWrapper}>
+          <View style={styles.leafCircle}>
+            <Ionicons name="leaf" size={26} color="#0D9488" />
+          </View>
+        </View>
+      </View>
+
+      {/* 📷 2. SCAN QR CAPSULE PILL */}
+      <TouchableOpacity
+        style={styles.collectionPillCard}
+        onPress={() => setShowQRScanner(true)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.collectionLeftBox}>
+          <View style={styles.calendarIconBox}>
+            <Ionicons name="qr-code" size={20} color="#0F4C5C" />
+          </View>
+          <View style={styles.collectionTextWrap}>
+            <Text style={styles.collectionSubLabel}>Counter Scanner</Text>
+            <Text style={styles.collectionDateText}>Scan Student Pickup QR</Text>
           </View>
         </View>
 
-        <View style={styles.cardDivider} />
+        <View style={styles.arrowCircle}>
+          <Ionicons name="scan-outline" size={18} color="#0F4C5C" />
+        </View>
+      </TouchableOpacity>
 
-        {/* 📷 Scan Student Pickup QR Button */}
-        <TouchableOpacity
-          style={styles.scanQrActionBtn}
-          onPress={() => setShowQRScanner(true)}
-          activeOpacity={0.85}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={styles.scanQrIconCircle}>
-              <Ionicons name="qr-code" size={20} color="#FFF" />
-            </View>
-            <View>
-              <Text style={styles.scanQrBtnTitle}>Scan Student Pickup QR</Text>
-              <Text style={styles.scanQrBtnSub}>Instant counter verification & handover</Text>
-            </View>
-          </View>
-          <Ionicons name="scan-outline" size={22} color="#4338CA" />
-        </TouchableOpacity>
+      {/* 🌟 3. MAIN SERVICES SECTION (2x2 Organic Pastel Wave Grid) */}
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionTitle}>Main Services</Text>
       </View>
 
-      {/* 📌 ESSENTIALS SECTION (2x2 Grid of Curated Squircles) */}
-      <Text style={styles.sectionHeader}>STAFF ESSENTIALS</Text>
-
-      <View style={styles.essentialsGrid}>
-        {/* Card 1: Review Approvals (Royal Iris Violet Squircle) */}
+      <View style={styles.servicesGrid}>
+        {/* Card 1: Review Approvals (Soft Pastel Ice Blue) */}
         <TouchableOpacity
-          style={[styles.pastelCard, styles.pastelViolet]}
+          style={[styles.serviceCard, styles.cardIceBlue]}
           onPress={onNavigateToApprovals}
           activeOpacity={0.85}
         >
-          <View style={[styles.iconBox, { backgroundColor: '#7C3AED' }]}>
-            <Ionicons name="checkmark-done-circle" size={20} color="#FFF" />
+          <View style={[styles.serviceIconCircle, { backgroundColor: '#BAE6FD' }]}>
+            <Ionicons name="checkmark-done-circle" size={22} color="#0284C7" />
           </View>
-
-          <Text style={styles.cardMainTitle}>Approvals</Text>
-
-          <View style={styles.cardMetricRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardMetricLabel}>Pending</Text>
-              <Text style={[styles.cardMetricVal, { color: '#6B21A8' }]}>
-                {pendingCount} Requests
-              </Text>
-            </View>
-            {pendingCount > 0 ? (
-              <View style={styles.alertDot}>
-                <Text style={styles.alertDotText}>{pendingCount}</Text>
-              </View>
-            ) : (
-              <Ionicons name="checkmark-circle-outline" size={16} color="#7C3AED" />
-            )}
-          </View>
-
-          <Text style={styles.cardFooterSub}>Review & Accept Clothes</Text>
+          <Text style={styles.serviceCardTitle}>Approvals</Text>
+          <Text style={styles.serviceCardSub}>
+            {pendingCount > 0 ? `${pendingCount} Pending` : 'All caught up'}
+          </Text>
         </TouchableOpacity>
 
-        {/* Card 2: Student Submissions (Ocean Azure Sky Squircle) */}
+        {/* Card 2: Student Submissions (Soft Pastel Sunset Peach) */}
         <TouchableOpacity
-          style={[styles.pastelCard, styles.pastelAzure]}
+          style={[styles.serviceCard, styles.cardSunsetPeach]}
           onPress={onNavigateToSubmissions}
           activeOpacity={0.85}
         >
-          <View style={[styles.iconBox, { backgroundColor: '#0284C7' }]}>
-            <Ionicons name="list" size={20} color="#FFF" />
+          <View style={[styles.serviceIconCircle, { backgroundColor: '#FED7AA' }]}>
+            <Ionicons name="list" size={22} color="#EA580C" />
           </View>
-
-          <Text style={styles.cardMainTitle}>Submissions</Text>
-
-          <View style={styles.cardMetricRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardMetricLabel}>Active Orders</Text>
-              <Text style={[styles.cardMetricVal, { color: '#075985' }]}>
-                {activeCount} Active
-              </Text>
-            </View>
-            <Ionicons name="folder-outline" size={16} color="#0284C7" />
-          </View>
-
-          <Text style={styles.cardFooterSub}>Search & Intake Checklist</Text>
+          <Text style={styles.serviceCardTitle}>Active Orders</Text>
+          <Text style={styles.serviceCardSub}>{activeCount} In processing</Text>
         </TouchableOpacity>
 
-        {/* Card 3: Download Reports (Fresh Matcha Emerald Squircle) */}
+        {/* Card 3: Download Reports (Soft Pastel Fresh Mint) */}
         <TouchableOpacity
-          style={[styles.pastelCard, styles.pastelMatcha]}
+          style={[styles.serviceCard, styles.cardFreshMint]}
           onPress={onNavigateToReports}
           activeOpacity={0.85}
         >
-          <View style={[styles.iconBox, { backgroundColor: '#16A34A' }]}>
-            <Ionicons name="download" size={20} color="#FFF" />
+          <View style={[styles.serviceIconCircle, { backgroundColor: '#BBF7D0' }]}>
+            <Ionicons name="download" size={22} color="#16A34A" />
           </View>
-
-          <Text style={styles.cardMainTitle}>Reports Export</Text>
-
-          <View style={styles.cardMetricRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardMetricLabel}>Format</Text>
-              <Text style={[styles.cardMetricVal, { color: '#166534' }]}>Excel (.xlsx)</Text>
-            </View>
-            <Ionicons name="document-text-outline" size={16} color="#16A34A" />
-          </View>
-
-          <Text style={styles.cardFooterSub}>Export Student Records</Text>
+          <Text style={styles.serviceCardTitle}>Excel Reports</Text>
+          <Text style={styles.serviceCardSub}>Audit & Census</Text>
         </TouchableOpacity>
 
-        {/* Card 4: Total Campus Load (Warm Sunset Coral Squircle) */}
+        {/* Card 4: Campus Analytics (Soft Pastel Blush Pink) */}
         <TouchableOpacity
-          style={[styles.pastelCard, styles.pastelSunset]}
-          onPress={onNavigateToSubmissions}
+          style={[styles.serviceCard, styles.cardBlushPink]}
+          onPress={() => setShowYearModal(true)}
           activeOpacity={0.85}
         >
-          <View style={[styles.iconBox, { backgroundColor: '#EA580C' }]}>
-            <Ionicons name="shirt" size={20} color="#FFF" />
+          <View style={[styles.serviceIconCircle, { backgroundColor: '#FECDD3' }]}>
+            <Ionicons name="stats-chart" size={22} color="#E11D48" />
           </View>
-
-          <Text style={styles.cardMainTitle}>Total Load</Text>
-
-          <View style={styles.cardMetricRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardMetricLabel}>Grand Total</Text>
-              <Text style={[styles.cardMetricVal, { color: '#9A3412' }]}>
-                {grandTotalClothes} Clothes
-              </Text>
-            </View>
-            <Ionicons name="stats-chart-outline" size={16} color="#EA580C" />
-          </View>
-
-          <Text style={styles.cardFooterSub}>{readyCount} Bags Ready Pickup</Text>
+          <Text style={styles.serviceCardTitle}>Batch Analytics</Text>
+          <Text style={styles.serviceCardSub}>{grandTotalClothes} Total clothes</Text>
         </TouchableOpacity>
       </View>
 
@@ -701,57 +659,176 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 1,
   },
-  greetingTopRow: {
+  heroSection: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    paddingVertical: 14,
+    marginBottom: 10,
   },
-  greetingName: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#0F172A',
+  heroTextContainer: {
+    flex: 1,
   },
-  greetingSub: {
+  greetingTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#0F4C5C',
+    fontFamily: Platform.OS === 'ios' ? 'Snell Roundhand' : 'serif',
+    letterSpacing: -0.5,
+  },
+  greetingSubtitle: {
+    fontSize: 14,
+    color: '#334155',
+    fontWeight: '600',
+    marginTop: 4,
+    lineHeight: 20,
+  },
+  heroDecorWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingLeft: 12,
+  },
+  leafCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#E6F4F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#BEE3EA',
+  },
+  collectionPillCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    marginBottom: 26,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F4C5C',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 4px 16px rgba(15, 76, 92, 0.06)',
+      },
+    }),
+  },
+  collectionLeftBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  calendarIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#E6F4F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  collectionTextWrap: {
+    justifyContent: 'center',
+  },
+  collectionSubLabel: {
     fontSize: 11,
     color: '#64748B',
-    marginTop: 2,
+    fontWeight: '600',
   },
-  weatherBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-  },
-  weatherIcon: {
-    fontSize: 18,
-  },
-  weatherTemp: {
-    fontSize: 12,
+  collectionDateText: {
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
+    marginTop: 2,
   },
-  weatherSub: {
-    fontSize: 8,
-    color: '#64748B',
-  },
-  cardDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 6,
-  },
-  viewScheduleRow: {
-    flexDirection: 'row',
+  arrowCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 8,
+    justifyContent: 'center',
   },
-  viewScheduleText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#4338CA',
+  sectionHeaderRow: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 16,
+    marginBottom: 24,
+  },
+  serviceCard: {
+    width: '48%',
+    borderRadius: 28, // Organic fluid squircle shape
+    padding: 18,
+    minHeight: 140,
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 3px 12px rgba(0,0,0,0.04)',
+      },
+    }),
+  },
+  cardIceBlue: {
+    backgroundColor: '#E8F5FD',
+    borderColor: '#BAE6FD',
+  },
+  cardSunsetPeach: {
+    backgroundColor: '#FFF2E8',
+    borderColor: '#FED7AA',
+  },
+  cardFreshMint: {
+    backgroundColor: '#EBF8F2',
+    borderColor: '#BBF7D0',
+  },
+  cardBlushPink: {
+    backgroundColor: '#FFF0F3',
+    borderColor: '#FECDD3',
+  },
+  serviceIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  serviceCardTitle: {
+    fontSize: 15.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  serviceCardSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '600',
   },
   sectionHeader: {
     fontSize: 12,
@@ -759,86 +836,6 @@ const styles = StyleSheet.create({
     color: '#334155',
     letterSpacing: 1,
     marginBottom: 14,
-    marginTop: 4,
-  },
-  essentialsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-    marginBottom: 24,
-  },
-  pastelCard: {
-    width: '47.5%',
-    borderRadius: 38, // 🌟 Dramatic curved squircle edges
-    padding: 18,
-    minHeight: 160,
-    justifyContent: 'space-between',
-    borderWidth: 1.5,
-    overflow: 'hidden',
-    ...THEME.shadows.md,
-  },
-  pastelSunset: {
-    backgroundColor: '#FFEAD5',
-    borderColor: '#FDBA74',
-  },
-  pastelMatcha: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#86EFAC',
-  },
-  pastelViolet: {
-    backgroundColor: '#F3E8FF',
-    borderColor: '#D8B4FE',
-  },
-  pastelAzure: {
-    backgroundColor: '#E0F2FE',
-    borderColor: '#7DD3FC',
-  },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...THEME.shadows.sm,
-  },
-  cardMainTitle: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#0F172A',
-    marginTop: 8,
-  },
-  cardMetricRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  cardMetricLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  cardMetricVal: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#0F172A',
-    marginTop: 1,
-  },
-  alertDot: {
-    backgroundColor: '#EF4444',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-  },
-  alertDotText: {
-    color: '#FFF',
-    fontSize: 9,
-    fontWeight: '900',
-  },
-  cardFooterSub: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#64748B',
     marginTop: 4,
   },
   breakdownHeaderWrap: {

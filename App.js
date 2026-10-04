@@ -273,7 +273,7 @@ const MainApp = () => {
           <View style={styles.floatingDockContainer} pointerEvents="box-none">
             <View style={styles.glassCapsuleDock}>
               {isStudent ? (
-                /* 🎓 Student Navigation Capsule */
+                /* 🎓 Student Navigation */
                 <>
                   {/* Home Tab */}
                   <TouchableOpacity
@@ -286,8 +286,8 @@ const MainApp = () => {
                   >
                     <Ionicons
                       name={studentTab === 'home' ? 'home' : 'home-outline'}
-                      size={21}
-                      color={studentTab === 'home' ? '#2563EB' : '#64748B'}
+                      size={22}
+                      color={studentTab === 'home' ? '#0F4C5C' : '#64748B'}
                     />
                     <Text
                       style={[
@@ -299,7 +299,7 @@ const MainApp = () => {
                     </Text>
                   </TouchableOpacity>
 
-                  {/* Central Action: Book Slot */}
+                  {/* Book Tab */}
                   <TouchableOpacity
                     style={[
                       styles.dockItem,
@@ -308,21 +308,18 @@ const MainApp = () => {
                     onPress={() => setStudentTab('new_booking')}
                     activeOpacity={0.7}
                   >
-                    <View
-                      style={[
-                        styles.heroOrbSmall,
-                        studentTab === 'new_booking' && styles.heroOrbSmallActive,
-                      ]}
-                    >
-                      <Ionicons name="add" size={14} color="#FFFFFF" />
-                    </View>
+                    <Ionicons
+                      name={studentTab === 'new_booking' ? 'clipboard' : 'clipboard-outline'}
+                      size={22}
+                      color={studentTab === 'new_booking' ? '#0F4C5C' : '#64748B'}
+                    />
                     <Text
                       style={[
                         styles.dockLabel,
                         studentTab === 'new_booking' && styles.dockLabelActive,
                       ]}
                     >
-                      Book Slot
+                      Book
                     </Text>
                   </TouchableOpacity>
 
@@ -337,8 +334,8 @@ const MainApp = () => {
                   >
                     <Ionicons
                       name={studentTab === 'history' ? 'time' : 'time-outline'}
-                      size={21}
-                      color={studentTab === 'history' ? '#2563EB' : '#64748B'}
+                      size={22}
+                      color={studentTab === 'history' ? '#0F4C5C' : '#64748B'}
                     />
                     <Text
                       style={[
@@ -361,8 +358,8 @@ const MainApp = () => {
                   >
                     <Ionicons
                       name={studentTab === 'profile' ? 'person' : 'person-outline'}
-                      size={21}
-                      color={studentTab === 'profile' ? '#2563EB' : '#64748B'}
+                      size={22}
+                      color={studentTab === 'profile' ? '#0F4C5C' : '#64748B'}
                     />
                     <Text
                       style={[
@@ -375,7 +372,7 @@ const MainApp = () => {
                   </TouchableOpacity>
                 </>
               ) : (
-                /* 🛡️ Staff Navigation Capsule */
+                /* 🛡️ Staff Navigation */
                 <>
                   <TouchableOpacity
                     style={[
@@ -387,8 +384,8 @@ const MainApp = () => {
                   >
                     <Ionicons
                       name={adminTab === 'overview' ? 'stats-chart' : 'stats-chart-outline'}
-                      size={20}
-                      color={adminTab === 'overview' ? '#2563EB' : '#64748B'}
+                      size={21}
+                      color={adminTab === 'overview' ? '#0F4C5C' : '#64748B'}
                     />
                     <Text
                       style={[
@@ -411,8 +408,8 @@ const MainApp = () => {
                     <View style={{ position: 'relative' }}>
                       <Ionicons
                         name={adminTab === 'approvals' ? 'checkmark-done-circle' : 'checkmark-done-circle-outline'}
-                        size={20}
-                        color={adminTab === 'approvals' ? '#7C3AED' : '#64748B'}
+                        size={21}
+                        color={adminTab === 'approvals' ? '#0F4C5C' : '#64748B'}
                       />
                       {pendingApprovalsCount > 0 && (
                         <View style={styles.dockBadge}>
@@ -423,7 +420,7 @@ const MainApp = () => {
                     <Text
                       style={[
                         styles.dockLabel,
-                        adminTab === 'approvals' && { color: '#7C3AED', fontWeight: '800' },
+                        adminTab === 'approvals' && styles.dockLabelActive,
                       ]}
                     >
                       Approvals
@@ -440,8 +437,8 @@ const MainApp = () => {
                   >
                     <Ionicons
                       name={adminTab === 'submissions' ? 'list' : 'list-outline'}
-                      size={20}
-                      color={adminTab === 'submissions' ? '#2563EB' : '#64748B'}
+                      size={21}
+                      color={adminTab === 'submissions' ? '#0F4C5C' : '#64748B'}
                     />
                     <Text
                       style={[
@@ -462,14 +459,14 @@ const MainApp = () => {
                     activeOpacity={0.7}
                   >
                     <Ionicons
-                      name={adminTab === 'reports' ? 'download' : 'download-outline'}
-                      size={20}
-                      color={adminTab === 'reports' ? '#059669' : '#64748B'}
+                      name={adminTab === 'reports' ? 'document-text' : 'document-text-outline'}
+                      size={21}
+                      color={adminTab === 'reports' ? '#0F4C5C' : '#64748B'}
                     />
                     <Text
                       style={[
                         styles.dockLabel,
-                        adminTab === 'reports' && { color: '#059669', fontWeight: '800' },
+                        adminTab === 'reports' && styles.dockLabelActive,
                       ]}
                     >
                       Reports
@@ -577,9 +574,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   dockItemActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#E6F4F7',
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#BEE3EA',
   },
   dockLabel: {
     fontSize: 10,
@@ -588,7 +585,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   dockLabelActive: {
-    color: '#2563EB',
+    color: '#0F4C5C',
     fontWeight: '800',
   },
   heroOrbSmall: {

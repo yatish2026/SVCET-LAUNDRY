@@ -53,28 +53,25 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
             style={styles.sideBtn}
             onPress={onOpenMenu || (() => {})}
             activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="menu-outline" size={26} color="#0F172A" />
+            <Ionicons name="menu" size={26} color="#0F4C5C" />
           </TouchableOpacity>
 
-          {/* Center College Emblem Logo & VASTRA App Name */}
+          {/* Center VASTRA App Name */}
           <View style={styles.logoContainer}>
-            <Image
-              source={require('../../assets/rvs_logo.png')}
-              style={styles.collegeLogo}
-              resizeMode="contain"
-            />
             <Text style={styles.headerAppName}>VASTRA</Text>
           </View>
 
-          {/* Right Actions: Notifications & Logout */}
+          {/* Right Actions: Notifications & Quick Logout */}
           <View style={styles.rightActions}>
             <TouchableOpacity
               style={styles.bellBtn}
               onPress={() => setNotifVisible(true)}
               activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="notifications-outline" size={22} color="#0F172A" />
+              <Ionicons name="notifications-outline" size={24} color="#0F4C5C" />
               {unreadCount > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{unreadCount}</Text>
@@ -86,8 +83,9 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
               style={styles.logoutBtn}
               onPress={handleLogout}
               activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="log-out-outline" size={22} color="#475569" />
+              <Ionicons name="log-out-outline" size={22} color="#64748B" />
             </TouchableOpacity>
           </View>
         </View>
@@ -95,7 +93,7 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
         {/* If Staff / Admin, show a subtle role chip */}
         {isStaff && (
           <View style={styles.staffPill}>
-            <Ionicons name="shield-checkmark" size={12} color="#065F46" />
+            <Ionicons name="shield-checkmark" size={12} color="#0F4C5C" />
             <Text style={styles.staffPillText}>Laundry Staff & Admin Portal</Text>
           </View>
         )}
@@ -113,26 +111,10 @@ export const Header = ({ onSelectBooking, onOpenMenu }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F6FAF9',
     paddingTop: Platform.OS === 'ios' ? 4 : 8,
-    paddingBottom: 8,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-      },
-    }),
+    paddingBottom: 6,
+    paddingHorizontal: 20,
   },
   headerRow: {
     flexDirection: 'row',
@@ -148,47 +130,43 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-  },
-  collegeLogo: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
   },
   headerAppName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '900',
-    color: '#0F172A',
-    letterSpacing: 1,
+    color: '#0F4C5C',
+    letterSpacing: 2.2,
+    fontFamily: Platform.OS === 'ios' ? 'Helvetica Neue' : 'sans-serif-medium',
   },
   rightActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    width: 76,
+    width: 64,
     justifyContent: 'flex-end',
   },
   bellBtn: {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   badge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: 1,
+    right: 1,
     minWidth: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#EF4444',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 2,
+    borderWidth: 1.5,
+    borderColor: '#F6FAF9',
   },
   badgeText: {
     color: '#FFF',
@@ -196,8 +174,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   logoutBtn: {
-    width: 34,
-    height: 34,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -206,19 +184,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    backgroundColor: '#ECFDF5',
+    backgroundColor: '#E6F4F7',
     paddingVertical: 3,
     paddingHorizontal: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
-    marginTop: 4,
+    borderColor: '#BEE3EA',
+    marginTop: 2,
     gap: 4,
   },
   staffPillText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#065F46',
+    color: '#0F4C5C',
   },
 });
 

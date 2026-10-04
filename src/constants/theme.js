@@ -1,31 +1,31 @@
 export const THEME = {
   colors: {
-    // Cool Modern Palette
-    primary: '#2563EB', // Vibrant Cool Blue
-    primaryDark: '#1D4ED8',
-    primaryLight: '#60A5FA',
-    primarySoft: '#EFF6FF',
+    // VASTRA Signature Teal & Organic Pastel Palette
+    primary: '#0F4C5C', // Deep Elegant Teal
+    primaryDark: '#0A3641',
+    primaryLight: '#2A7F93',
+    primarySoft: '#E6F4F7',
 
     secondary: '#0D9488', // Crisp Teal
     secondaryLight: '#14B8A6',
     secondarySoft: '#F0FDFA',
 
-    accent: '#8B5CF6', // Cool Purple
+    accent: '#7C3AED', // Soft Iris
     accentSoft: '#F5F3FF',
 
-    info: '#0284C7', // Sky
+    info: '#0284C7', // Sky Cyan
     infoSoft: '#E0F2FE',
 
-    success: '#059669', // Emerald
-    successSoft: '#ECFDF5',
+    success: '#16A34A', // Emerald Matcha
+    successSoft: '#DCFCE7',
 
-    warning: '#D97706', // Warm Amber
-    warningSoft: '#FFFBEB',
+    warning: '#EA580C', // Warm Sunset Peach
+    warningSoft: '#FFEDD5',
 
-    danger: '#E11D48', // Rose
+    danger: '#E11D48', // Rose Blush
     dangerSoft: '#FFE4E6',
 
-    background: '#F1F5F9', // Cool light slate
+    background: '#F6FAF9', // Ambient serene canvas
     surface: '#FFFFFF',
     surfaceSubtle: '#F8FAFC',
     surfaceHover: '#E2E8F0',
@@ -37,7 +37,7 @@ export const THEME = {
 
     border: '#E2E8F0',
     borderLight: '#F1F5F9',
-    borderFocus: '#2563EB',
+    borderFocus: '#0F4C5C',
     divider: '#F1F5F9',
 
     // Status Colors (Instant booking, no waiting for approval)
