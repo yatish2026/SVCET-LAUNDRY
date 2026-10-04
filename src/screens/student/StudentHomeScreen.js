@@ -472,8 +472,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 16,
-    marginBottom: 24,
+    rowGap: 12,
+    marginBottom: 20,
   },
   serviceCard: {
     width: '48%',
