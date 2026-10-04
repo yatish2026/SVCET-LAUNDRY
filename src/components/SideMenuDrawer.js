@@ -152,9 +152,9 @@ export const SideMenuDrawer = ({
                   onPress={() => handleItemPress(() => onNavigate('reports'))}
                 >
                   <View style={[styles.menuIconBox, { backgroundColor: '#F0FDF4' }]}>
-                    <Ionicons name="download-outline" size={18} color="#16A34A" />
+                    <Ionicons name="grid-outline" size={18} color="#16A34A" />
                   </View>
-                  <Text style={styles.menuItemText}>Export Reports (.CSV)</Text>
+                  <Text style={styles.menuItemText}>Export Excel Reports (.xlsx)</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -165,7 +165,7 @@ export const SideMenuDrawer = ({
                     <Ionicons name="document-text-outline" size={18} color="#4338CA" />
                   </View>
                   <Text style={[styles.menuItemText, { color: '#4338CA', fontWeight: '800' }]}>
-                    📄 Monthly PDF & Census Report
+                    📊 Monthly Excel & Census Report
                   </Text>
                 </TouchableOpacity>
               </>
@@ -202,7 +202,7 @@ export const SideMenuDrawer = ({
                     <Ionicons name="document-text-outline" size={18} color="#059669" />
                   </View>
                   <Text style={[styles.menuItemText, { color: '#059669', fontWeight: '800' }]}>
-                    📄 Monthly Laundry Report
+                    📊 Monthly Excel Laundry Report
                   </Text>
                 </TouchableOpacity>
 

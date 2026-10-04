@@ -17,11 +17,9 @@ import { useLaundry } from '../../context/LaundryContext';
 import { ACADEMIC_COURSES } from '../../constants/schedule';
 import AdminCalendarAnalyticsModal from '../../components/AdminCalendarAnalyticsModal';
 import StudentAuditLedgerModal from '../../components/StudentAuditLedgerModal';
-import AdminStudentCensusModal from '../../components/AdminStudentCensusModal';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import AdminScheduleEditorModal from '../../components/AdminScheduleEditorModal';
 import MonthlyAnalyticsReportModal from '../../components/MonthlyAnalyticsReportModal';
+import { exportToExcel } from '../../utils/excelExporter';
 
 export const REPORT_FILTER_SECTIONS = [
   { id: 'TIMEFRAME', label: 'Time Period', icon: 'calendar' },
@@ -134,7 +132,7 @@ export const ReportsExportScreen = () => {
   const completedCount = filteredBookings.filter((b) => b.status === 'completed').length;
   const activeCount = filteredBookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled').length;
 
-  const handleDownloadCSV = async () => {
+  const handleDownloadExcel = async () => {
     try {
       if (filteredBookings.length === 0) {
         Alert.alert('No Data', 'No records match your selected report filters.');
@@ -143,7 +141,7 @@ export const ReportsExportScreen = () => {
 
       const headers = [
         'Booking ID',
-        'Token',
+        'Pickup Token',
         'Date Created',
         'Student Name',
         'Roll No',
@@ -165,66 +163,52 @@ export const ReportsExportScreen = () => {
           .join('; ');
 
         return [
-          `"${b.id || ''}"`,
+          b.id || '',
           `#${b.pickup_token || ''}`,
-          `"${b.created_at || ''}"`,
-          `"${b.student_name || ''}"`,
-          `"${b.student_id || ''}"`,
-          `"${b.academic_year || ''}"`,
-          `"${b.hostel_block || ''}"`,
-          `"${b.room_number || ''}"`,
-          `"${b.phone_number || ''}"`,
+          b.created_at || '',
+          b.student_name || '',
+          b.student_id || '',
+          b.academic_year || '',
+          b.hostel_block || '',
+          b.room_number || '',
+          b.phone_number || '',
           b.total_items || 1,
-          `"${itemsList}"`,
-          `"${b.status || ''}"`,
-          `"${b.dropoff_slot_time || ''}"`,
-          `"${b.pickup_slot_time || ''}"`,
-          `"${(b.special_instructions || '').replace(/"/g, '""')}"`,
-        ].join(',');
+          itemsList,
+          b.status || '',
+          b.dropoff_slot_time || '',
+          b.pickup_slot_time || '',
+          b.special_instructions || '',
+        ];
       });
 
-      const csvContent = [headers.join(','), ...rows].join('\n');
-
-      let filename = `RVS_VASTRA_Master_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+      let reportTitle = 'RVS_VASTRA_Master_Excel_Report';
       if (timeframeMode === 'DAY') {
-        filename = `RVS_VASTRA_Daily_Report_${selectedDate}.csv`;
+        reportTitle = `RVS_VASTRA_Daily_Excel_${selectedDate}`;
       } else if (timeframeMode === 'MONTH') {
-        filename = `RVS_VASTRA_Monthly_Report_${selectedMonth}.csv`;
+        reportTitle = `RVS_VASTRA_Monthly_Excel_${selectedMonth}`;
       }
 
-      if (Platform.OS === 'web') {
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      const summaryInfo = [
+        { label: 'Report Generated For', value: 'RVS University & SVCET Campus Laundry' },
+        { label: 'Selected Timeframe', value: timeframeMode === 'ALL' ? 'All-Time Records' : timeframeMode === 'DAY' ? selectedDate : selectedMonth },
+        { label: 'Total Records Exported', value: `${filteredBookings.length} Laundry Batches` },
+        { label: 'Total Clothes Cleaned', value: `${totalClothes} items` },
+      ];
 
+      const res = await exportToExcel({
+        title: reportTitle,
+        sheetName: 'Laundry Audit Report',
+        headers,
+        rows,
+        summaryInfo,
+      });
+
+      if (res?.success) {
         setDownloadSuccess(true);
         setTimeout(() => setDownloadSuccess(false), 4000);
-      } else {
-        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-        await FileSystem.writeAsStringAsync(fileUri, '\uFEFF' + csvContent, {
-          encoding: FileSystem.EncodingType.UTF8,
-        });
-
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(fileUri, {
-            mimeType: 'text/csv',
-            dialogTitle: 'Open in Excel / Save Report (.csv)',
-            UTI: 'public.comma-separated-values-text',
-          });
-        } else {
-          await Share.share({
-            title: filename,
-            message: csvContent,
-          });
-        }
       }
     } catch (err) {
-      Alert.alert('Export Error', 'Failed to generate CSV export file.');
+      Alert.alert('Export Error', 'Failed to generate Excel spreadsheet.');
     }
   };
 
@@ -241,20 +225,20 @@ export const ReportsExportScreen = () => {
             <Ionicons name="document-text" size={26} color="#059669" />
           </View>
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.headerTitle}>Official Laundry Reports</Text>
-            <Text style={styles.headerSub}>Export daily, monthly, batch & student records</Text>
+            <Text style={styles.headerTitle}>Official Excel Reports</Text>
+            <Text style={styles.headerSub}>Export daily, monthly, batch & student Excel spreadsheets</Text>
           </View>
         </View>
 
         <View style={{ gap: 8, marginTop: 4 }}>
           <TouchableOpacity
             style={styles.exportActionBtn}
-            onPress={handleDownloadCSV}
+            onPress={handleDownloadExcel}
             activeOpacity={0.85}
           >
-            <Ionicons name="download" size={18} color="#FFF" />
+            <Ionicons name="grid" size={18} color="#FFF" />
             <Text style={styles.exportActionBtnText}>
-              Export CSV ({filteredBookings.length} Records)
+              📊 Export Excel Spreadsheet ({filteredBookings.length} Records)
             </Text>
           </TouchableOpacity>
 
@@ -265,7 +249,7 @@ export const ReportsExportScreen = () => {
           >
             <Ionicons name="document-text" size={18} color="#FFF" />
             <Text style={styles.exportActionBtnText}>
-              📄 View Monthly PDF Analysis & Census
+              📄 View Monthly Excel & Census Report
             </Text>
           </TouchableOpacity>
         </View>
@@ -273,7 +257,7 @@ export const ReportsExportScreen = () => {
         {downloadSuccess && (
           <View style={styles.successBanner}>
             <Ionicons name="checkmark-circle" size={16} color="#059669" />
-            <Text style={styles.successBannerText}>CSV Report downloaded successfully!</Text>
+            <Text style={styles.successBannerText}>Excel Spreadsheet exported successfully!</Text>
           </View>
         )}
       </View>

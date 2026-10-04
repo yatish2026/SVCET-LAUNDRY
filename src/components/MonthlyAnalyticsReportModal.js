@@ -13,8 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
 import { useLaundry } from '../context/LaundryContext';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+import { exportToExcel } from '../utils/excelExporter';
 
 export const MonthlyAnalyticsReportModal = ({ visible, onClose }) => {
   const { bookings } = useLaundry();
@@ -110,12 +109,9 @@ export const MonthlyAnalyticsReportModal = ({ visible, onClose }) => {
   // Share or Export Formatted Excel Spreadsheet Document
   const handleShareReport = async () => {
     try {
-      const filename = `RVS_VASTRA_Monthly_Census_${selectedMonth}.csv`;
-
-      // Build real Excel-ready CSV headers and rows
       const headers = [
         'Booking ID',
-        'Token',
+        'Pickup Token',
         'Date Created',
         'Student Name',
         'Roll No',
@@ -134,66 +130,38 @@ export const MonthlyAnalyticsReportModal = ({ visible, onClose }) => {
           .join('; ');
 
         return [
-          `"${b.id || ''}"`,
+          b.id || '',
           `#${b.pickup_token || ''}`,
-          `"${b.created_at || ''}"`,
-          `"${b.student_name || ''}"`,
-          `"${b.student_id || ''}"`,
-          `"${b.academic_year || ''}"`,
-          `"${b.hostel_block || ''}"`,
-          `"${b.room_number || ''}"`,
-          `"${b.phone_number || ''}"`,
+          b.created_at || '',
+          b.student_name || '',
+          b.student_id || '',
+          b.academic_year || '',
+          b.hostel_block || '',
+          b.room_number || '',
+          b.phone_number || '',
           b.total_items || 1,
-          `"${itemsList}"`,
-          `"${b.status || ''}"`,
-        ].join(',');
+          itemsList,
+          b.status || '',
+        ];
       });
 
-      // Prepend Summary Banner to the CSV sheet
-      const summaryBanner = [
-        `"RVS UNIVERSITY - CENTRAL LAUNDRY MONTHLY CENSUS REPORT"`,
-        `"Reporting Month: ${monthData.monthName}"`,
-        `"Total Clothes Washed: ${monthData.totalClothes} items"`,
-        `"Total Students Benefited: ${monthData.studentCount} students"`,
-        `"Completed Orders: ${monthData.completedCount} (${monthData.completionRate}%)"`,
-        `"In Progress Orders: ${monthData.inProgressCount}"`,
-        `""`,
-        headers.join(','),
-      ].join('\n');
+      const summaryInfo = [
+        { label: 'RVS UNIVERSITY CENTRAL LAUNDRY', value: `MONTHLY CENSUS REPORT - ${monthData.monthName.toUpperCase()}` },
+        { label: 'Total Clothes Washed', value: `${monthData.totalClothes} items` },
+        { label: 'Total Students Benefited', value: `${monthData.studentCount} students` },
+        { label: 'Orders Completed', value: `${monthData.completedCount} batches (${monthData.completionRate}% success)` },
+        { label: 'Orders In Progress', value: `${monthData.inProgressCount} batches` },
+      ];
 
-      const fullCsv = [summaryBanner, ...rows].join('\n');
-
-      if (Platform.OS === 'web') {
-        const blob = new Blob(['\uFEFF' + fullCsv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        Alert.alert('Excel Exported', 'Saved to your device downloads folder.');
-      } else {
-        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-        await FileSystem.writeAsStringAsync(fileUri, '\uFEFF' + fullCsv, {
-          encoding: FileSystem.EncodingType.UTF8,
-        });
-
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(fileUri, {
-            mimeType: 'text/csv',
-            dialogTitle: 'Open in Excel / Save Report (.csv)',
-            UTI: 'public.comma-separated-values-text',
-          });
-        } else {
-          await Share.share({
-            title: filename,
-            message: fullCsv,
-          });
-        }
-      }
+      await exportToExcel({
+        title: `RVS_VASTRA_Monthly_Census_${selectedMonth}`,
+        sheetName: `${selectedMonth} Census`,
+        headers,
+        rows,
+        summaryInfo,
+      });
     } catch (err) {
-      Alert.alert('Export Error', 'Failed to generate Excel file.');
+      Alert.alert('Export Error', 'Failed to generate Excel spreadsheet.');
     }
   };
 
@@ -367,8 +335,8 @@ export const MonthlyAnalyticsReportModal = ({ visible, onClose }) => {
           {/* Action Footer */}
           <View style={styles.footerBar}>
             <TouchableOpacity style={styles.shareActionBtn} onPress={handleShareReport} activeOpacity={0.85}>
-              <Ionicons name="share-social" size={18} color="#FFFFFF" />
-              <Text style={styles.shareActionBtnText}>Share / Save Report Document</Text>
+              <Ionicons name="grid" size={18} color="#FFFFFF" />
+              <Text style={styles.shareActionBtnText}>📊 Export & Share Excel Spreadsheet</Text>
             </TouchableOpacity>
           </View>
         </View>
