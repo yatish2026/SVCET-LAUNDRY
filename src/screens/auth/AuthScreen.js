@@ -303,17 +303,17 @@ export const AuthScreen = () => {
               <Text style={styles.formSub}>Sign in to track your laundry orders & pickup tokens</Text>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email ID / Gmail</Text>
+                <Text style={styles.inputLabel}>Email ID / Roll Number / Mobile</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons name="mail-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                  <Ionicons name="person-outline" size={18} color="#64748B" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="e.g. name@gmail.com"
+                    placeholder="e.g. 22781A0501 or name@gmail.com"
                     placeholderTextColor="#94A3B8"
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
-                    keyboardType="email-address"
+                    autoCorrect={false}
                   />
                 </View>
               </View>

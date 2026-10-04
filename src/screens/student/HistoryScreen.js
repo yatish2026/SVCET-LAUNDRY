@@ -29,25 +29,30 @@ export const HistoryScreen = ({ onSelectBooking }) => {
     setRefreshing(false);
   };
 
-  const studentName = (profile?.full_name || profile?.email?.split('@')[0] || '').trim().toLowerCase();
   const studentEmail = (profile?.email || '').trim().toLowerCase();
-  const studentRollNo = (profile?.student_id || '').trim();
+  const studentRollNo = (profile?.student_id || '').trim().toLowerCase();
+  const studentPhone = (profile?.phone_number || '').replace(/[^0-9]/g, '');
 
-  // Strict student booking filter
+  // Strict student booking filter (isolated by Roll No, Email, User ID, Phone)
   const studentBookings = useMemo(() => {
     return bookings.filter((b) => {
       // 1. Unique User ID match
       if (b.user_id && profile?.id && b.user_id === profile.id) return true;
       // 2. Unique Student Email match
-      if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
-      // 3. Exact Student Name match
-      const bName = (b.student_name || '').trim().toLowerCase();
-      if (studentName && bName && bName === studentName) return true;
-      // 4. Roll Number match
-      if (studentRollNo && studentRollNo !== 'SVCET-STD' && studentRollNo !== 'RVS-STD' && b.student_id === studentRollNo) return true;
+      if (b.student_email && studentEmail && b.student_email.toLowerCase().trim() === studentEmail) return true;
+      // 3. Unique Student Roll Number match (Case-insensitive)
+      const bRoll = (b.student_id || '').trim().toLowerCase();
+      if (studentRollNo && bRoll && studentRollNo !== 'svcet-std' && studentRollNo !== 'rvs-std' && bRoll === studentRollNo) {
+        return true;
+      }
+      // 4. Unique Phone Number match (last 10 digits)
+      const bPhone = (b.phone_number || '').replace(/[^0-9]/g, '');
+      if (studentPhone && bPhone && studentPhone.length >= 10 && bPhone.length >= 10) {
+        if (studentPhone.slice(-10) === bPhone.slice(-10)) return true;
+      }
       return false;
     });
-  }, [bookings, profile, studentEmail, studentName, studentRollNo]);
+  }, [bookings, profile, studentEmail, studentRollNo, studentPhone]);
 
   // Today & Yesterday Strings
   const todayStr = new Date().toISOString().slice(0, 10);

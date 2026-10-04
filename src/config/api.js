@@ -1,6 +1,6 @@
-// GoDaddy Backend API Base URL (reads from .env or uses default)
+// GoDaddy/cPanel Backend API Base URL (reads from .env or uses default live server)
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || 'https://rvsu.org/api/index.php';
+  process.env.EXPO_PUBLIC_API_URL || 'https://rvsu.ac.in/api/index.php';
 
 export const API_ENDPOINTS = {
   REGISTER: `${API_BASE_URL}?action=register`,

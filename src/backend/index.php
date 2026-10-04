@@ -193,12 +193,23 @@ try {
             $role = in_array($body['role'] ?? '', ['student', 'staff', 'admin']) ? $body['role'] : 'student';
 
             // Check duplicate email
-            $chk = $conn->prepare("SELECT id FROM laundry_users WHERE email = ?");
+            $chk = $conn->prepare("SELECT id FROM laundry_users WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))");
             $chk->execute([$email]);
             if ($chk->fetch()) {
                 http_response_code(409);
-                echo json_encode(["success" => false, "error" => "An account with this email already exists."]);
+                echo json_encode(["success" => false, "error" => "An account with this email already exists. Please sign in."]);
                 exit();
+            }
+
+            // Check duplicate Student Roll Number
+            if (!empty($studentId) && $studentId !== 'SVCET-STD' && $studentId !== 'RVS-STD') {
+                $chkRoll = $conn->prepare("SELECT id FROM laundry_users WHERE LOWER(TRIM(student_id)) = LOWER(TRIM(?))");
+                $chkRoll->execute([$studentId]);
+                if ($chkRoll->fetch()) {
+                    http_response_code(409);
+                    echo json_encode(["success" => false, "error" => "An account with Student Roll Number '$studentId' already exists. Please sign in or reset password."]);
+                    exit();
+                }
             }
 
             $userId = 'usr_' . uniqid();
@@ -228,23 +239,40 @@ try {
             break;
 
         // ----------------------------------------------------
-        // 2. LOGIN
+        // 2. LOGIN (Multi-Identifier: Email, Roll No, or Phone)
         // ----------------------------------------------------
         case 'login':
-            $email = validateEmail($body['email'] ?? '');
-            checkRateLimit($conn, 'auth', $email);
-
+            $rawIdentifier = trim($body['identifier'] ?? $body['student_id'] ?? $body['email'] ?? $body['phone'] ?? '');
             $password = $body['password'] ?? '';
 
-            $stmt = $conn->prepare("SELECT * FROM laundry_users WHERE email = ? LIMIT 1");
-            $stmt->execute([$email]);
+            if (empty($rawIdentifier) || empty($password)) {
+                http_response_code(422);
+                echo json_encode(["success" => false, "error" => "Please enter your Email/Roll Number and Password."]);
+                exit();
+            }
+
+            checkRateLimit($conn, 'auth', $rawIdentifier);
+
+            // 1. Search by Email, Roll Number (Student ID), or Phone
+            $cleanDigits = preg_replace('/[^0-9]/', '', $rawIdentifier);
+            $phonePattern = strlen($cleanDigits) >= 7 ? ('%' . substr($cleanDigits, -10)) : '%---%';
+
+            $stmt = $conn->prepare("SELECT * FROM laundry_users 
+                WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))
+                   OR LOWER(TRIM(student_id)) = LOWER(TRIM(?))
+                   OR REPLACE(REPLACE(REPLACE(phone_number, '+', ''), ' ', ''), '-', '') LIKE ?
+                LIMIT 1");
+            $stmt->execute([$rawIdentifier, $rawIdentifier, $phonePattern]);
             $user = $stmt->fetch();
 
             // Seamless Fallback / Migration from legacy 'profiles' table if present
             if (!$user) {
                 try {
-                    $oldStmt = $conn->prepare("SELECT * FROM profiles WHERE email = ? LIMIT 1");
-                    $oldStmt->execute([$email]);
+                    $oldStmt = $conn->prepare("SELECT * FROM profiles 
+                        WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) 
+                           OR LOWER(TRIM(student_id)) = LOWER(TRIM(?)) 
+                        LIMIT 1");
+                    $oldStmt->execute([$rawIdentifier, $rawIdentifier]);
                     $oldUser = $oldStmt->fetch();
                     if ($oldUser) {
                         $oldPass = $oldUser['password_hash'] ?? $oldUser['password'] ?? '';
@@ -279,11 +307,11 @@ try {
 
             if (!$user || !password_verify($password, $user['password_hash'])) {
                 http_response_code(401);
-                echo json_encode(["success" => false, "error" => "Invalid email or password."]);
+                echo json_encode(["success" => false, "error" => "Invalid Email/Roll Number or password."]);
                 exit();
             }
 
-            clearAuthRateLimit($conn, $email);
+            clearAuthRateLimit($conn, $rawIdentifier);
             unset($user['password_hash']);
 
             echo json_encode([
@@ -609,6 +637,12 @@ try {
                 "success" => true,
                 "message" => "Your password has been reset successfully. You can now sign in with your new password."
             ]);
+            break;
+
+        case 'get_students_census':
+            $stmt = $conn->query("SELECT id, email, full_name, role, student_id, academic_year, hostel_block, room_number, phone_number, created_at FROM laundry_users ORDER BY created_at DESC");
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            echo json_encode(["success" => true, "users" => $users]);
             break;
 
         default:

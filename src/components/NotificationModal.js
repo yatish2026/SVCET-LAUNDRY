@@ -9,15 +9,22 @@ export const NotificationModal = ({ visible, onClose, onSelectBooking }) => {
   const { notifications, bookings, markNotificationRead, clearAllNotifications } = useLaundry();
   const { role, profile, isStaff } = useAuth();
 
-  const studentName = profile?.full_name || profile?.email?.split('@')[0] || '';
-  const studentPhone = profile?.phone_number || '';
+  const studentRollNo = (profile?.student_id || '').trim().toLowerCase();
+  const studentEmail = (profile?.email || '').trim().toLowerCase();
+  const studentPhone = (profile?.phone_number || '').replace(/[^0-9]/g, '');
+
   const myBookingIds = (bookings || [])
-    .filter(
-      (b) =>
-        (studentPhone && b.phone_number === studentPhone) ||
-        (studentName && b.student_name && b.student_name.toLowerCase() === studentName.toLowerCase()) ||
-        b.student_id === profile?.student_id
-    )
+    .filter((b) => {
+      if (b.user_id && profile?.id && b.user_id === profile.id) return true;
+      if (b.student_email && studentEmail && b.student_email.toLowerCase().trim() === studentEmail) return true;
+      const bRoll = (b.student_id || '').trim().toLowerCase();
+      if (studentRollNo && bRoll && studentRollNo !== 'svcet-std' && studentRollNo !== 'rvs-std' && bRoll === studentRollNo) return true;
+      const bPhone = (b.phone_number || '').replace(/[^0-9]/g, '');
+      if (studentPhone && bPhone && studentPhone.length >= 10 && bPhone.length >= 10) {
+        if (studentPhone.slice(-10) === bPhone.slice(-10)) return true;
+      }
+      return false;
+    })
     .map((b) => b.id);
 
   const roleNotifs = notifications.filter((n) => {

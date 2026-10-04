@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
+  BackHandler,
+  ToastAndroid,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,6 +46,45 @@ const MainApp = () => {
   const [adminTab, setAdminTab] = useState('overview'); // 'overview' | 'approvals' | 'submissions' | 'reports'
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [menuDrawerVisible, setMenuDrawerVisible] = useState(false);
+
+  // 📱 Android Hardware Back Button Handling
+  useEffect(() => {
+    const handleHardwareBackPress = () => {
+      // 1. If side menu drawer is open, close it
+      if (menuDrawerVisible) {
+        setMenuDrawerVisible(false);
+        return true;
+      }
+
+      // 2. If an order detail is currently open, go back to list
+      if (selectedBookingId) {
+        setSelectedBookingId(null);
+        return true;
+      }
+
+      // 3. If in a student sub-tab (not home), go back to home tab
+      if (isStudent && studentTab !== 'home') {
+        setStudentTab('home');
+        return true;
+      }
+
+      // 4. If in an admin sub-tab (not overview), go back to overview tab
+      if (isStaff && adminTab !== 'overview') {
+        setAdminTab('overview');
+        return true;
+      }
+
+      // 5. If already on root Home screen, allow natural app minimization/exit
+      return false;
+    };
+
+    const backSubscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleHardwareBackPress
+    );
+
+    return () => backSubscription.remove();
+  }, [menuDrawerVisible, selectedBookingId, studentTab, adminTab, isStudent, isStaff]);
 
   // Helper to open details modal or screen
   const handleSelectBooking = (bookingId) => {

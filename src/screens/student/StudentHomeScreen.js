@@ -43,27 +43,28 @@ export const StudentHomeScreen = ({
   });
 
   const studentEmail = (profile?.email || '').trim().toLowerCase();
-  const studentRollNo = (profile?.student_id || '').trim();
-  const cleanStudentName = studentName.trim().toLowerCase();
+  const studentRollNo = (profile?.student_id || '').trim().toLowerCase();
+  const studentPhone = (profile?.phone_number || '').replace(/[^0-9]/g, '');
 
   const studentBookings = useMemo(() => {
     return bookings.filter((b) => {
       // 1. Unique User ID match
       if (b.user_id && profile?.id && b.user_id === profile.id) return true;
       // 2. Unique Email match
-      if (b.student_email && studentEmail && b.student_email.toLowerCase() === studentEmail) return true;
-      // 3. Exact Student Name match (STRICT equality, NO substring match)
-      const bName = (b.student_name || '').trim().toLowerCase();
-      if (cleanStudentName && bName && bName === cleanStudentName) {
+      if (b.student_email && studentEmail && b.student_email.toLowerCase().trim() === studentEmail) return true;
+      // 3. Unique Student Roll Number match (Case-insensitive)
+      const bRoll = (b.student_id || '').trim().toLowerCase();
+      if (studentRollNo && bRoll && studentRollNo !== 'svcet-std' && studentRollNo !== 'rvs-std' && bRoll === studentRollNo) {
         return true;
       }
-      // 4. Roll Number match (if valid and not default placeholder)
-      if (studentRollNo && studentRollNo !== 'SVCET-STD' && studentRollNo !== 'RVS-STD' && b.student_id === studentRollNo) {
-        return true;
+      // 4. Unique Phone Number match (last 10 digits)
+      const bPhone = (b.phone_number || '').replace(/[^0-9]/g, '');
+      if (studentPhone && bPhone && studentPhone.length >= 10 && bPhone.length >= 10) {
+        if (studentPhone.slice(-10) === bPhone.slice(-10)) return true;
       }
       return false;
     });
-  }, [bookings, profile, studentEmail, cleanStudentName, studentRollNo]);
+  }, [bookings, profile, studentEmail, studentRollNo, studentPhone]);
 
   const activeBookings = studentBookings.filter(
     (b) => b.status !== 'completed' && b.status !== 'cancelled'

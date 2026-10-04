@@ -1,139 +1,165 @@
 import { API_ENDPOINTS } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const apiService = {
-  // 1. User Registration
-  async register(userData) {
-    try {
-      const response = await fetch(API_ENDPOINTS.REGISTER, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+// 🛡️ Helper for timeout-protected, safe JSON fetching
+const safeFetch = async (url, options = {}, timeoutMs = 15000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      const data = await response.json();
-      if (!response.ok || data.error) {
-        // If legacy backend strictly requires ['1st Year', '2nd Year', '3rd Year', '4th Year']
-        if (data.error && (data.error.includes('academic year') || data.error.includes('Academic year'))) {
-          let legacyYear = '1st Year';
-          const courseStr = (userData.academic_year || '').toLowerCase();
-          if (courseStr.includes('2nd') || courseStr.includes('diploma 2')) legacyYear = '2nd Year';
-          else if (courseStr.includes('3rd')) legacyYear = '3rd Year';
-          else if (courseStr.includes('4th') || courseStr.includes('mba') || courseStr.includes('mca')) legacyYear = '4th Year';
-
-          const retryRes = await fetch(API_ENDPOINTS.REGISTER, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ ...userData, academic_year: legacyYear }),
-          });
-          const retryData = await retryRes.json();
-          if (retryRes.ok && !retryData.error) {
-            return {
-              ...retryData,
-              user: {
-                ...retryData.user,
-                academic_year: userData.academic_year,
-                course: userData.academic_year,
-                location: userData.location,
-                gender: userData.gender,
-              },
-            };
-          }
-        }
-        throw new Error(data.error || 'Registration failed.');
-      }
-
-      return {
-        ...data,
-        user: {
-          ...data.user,
-          academic_year: userData.academic_year,
-          course: userData.academic_year,
-          location: userData.location,
-          gender: userData.gender,
-        },
-      };
-    } catch (err) {
-      throw err;
-    }
-  },
-
-  // 2. User Login
-  async login(email, password) {
-    const response = await fetch(API_ENDPOINTS.LOGIN, {
-      method: 'POST',
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
+        ...(options.headers || {}),
       },
-      body: JSON.stringify({ email, password }),
     });
 
-    const data = await response.json();
-    if (!response.ok || data.error) {
-      throw new Error(data.error || 'Invalid email or password.');
+    clearTimeout(timeoutId);
+
+    const text = await response.text();
+    let data = null;
+
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (parseErr) {
+      console.warn('Non-JSON response received from server:', text?.slice(0, 150));
+      if (response.status === 405) {
+        throw new Error('Server configuration error (405 Method Not Allowed). Please try again shortly.');
+      }
+      if (response.status === 404) {
+        throw new Error('Service endpoint temporarily unavailable. Please try again shortly.');
+      }
+      if (response.status >= 500) {
+        throw new Error('Server maintenance in progress. Please try again in a few moments.');
+      }
+      throw new Error('Unable to communicate with laundry server. Please check your network connection.');
+    }
+
+    return { ok: response.ok, status: response.status, data };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('Connection timed out. Please check your internet connection and try again.');
+    }
+    if (err.message && (err.message.includes('Network request failed') || err.message.includes('Failed to fetch'))) {
+      throw new Error('Network connection error. Please check your mobile data or Wi-Fi.');
+    }
+    throw err;
+  }
+};
+
+export const apiService = {
+  // 1. User Registration
+  async register(userData) {
+    const sanitizedData = {
+      ...userData,
+      email: (userData.email || '').trim().toLowerCase(),
+      student_id: (userData.student_id || '').trim(),
+      phone_number: (userData.phone_number || '').trim(),
+      full_name: (userData.full_name || '').trim(),
+    };
+
+    const { ok, data } = await safeFetch(API_ENDPOINTS.REGISTER, {
+      method: 'POST',
+      body: JSON.stringify(sanitizedData),
+    });
+
+    if (!ok || data?.error) {
+      // If legacy backend strictly requires ['1st Year', '2nd Year', '3rd Year', '4th Year']
+      if (data?.error && (data.error.includes('academic year') || data.error.includes('Academic year'))) {
+        let legacyYear = '1st Year';
+        const courseStr = (sanitizedData.academic_year || '').toLowerCase();
+        if (courseStr.includes('2nd') || courseStr.includes('diploma 2')) legacyYear = '2nd Year';
+        else if (courseStr.includes('3rd')) legacyYear = '3rd Year';
+        else if (courseStr.includes('4th') || courseStr.includes('mba') || courseStr.includes('mca')) legacyYear = '4th Year';
+
+        const retryRes = await safeFetch(API_ENDPOINTS.REGISTER, {
+          method: 'POST',
+          body: JSON.stringify({ ...sanitizedData, academic_year: legacyYear }),
+        });
+
+        if (retryRes.ok && !retryRes.data?.error) {
+          return {
+            ...retryRes.data,
+            user: {
+              ...retryRes.data.user,
+              academic_year: sanitizedData.academic_year,
+              course: sanitizedData.academic_year,
+              location: sanitizedData.location,
+              gender: sanitizedData.gender,
+            },
+          };
+        }
+      }
+      throw new Error(data?.error || 'Registration failed.');
+    }
+
+    return {
+      ...data,
+      user: {
+        ...data.user,
+        academic_year: sanitizedData.academic_year,
+        course: sanitizedData.academic_year,
+        location: sanitizedData.location,
+        gender: sanitizedData.gender,
+      },
+    };
+  },
+
+  // 2. User Login (Supports Email, Roll Number, or Phone)
+  async login(identifier, password) {
+    const cleanId = (identifier || '').trim();
+    const cleanPassword = password || '';
+
+    const { ok, data } = await safeFetch(API_ENDPOINTS.LOGIN, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: cleanId,
+        student_id: cleanId,
+        identifier: cleanId,
+        phone: cleanId,
+        password: cleanPassword,
+      }),
+    });
+
+    if (!ok || data?.error) {
+      throw new Error(data?.error || 'Invalid login credentials. Please check your Roll No/Email and Password.');
     }
     return data;
   },
 
   // 3. Fetch All Bookings
   async getBookings() {
-    const response = await fetch(API_ENDPOINTS.GET_BOOKINGS, {
+    const { ok, data } = await safeFetch(API_ENDPOINTS.GET_BOOKINGS, {
       method: 'GET',
-      headers: {
-        Accept: 'application/json',
-      },
     });
 
-    const data = await response.json();
-    if (!response.ok || data.error) {
-      throw new Error(data.error || 'Failed to fetch bookings.');
+    if (!ok || data?.error) {
+      throw new Error(data?.error || 'Failed to fetch bookings.');
     }
     return data.bookings || [];
   },
 
   // 4. Create New Booking
   async createBooking(bookingData) {
-    try {
-      const response = await fetch(API_ENDPOINTS.CREATE_BOOKING, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(bookingData),
-      });
+    const { ok, data } = await safeFetch(API_ENDPOINTS.CREATE_BOOKING, {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    });
 
-      const text = await response.text();
-      let data = {};
-      try {
-        data = JSON.parse(text);
-      } catch (jsonErr) {
-        console.error('Server returned non-JSON:', text);
-        throw new Error(`Server response error: ${text.slice(0, 100)}`);
-      }
-
-      if (!response.ok || data.error) {
-        throw new Error(data.error || 'Failed to create booking.');
-      }
-      return data.booking;
-    } catch (err) {
-      console.log('Error creating booking on GoDaddy API:', err);
-      throw err;
+    if (!ok || data?.error) {
+      throw new Error(data?.error || 'Failed to create booking.');
     }
+    return data.booking;
   },
 
   // 5. Update Order Status
   async updateStatus(bookingId, newStatus) {
-    const response = await fetch(API_ENDPOINTS.UPDATE_STATUS, {
+    const { ok, data } = await safeFetch(API_ENDPOINTS.UPDATE_STATUS, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
       body: JSON.stringify({
         booking_id: bookingId,
         new_status: newStatus,
@@ -141,9 +167,8 @@ export const apiService = {
       }),
     });
 
-    const data = await response.json();
-    if (!response.ok || data.error) {
-      throw new Error(data.error || 'Failed to update order status.');
+    if (!ok || data?.error) {
+      throw new Error(data?.error || 'Failed to update order status.');
     }
     return data;
   },
@@ -151,14 +176,10 @@ export const apiService = {
   // 6. Fetch Notifications
   async getNotifications() {
     try {
-      const response = await fetch(API_ENDPOINTS.GET_NOTIFICATIONS, {
+      const { data } = await safeFetch(API_ENDPOINTS.GET_NOTIFICATIONS, {
         method: 'GET',
-        headers: {
-          Accept: 'application/json',
-        },
       });
-      const data = await response.json();
-      return data.notifications || [];
+      return data?.notifications || [];
     } catch (e) {
       return [];
     }
@@ -173,20 +194,15 @@ export const apiService = {
     } catch (e) {}
 
     try {
-      const response = await fetch(API_ENDPOINTS.GET_TICKETS, {
+      const { ok, data } = await safeFetch(API_ENDPOINTS.GET_TICKETS, {
         method: 'GET',
-        headers: { Accept: 'application/json' },
       });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.tickets && Array.isArray(data.tickets)) {
-          // Merge server tickets with any pending local tickets
-          const serverIds = new Set(data.tickets.map((t) => t.id));
-          const unsynced = localTickets.filter((t) => !serverIds.has(t.id));
-          const merged = [...unsynced, ...data.tickets];
-          await AsyncStorage.setItem('@vastra_support_tickets', JSON.stringify(merged)).catch(() => {});
-          return merged;
-        }
+      if (ok && data?.tickets && Array.isArray(data.tickets)) {
+        const serverIds = new Set(data.tickets.map((t) => t.id));
+        const unsynced = localTickets.filter((t) => !serverIds.has(t.id));
+        const merged = [...unsynced, ...data.tickets];
+        await AsyncStorage.setItem('@vastra_support_tickets', JSON.stringify(merged)).catch(() => {});
+        return merged;
       }
     } catch (err) {
       console.log('Error fetching tickets from server, using local fallback:', err);
@@ -215,18 +231,11 @@ export const apiService = {
 
     // Send to server in background
     try {
-      const response = await fetch(API_ENDPOINTS.CREATE_TICKET, {
+      const { ok, data } = await safeFetch(API_ENDPOINTS.CREATE_TICKET, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
         body: JSON.stringify(newTicket),
       });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ticket) return data.ticket;
-      }
+      if (ok && data?.ticket) return data.ticket;
     } catch (err) {
       console.log('Server unreachable for ticket, saved locally:', err);
     }
@@ -248,12 +257,8 @@ export const apiService = {
 
     // Update on server
     try {
-      await fetch(API_ENDPOINTS.UPDATE_TICKET_STATUS, {
+      await safeFetch(API_ENDPOINTS.UPDATE_TICKET_STATUS, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
         body: JSON.stringify({ ticket_id: ticketId, status: newStatus }),
       });
     } catch (err) {
@@ -264,49 +269,20 @@ export const apiService = {
   // 10. Student Password Reset / Account Recovery
   async resetPassword({ email, student_id, new_password }) {
     try {
-      const response = await fetch(API_ENDPOINTS.RESET_PASSWORD, {
+      const { ok, data } = await safeFetch(API_ENDPOINTS.RESET_PASSWORD, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
         body: JSON.stringify({
-          email: email.trim(),
-          student_id: student_id.trim(),
+          email: (email || '').trim(),
+          student_id: (student_id || '').trim(),
           new_password,
         }),
       });
 
-      const text = await response.text();
-      let data = {};
-      try {
-        data = JSON.parse(text);
-      } catch (jsonErr) {
-        data = {};
-      }
-
-      if (response.ok && data.success) {
-        // Also update local cache for instant offline login
-        try {
-          const stored = await AsyncStorage.getItem('@vastra_registered_users');
-          if (stored) {
-            const users = JSON.parse(stored);
-            const idx = users.findIndex(
-              (u) =>
-                u.email?.toLowerCase() === email.trim().toLowerCase() &&
-                (u.student_id?.toLowerCase() === student_id.trim().toLowerCase() ||
-                 u.phone_number?.includes(student_id.trim()))
-            );
-            if (idx !== -1) {
-              users[idx].password = new_password;
-              await AsyncStorage.setItem('@vastra_registered_users', JSON.stringify(users));
-            }
-          }
-        } catch (e) {}
+      if (ok && data?.success) {
         return data;
       }
 
-      if (data.error && !data.error.includes('Method not allowed') && !data.error.includes('Endpoint not found')) {
+      if (data?.error && !data.error.includes('Method not allowed') && !data.error.includes('Endpoint not found')) {
         throw new Error(data.error);
       }
     } catch (err) {
@@ -321,48 +297,17 @@ export const apiService = {
       }
     }
 
-    // Local AsyncStorage fallback (if GoDaddy PHP file has not been re-uploaded yet)
-    try {
-      const stored = await AsyncStorage.getItem('@vastra_registered_users');
-      if (stored) {
-        const users = JSON.parse(stored);
-        const idx = users.findIndex(
-          (u) =>
-            u.email?.toLowerCase() === email.trim().toLowerCase() &&
-            (u.student_id?.toLowerCase() === student_id.trim().toLowerCase() ||
-             u.phone_number?.includes(student_id.trim()))
-        );
-        if (idx !== -1) {
-          users[idx].password = new_password;
-          await AsyncStorage.setItem('@vastra_registered_users', JSON.stringify(users));
-          return { success: true, message: 'Password updated successfully.' };
-        }
-      }
-    } catch (e) {}
-
     return { success: true, message: 'Password reset request processed.' };
   },
 
-  // 12. Fetch All Registered Student Accounts for Admin Census
+  // 11. Fetch All Registered Student Accounts for Admin Census
   async getStudentsCensus() {
     try {
-      const response = await fetch(API_ENDPOINTS.GET_STUDENTS_CENSUS, {
+      const { ok, data } = await safeFetch(API_ENDPOINTS.GET_STUDENTS_CENSUS, {
         method: 'GET',
-        headers: { Accept: 'application/json' },
       });
-      const data = await response.json();
-      if (response.ok && data.success && Array.isArray(data.users)) {
+      if (ok && data?.success && Array.isArray(data.users)) {
         return data.users;
-      }
-    } catch (e) {
-      // Backend not reached or fallback
-    }
-
-    // Fallback: Read from local AsyncStorage registry
-    try {
-      const stored = await AsyncStorage.getItem('@vastra_registered_users');
-      if (stored) {
-        return JSON.parse(stored);
       }
     } catch (e) {}
 
