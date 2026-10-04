@@ -54,21 +54,24 @@ export const WavyServiceCard = ({
       onPress={onPress}
       activeOpacity={0.82}
     >
-      {/* 🌊 Organic Fluid Wavy Vector Background */}
-      <Svg
-        style={StyleSheet.absoluteFillObject}
-        viewBox="0 0 160 110"
-        preserveAspectRatio="none"
-      >
-        <Path
-          d={pathD}
-          fill={theme.bg}
-          stroke={theme.border}
-          strokeWidth="1.8"
-        />
-      </Svg>
+      {/* 🌊 Background SVG layer with explicit zIndex/pointerEvents */}
+      <View style={styles.svgLayer} pointerEvents="none">
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 160 110"
+          preserveAspectRatio="none"
+        >
+          <Path
+            d={pathD}
+            fill={theme.bg}
+            stroke={theme.border}
+            strokeWidth="1.8"
+          />
+        </Svg>
+      </View>
 
-      {/* 📝 Card Content centered comfortably inside the wave box */}
+      {/* 📝 Content layer with high elevation & zIndex so it is 100% visible on Android */}
       <View style={styles.contentWrap}>
         <View style={styles.iconWrap}>
           <Ionicons name={icon} size={iconSize} color={activeIconColor} />
@@ -107,6 +110,15 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  svgLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+    elevation: 1,
+  },
   contentWrap: {
     flex: 1,
     paddingTop: 10,
@@ -114,17 +126,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2,
+    zIndex: 10,
+    elevation: 8,
+    backgroundColor: 'transparent',
   },
   iconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
+    zIndex: 11,
+    elevation: 9,
   },
   textWrap: {
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    zIndex: 11,
+    elevation: 9,
   },
   titleText: {
     fontSize: 14.5,

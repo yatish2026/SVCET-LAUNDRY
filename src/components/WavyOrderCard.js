@@ -86,21 +86,24 @@ export const WavyOrderCard = ({
       onPress={onPress}
       activeOpacity={0.85}
     >
-      {/* 🌊 Organic Fluid Wavy Vector Background */}
-      <Svg
-        style={StyleSheet.absoluteFillObject}
-        viewBox="0 0 360 95"
-        preserveAspectRatio="none"
-      >
-        <Path
-          d={pathD}
-          fill={statusTheme.bg}
-          stroke={statusTheme.border}
-          strokeWidth="1.8"
-        />
-      </Svg>
+      {/* 🌊 SVG Layer behind with pointerEvents="none" */}
+      <View style={styles.svgLayer} pointerEvents="none">
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 360 95"
+          preserveAspectRatio="none"
+        >
+          <Path
+            d={pathD}
+            fill={statusTheme.bg}
+            stroke={statusTheme.border}
+            strokeWidth="1.8"
+          />
+        </Svg>
+      </View>
 
-      {/* 📝 Clean, Uncluttered Essential Info */}
+      {/* 📝 Content Layer with high zIndex & elevation for Android */}
       <View style={styles.cardContent}>
         {/* Top Row: Order ID + Status Badge */}
         <View style={styles.topRow}>
@@ -164,17 +167,30 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  svgLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+    elevation: 1,
+  },
   cardContent: {
     flex: 1,
     paddingHorizontal: 20,
     paddingVertical: 14,
     justifyContent: 'space-between',
-    zIndex: 2,
+    zIndex: 10,
+    elevation: 8,
+    backgroundColor: 'transparent',
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    zIndex: 11,
+    elevation: 9,
   },
   idGroup: {
     flexDirection: 'row',
@@ -215,6 +231,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 4,
+    zIndex: 11,
+    elevation: 9,
   },
   clothesGroup: {
     flexDirection: 'row',

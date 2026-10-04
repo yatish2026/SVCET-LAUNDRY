@@ -18,6 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ACADEMIC_YEARS, getYearConfig } from '../../constants/schedule';
 import QRScannerModal from '../../components/QRScannerModal';
 import WavyServiceCard from '../../components/WavyServiceCard';
+import LaundryBasketHero from '../../components/LaundryBasketHero';
 
 export const AdminDashboardScreen = ({
   onNavigateToApprovals,
@@ -118,11 +119,7 @@ export const AdminDashboardScreen = ({
 
         {/* 🧺 Cute Laundry Basket Illustration (Replaces leaf badge) */}
         <View style={styles.heroDecorWrapper}>
-          <Image
-            source={require('../../assets/laundry_hero_basket.png')}
-            style={styles.heroBasketImage}
-            resizeMode="contain"
-          />
+          <LaundryBasketHero size={90} />
         </View>
       </View>
 
