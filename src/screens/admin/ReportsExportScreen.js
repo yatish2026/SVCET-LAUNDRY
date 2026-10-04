@@ -18,6 +18,8 @@ import { ACADEMIC_COURSES } from '../../constants/schedule';
 import AdminCalendarAnalyticsModal from '../../components/AdminCalendarAnalyticsModal';
 import StudentAuditLedgerModal from '../../components/StudentAuditLedgerModal';
 import AdminStudentCensusModal from '../../components/AdminStudentCensusModal';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import AdminScheduleEditorModal from '../../components/AdminScheduleEditorModal';
 import MonthlyAnalyticsReportModal from '../../components/MonthlyAnalyticsReportModal';
 
@@ -191,7 +193,7 @@ export const ReportsExportScreen = () => {
       }
 
       if (Platform.OS === 'web') {
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
@@ -203,14 +205,23 @@ export const ReportsExportScreen = () => {
         setDownloadSuccess(true);
         setTimeout(() => setDownloadSuccess(false), 4000);
       } else {
-        await Share.share({
-          title: filename,
-          message: csvContent,
+        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+        await FileSystem.writeAsStringAsync(fileUri, '\uFEFF' + csvContent, {
+          encoding: FileSystem.EncodingType.UTF8,
         });
-        Alert.alert(
-          'File Ready to Save! 📁',
-          `Use the system share menu to select "Save to Downloads", WhatsApp, or Google Drive to store ${filename} on your phone.`
-        );
+
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'text/csv',
+            dialogTitle: 'Open in Excel / Save Report (.csv)',
+            UTI: 'public.comma-separated-values-text',
+          });
+        } else {
+          await Share.share({
+            title: filename,
+            message: csvContent,
+          });
+        }
       }
     } catch (err) {
       Alert.alert('Export Error', 'Failed to generate CSV export file.');

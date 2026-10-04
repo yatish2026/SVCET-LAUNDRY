@@ -13,6 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import THEME from '../constants/theme';
 import { useLaundry } from '../context/LaundryContext';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 export const MonthlyAnalyticsReportModal = ({ visible, onClose }) => {
   const { bookings } = useLaundry();
@@ -105,46 +107,93 @@ export const MonthlyAnalyticsReportModal = ({ visible, onClose }) => {
     };
   }, [bookings, selectedMonth]);
 
-  // Share or Export Formatted Summary Document
+  // Share or Export Formatted Excel Spreadsheet Document
   const handleShareReport = async () => {
     try {
-      const summaryText = `📄 RVS UNIVERSITY - LAUNDRY PERFORMANCE REPORT
-Month: ${monthData.monthName}
----------------------------------------------
-📊 SUMMARY METRICS:
-• Total Clothes Washed: ${monthData.totalClothes} items
-• Total Student Beneficiaries: ${monthData.studentCount} students
-• Total Laundry Orders: ${monthData.totalOrders} batches
-• Completed Orders: ${monthData.completedCount} (${monthData.completionRate}%)
-• In Progress Orders: ${monthData.inProgressCount}
+      const filename = `RVS_VASTRA_Monthly_Census_${selectedMonth}.csv`;
 
-🧺 CATEGORY BREAKDOWN:
-• Shirts / Tops: ${monthData.categoryCounts.shirts}
-• Pants / Trousers: ${monthData.categoryCounts.pants}
-• Innerwear: ${monthData.categoryCounts.innerwear}
-• Bedding & Towels: ${monthData.categoryCounts.bedding}
-• Traditional & Formals: ${monthData.categoryCounts.traditional}
+      // Build real Excel-ready CSV headers and rows
+      const headers = [
+        'Booking ID',
+        'Token',
+        'Date Created',
+        'Student Name',
+        'Roll No',
+        'Academic Year',
+        'Hostel Block',
+        'Room No',
+        'Phone Number',
+        'Total Clothes',
+        'Items Breakdown',
+        'Current Status',
+      ];
 
-Generated via VASTRA Hostel Laundry System on ${new Date().toLocaleString()}`;
+      const rows = monthData.records.map((b) => {
+        const itemsList = Object.entries(b.items || {})
+          .map(([k, v]) => `${k}:${v}`)
+          .join('; ');
+
+        return [
+          `"${b.id || ''}"`,
+          `#${b.pickup_token || ''}`,
+          `"${b.created_at || ''}"`,
+          `"${b.student_name || ''}"`,
+          `"${b.student_id || ''}"`,
+          `"${b.academic_year || ''}"`,
+          `"${b.hostel_block || ''}"`,
+          `"${b.room_number || ''}"`,
+          `"${b.phone_number || ''}"`,
+          b.total_items || 1,
+          `"${itemsList}"`,
+          `"${b.status || ''}"`,
+        ].join(',');
+      });
+
+      // Prepend Summary Banner to the CSV sheet
+      const summaryBanner = [
+        `"RVS UNIVERSITY - CENTRAL LAUNDRY MONTHLY CENSUS REPORT"`,
+        `"Reporting Month: ${monthData.monthName}"`,
+        `"Total Clothes Washed: ${monthData.totalClothes} items"`,
+        `"Total Students Benefited: ${monthData.studentCount} students"`,
+        `"Completed Orders: ${monthData.completedCount} (${monthData.completionRate}%)"`,
+        `"In Progress Orders: ${monthData.inProgressCount}"`,
+        `""`,
+        headers.join(','),
+      ].join('\n');
+
+      const fullCsv = [summaryBanner, ...rows].join('\n');
 
       if (Platform.OS === 'web') {
-        const blob = new Blob([summaryText], { type: 'text/plain;charset=utf-8' });
+        const blob = new Blob(['\uFEFF' + fullCsv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `VASTRA_Monthly_Report_${selectedMonth}.txt`;
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        Alert.alert('Report Exported', 'Saved to your device downloads folder.');
+        Alert.alert('Excel Exported', 'Saved to your device downloads folder.');
       } else {
-        await Share.share({
-          title: `VASTRA Laundry Report - ${monthData.monthName}`,
-          message: summaryText,
+        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+        await FileSystem.writeAsStringAsync(fileUri, '\uFEFF' + fullCsv, {
+          encoding: FileSystem.EncodingType.UTF8,
         });
+
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'text/csv',
+            dialogTitle: 'Open in Excel / Save Report (.csv)',
+            UTI: 'public.comma-separated-values-text',
+          });
+        } else {
+          await Share.share({
+            title: filename,
+            message: fullCsv,
+          });
+        }
       }
     } catch (err) {
-      Alert.alert('Share Error', 'Could not open system share dialog.');
+      Alert.alert('Export Error', 'Failed to generate Excel file.');
     }
   };
 
