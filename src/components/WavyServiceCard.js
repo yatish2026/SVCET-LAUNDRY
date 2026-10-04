@@ -54,8 +54,8 @@ export const WavyServiceCard = ({
       onPress={onPress}
       activeOpacity={0.82}
     >
-      {/* 🌊 Background SVG layer with explicit zIndex/pointerEvents */}
-      <View style={styles.svgLayer} pointerEvents="none">
+      {/* 🌊 1. Background SVG Wave */}
+      <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
         <Svg
           width="100%"
           height="100%"
@@ -71,20 +71,18 @@ export const WavyServiceCard = ({
         </Svg>
       </View>
 
-      {/* 📝 Content layer with high elevation & zIndex so it is 100% visible on Android */}
-      <View style={styles.contentWrap}>
+      {/* 📝 2. Centered Text & Icon Content Layer (Drawn over SVG) */}
+      <View style={styles.contentWrap} pointerEvents="none">
         <View style={styles.iconWrap}>
           <Ionicons name={icon} size={iconSize} color={activeIconColor} />
         </View>
 
-        <View style={styles.textWrap}>
-          <Text style={styles.titleText} numberOfLines={1}>
-            {title}
-          </Text>
-          <Text style={styles.subText} numberOfLines={1}>
-            {subtitle}
-          </Text>
-        </View>
+        <Text style={styles.titleText} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={styles.subText} numberOfLines={1}>
+          {subtitle}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -93,56 +91,39 @@ export const WavyServiceCard = ({
 const styles = StyleSheet.create({
   container: {
     width: '48%',
-    height: 114,
+    height: 112,
     position: 'relative',
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#0F4C5C',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.07,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
       },
       android: {
-        elevation: 2.5,
+        elevation: 2,
       },
       web: {
-        boxShadow: '0 4px 14px rgba(15, 76, 92, 0.06)',
+        boxShadow: '0 4px 12px rgba(15, 76, 92, 0.05)',
       },
     }),
   },
-  svgLayer: {
+  contentWrap: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 1,
-    elevation: 1,
-  },
-  contentWrap: {
-    flex: 1,
-    paddingTop: 10,
-    paddingBottom: 10,
-    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 10,
-    elevation: 8,
-    backgroundColor: 'transparent',
+    paddingHorizontal: 8,
+    paddingVertical: 10,
   },
   iconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
-    zIndex: 11,
-    elevation: 9,
-  },
-  textWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    zIndex: 11,
-    elevation: 9,
+    marginBottom: 5,
   },
   titleText: {
     fontSize: 14.5,

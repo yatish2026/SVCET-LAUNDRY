@@ -86,8 +86,8 @@ export const WavyOrderCard = ({
       onPress={onPress}
       activeOpacity={0.85}
     >
-      {/* 🌊 SVG Layer behind with pointerEvents="none" */}
-      <View style={styles.svgLayer} pointerEvents="none">
+      {/* 🌊 1. SVG Background Wave */}
+      <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
         <Svg
           width="100%"
           height="100%"
@@ -103,8 +103,8 @@ export const WavyOrderCard = ({
         </Svg>
       </View>
 
-      {/* 📝 Content Layer with high zIndex & elevation for Android */}
-      <View style={styles.cardContent}>
+      {/* 📝 2. Foreground Order Details */}
+      <View style={styles.cardContent} pointerEvents="box-none">
         {/* Top Row: Order ID + Status Badge */}
         <View style={styles.topRow}>
           <View style={styles.idGroup}>
@@ -149,15 +149,16 @@ export const WavyOrderCard = ({
 const styles = StyleSheet.create({
   cardContainer: {
     width: '100%',
-    height: 96,
+    height: 94,
     position: 'relative',
     marginBottom: 10,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#0F4C5C',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
       },
       android: {
         elevation: 2,
@@ -167,30 +168,20 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  svgLayer: {
+  cardContent: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 1,
-    elevation: 1,
-  },
-  cardContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     justifyContent: 'space-between',
-    zIndex: 10,
-    elevation: 8,
-    backgroundColor: 'transparent',
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    zIndex: 11,
-    elevation: 9,
   },
   idGroup: {
     flexDirection: 'row',
@@ -231,8 +222,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 4,
-    zIndex: 11,
-    elevation: 9,
   },
   clothesGroup: {
     flexDirection: 'row',
