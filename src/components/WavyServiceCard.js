@@ -109,30 +109,36 @@ const styles = StyleSheet.create({
   },
   contentWrap: {
     flex: 1,
-    paddingTop: 12,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
   },
   iconWrap: {
-    alignSelf: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 6,
   },
   textWrap: {
+    alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   titleText: {
     fontSize: 14.5,
     fontWeight: '800',
     color: '#0F4C5C',
     letterSpacing: -0.2,
-    marginBottom: 1,
+    textAlign: 'center',
+    marginBottom: 2,
   },
   subText: {
     fontSize: 11,
     color: '#526477',
     fontWeight: '600',
+    textAlign: 'center',
   },
 });
 
