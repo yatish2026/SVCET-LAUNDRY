@@ -30,7 +30,7 @@ export const StudentHomeScreen = ({
   const [rulesModalVisible, setRulesModalVisible] = useState(false);
 
   const studentName = profile?.full_name || profile?.email?.split('@')[0] || 'Student';
-  const studentPhone = profile?.phone_number || '';
+  const studentRawPhone = profile?.phone_number || '';
   const studentYear = profile?.academic_year || '1st Year B.Tech';
   const yearConfig = useMemo(() => getStudentSchedule(profile), [profile]);
 
@@ -44,7 +44,7 @@ export const StudentHomeScreen = ({
 
   const studentEmail = (profile?.email || '').trim().toLowerCase();
   const studentRollNo = (profile?.student_id || '').trim().toLowerCase();
-  const studentPhone = (profile?.phone_number || '').replace(/[^0-9]/g, '');
+  const cleanStudentPhone = (profile?.phone_number || '').replace(/[^0-9]/g, '');
 
   const studentBookings = useMemo(() => {
     return bookings.filter((b) => {
@@ -59,12 +59,12 @@ export const StudentHomeScreen = ({
       }
       // 4. Unique Phone Number match (last 10 digits)
       const bPhone = (b.phone_number || '').replace(/[^0-9]/g, '');
-      if (studentPhone && bPhone && studentPhone.length >= 10 && bPhone.length >= 10) {
-        if (studentPhone.slice(-10) === bPhone.slice(-10)) return true;
+      if (cleanStudentPhone && bPhone && cleanStudentPhone.length >= 10 && bPhone.length >= 10) {
+        if (cleanStudentPhone.slice(-10) === bPhone.slice(-10)) return true;
       }
       return false;
     });
-  }, [bookings, profile, studentEmail, studentRollNo, studentPhone]);
+  }, [bookings, profile, studentEmail, studentRollNo, cleanStudentPhone]);
 
   const activeBookings = studentBookings.filter(
     (b) => b.status !== 'completed' && b.status !== 'cancelled'
