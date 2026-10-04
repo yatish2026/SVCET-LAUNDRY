@@ -365,21 +365,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 10,
   },
-  heroTextContainer: {
-    flex: 1,
-  },
   greetingTitle: {
-    fontSize: 34,
-    fontWeight: '700',
+    fontSize: 36,
     color: '#0F4C5C',
     fontFamily: Platform.select({
-      ios: 'Caveat-Bold, Snell Roundhand, cursive',
+      ios: 'Caveat_700Bold',
       android: 'Caveat_700Bold',
       web: 'Caveat, "Dancing Script", "Segoe Print", cursive, sans-serif',
       default: 'Caveat_700Bold',
     }),
     letterSpacing: -0.3,
-    lineHeight: 38,
+    lineHeight: 40,
+    ...Platform.select({
+      web: {
+        fontWeight: '700',
+      },
+      default: {},
+    }),
   },
   greetingSubtitle: {
     fontSize: 14,
