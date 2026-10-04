@@ -18,6 +18,7 @@ import { useLaundry } from '../../context/LaundryContext';
 import PickupTokenModal from '../../components/PickupTokenModal';
 import RaiseTicketModal from '../../components/RaiseTicketModal';
 import StatusBadge from '../../components/StatusBadge';
+import WavyServiceCard from '../../components/WavyServiceCard';
 
 export const StudentHomeScreen = ({
   onNavigateToNewBooking,
@@ -124,30 +125,31 @@ export const StudentHomeScreen = ({
         </View>
       </TouchableOpacity>
 
-      {/* 🌟 3. MAIN SERVICES SECTION (2x2 Organic Fluid Squircle Grid) */}
+      {/* 🌊 3. MAIN SERVICES SECTION (Authentic Organic Fluid Wavy Cards) */}
       <View style={styles.sectionHeaderRow}>
         <Text style={styles.sectionTitle}>Main Services</Text>
       </View>
 
       <View style={styles.servicesGrid}>
-        {/* Card 1: Book a Slot (Soft Pastel Ice Blue) */}
-        <TouchableOpacity
-          style={[styles.serviceCard, styles.cardIceBlue, styles.squircle1]}
+        {/* Card 1: Book a Slot (Vibrant Soft Ice Blue Wave) */}
+        <WavyServiceCard
+          title="Book a Slot"
+          subtitle="Schedule pickup"
+          icon="calendar-outline"
+          iconColor="#0F4C5C"
+          colorTheme="iceBlue"
+          variant={1}
           onPress={onNavigateToNewBooking}
-          activeOpacity={0.82}
-        >
-          <View style={styles.cardIconDirectWrap}>
-            <Ionicons name="calendar-outline" size={30} color="#0F4C5C" />
-          </View>
-          <View style={styles.cardTextContent}>
-            <Text style={styles.serviceCardTitle}>Book a Slot</Text>
-            <Text style={styles.serviceCardSub}>Schedule pickup</Text>
-          </View>
-        </TouchableOpacity>
+        />
 
-        {/* Card 2: Pickup Tokens (Soft Pastel Sunset Peach) */}
-        <TouchableOpacity
-          style={[styles.serviceCard, styles.cardSunsetPeach, styles.squircle2]}
+        {/* Card 2: Pickup Tokens (Warm Soft Sunset Peach Wave) */}
+        <WavyServiceCard
+          title="Pickup Tokens"
+          subtitle="Get token"
+          icon="qr-code-outline"
+          iconColor="#C2410C"
+          colorTheme="sunsetPeach"
+          variant={2}
           onPress={() => {
             if (readyBookings.length > 0) {
               setSelectedTokenBooking(readyBookings[0]);
@@ -157,46 +159,29 @@ export const StudentHomeScreen = ({
               setScheduleModalVisible(true);
             }
           }}
-          activeOpacity={0.82}
-        >
-          <View style={styles.cardIconDirectWrap}>
-            <Ionicons name="qr-code-outline" size={30} color="#0F4C5C" />
-          </View>
-          <View style={styles.cardTextContent}>
-            <Text style={styles.serviceCardTitle}>Pickup Tokens</Text>
-            <Text style={styles.serviceCardSub}>Get token</Text>
-          </View>
-        </TouchableOpacity>
+        />
 
-        {/* Card 3: Wash History (Soft Pastel Fresh Mint) */}
-        <TouchableOpacity
-          style={[styles.serviceCard, styles.cardFreshMint, styles.squircle3]}
+        {/* Card 3: Wash History (Crisp Soft Fresh Mint Wave) */}
+        <WavyServiceCard
+          title="Wash History"
+          subtitle="View requests"
+          icon="time-outline"
+          iconColor="#059669"
+          colorTheme="freshMint"
+          variant={3}
           onPress={onNavigateToHistory}
-          activeOpacity={0.82}
-        >
-          <View style={styles.cardIconDirectWrap}>
-            <Ionicons name="time-outline" size={30} color="#0F4C5C" />
-          </View>
-          <View style={styles.cardTextContent}>
-            <Text style={styles.serviceCardTitle}>Wash History</Text>
-            <Text style={styles.serviceCardSub}>View requests</Text>
-          </View>
-        </TouchableOpacity>
+        />
 
-        {/* Card 4: Help & Support (Soft Pastel Blush Pink) */}
-        <TouchableOpacity
-          style={[styles.serviceCard, styles.cardBlushPink, styles.squircle4]}
+        {/* Card 4: Help & Support (Delicate Soft Blush Pink Wave) */}
+        <WavyServiceCard
+          title="Help & Support"
+          subtitle="We're here for you"
+          icon="headset-outline"
+          iconColor="#E11D48"
+          colorTheme="blushPink"
+          variant={4}
           onPress={() => setHelpModalVisible(true)}
-          activeOpacity={0.82}
-        >
-          <View style={styles.cardIconDirectWrap}>
-            <Ionicons name="headset-outline" size={30} color="#0F4C5C" />
-          </View>
-          <View style={styles.cardTextContent}>
-            <Text style={styles.serviceCardTitle}>Help & Support</Text>
-            <Text style={styles.serviceCardSub}>We're here for you</Text>
-          </View>
-        </TouchableOpacity>
+        />
       </View>
 
       {/* 🧺 4. ACTIVE ORDER SPOTLIGHT (If currently in progress) */}

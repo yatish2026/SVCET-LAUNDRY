@@ -17,6 +17,7 @@ import { useLaundry } from '../../context/LaundryContext';
 import { useAuth } from '../../context/AuthContext';
 import { ACADEMIC_YEARS, getYearConfig } from '../../constants/schedule';
 import QRScannerModal from '../../components/QRScannerModal';
+import WavyServiceCard from '../../components/WavyServiceCard';
 
 export const AdminDashboardScreen = ({
   onNavigateToApprovals,
@@ -146,73 +147,55 @@ export const AdminDashboardScreen = ({
         </View>
       </TouchableOpacity>
 
-      {/* 🌟 3. MAIN SERVICES SECTION (2x2 Organic Fluid Squircle Grid) */}
+      {/* 🌊 3. MAIN SERVICES SECTION (Authentic Organic Fluid Wavy Cards) */}
       <View style={styles.sectionHeaderRow}>
         <Text style={styles.sectionTitle}>Main Services</Text>
       </View>
 
       <View style={styles.servicesGrid}>
-        {/* Card 1: Review Approvals (Soft Pastel Ice Blue) */}
-        <TouchableOpacity
-          style={[styles.serviceCard, styles.cardIceBlue, styles.squircle1]}
+        {/* Card 1: Review Approvals (Vibrant Soft Ice Blue Wave) */}
+        <WavyServiceCard
+          title="Approvals"
+          subtitle={pendingCount > 0 ? `${pendingCount} Pending` : 'All caught up'}
+          icon="checkmark-done-circle-outline"
+          iconColor="#0F4C5C"
+          colorTheme="iceBlue"
+          variant={1}
           onPress={onNavigateToApprovals}
-          activeOpacity={0.82}
-        >
-          <View style={styles.cardIconDirectWrap}>
-            <Ionicons name="checkmark-done-circle-outline" size={30} color="#0F4C5C" />
-          </View>
-          <View style={styles.cardTextContent}>
-            <Text style={styles.serviceCardTitle}>Approvals</Text>
-            <Text style={styles.serviceCardSub}>
-              {pendingCount > 0 ? `${pendingCount} Pending` : 'All caught up'}
-            </Text>
-          </View>
-        </TouchableOpacity>
+        />
 
-        {/* Card 2: Student Submissions (Soft Pastel Sunset Peach) */}
-        <TouchableOpacity
-          style={[styles.serviceCard, styles.cardSunsetPeach, styles.squircle2]}
+        {/* Card 2: Student Submissions (Warm Soft Sunset Peach Wave) */}
+        <WavyServiceCard
+          title="Active Orders"
+          subtitle={`${activeCount} In processing`}
+          icon="list-outline"
+          iconColor="#C2410C"
+          colorTheme="sunsetPeach"
+          variant={2}
           onPress={onNavigateToSubmissions}
-          activeOpacity={0.82}
-        >
-          <View style={styles.cardIconDirectWrap}>
-            <Ionicons name="list-outline" size={30} color="#0F4C5C" />
-          </View>
-          <View style={styles.cardTextContent}>
-            <Text style={styles.serviceCardTitle}>Active Orders</Text>
-            <Text style={styles.serviceCardSub}>{activeCount} In processing</Text>
-          </View>
-        </TouchableOpacity>
+        />
 
-        {/* Card 3: Download Reports (Soft Pastel Fresh Mint) */}
-        <TouchableOpacity
-          style={[styles.serviceCard, styles.cardFreshMint, styles.squircle3]}
+        {/* Card 3: Download Reports (Crisp Soft Fresh Mint Wave) */}
+        <WavyServiceCard
+          title="Excel Reports"
+          subtitle="Audit & Census"
+          icon="download-outline"
+          iconColor="#059669"
+          colorTheme="freshMint"
+          variant={3}
           onPress={onNavigateToReports}
-          activeOpacity={0.82}
-        >
-          <View style={styles.cardIconDirectWrap}>
-            <Ionicons name="download-outline" size={30} color="#0F4C5C" />
-          </View>
-          <View style={styles.cardTextContent}>
-            <Text style={styles.serviceCardTitle}>Excel Reports</Text>
-            <Text style={styles.serviceCardSub}>Audit & Census</Text>
-          </View>
-        </TouchableOpacity>
+        />
 
-        {/* Card 4: Campus Analytics (Soft Pastel Blush Pink) */}
-        <TouchableOpacity
-          style={[styles.serviceCard, styles.cardBlushPink, styles.squircle4]}
+        {/* Card 4: Campus Analytics (Delicate Soft Blush Pink Wave) */}
+        <WavyServiceCard
+          title="Batch Analytics"
+          subtitle={`${grandTotalClothes} Total clothes`}
+          icon="stats-chart-outline"
+          iconColor="#E11D48"
+          colorTheme="blushPink"
+          variant={4}
           onPress={() => setShowYearModal(true)}
-          activeOpacity={0.82}
-        >
-          <View style={styles.cardIconDirectWrap}>
-            <Ionicons name="stats-chart-outline" size={30} color="#0F4C5C" />
-          </View>
-          <View style={styles.cardTextContent}>
-            <Text style={styles.serviceCardTitle}>Batch Analytics</Text>
-            <Text style={styles.serviceCardSub}>{grandTotalClothes} Total clothes</Text>
-          </View>
-        </TouchableOpacity>
+        />
       </View>
 
       {/* 📊 Compact College Year Breakdown Button Card */}
