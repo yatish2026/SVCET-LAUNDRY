@@ -32,7 +32,7 @@ import PrivacyPolicyModal from '../common/PrivacyPolicyModal';
 import TermsConditionsModal from '../common/TermsConditionsModal';
 import RaiseTicketModal from '../../components/RaiseTicketModal';
 
-export const ProfileScreen = () => {
+export const ProfileScreen = ({ onOpenAnalytics }) => {
   const { profile, updateProfile, signOut } = useAuth();
   const { bookings, tickets } = useLaundry();
 
@@ -584,181 +584,33 @@ export const ProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 📊 SINGLE COMBINED LAUNDRY ANALYTICS & USAGE HUB */}
-      <View style={styles.calendarCard}>
-        <View style={styles.calendarCardHeader}>
-          <View>
-            <Text style={styles.cardSectionTitle}>📊 Laundry Analytics & Wash Usage</Text>
-            <Text style={styles.cardSectionSub}>
-              {calendarMode === 'ALL'
-                ? 'All-Time total wash metrics'
-                : calendarMode === 'MONTH'
-                ? `Activity for ${new Date(`${selectedMonth}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })}`
-                : calendarMode === 'DAY'
-                ? `Activity for ${selectedDate}`
-                : `Activity for Year ${selectedYear}`}
+      {/* 📊 LAUNDRY ANALYTICS & WASH TRENDS ACTION BANNER */}
+      <TouchableOpacity
+        style={styles.analyticsShortcutCard}
+        onPress={() => onOpenAnalytics && onOpenAnalytics()}
+        activeOpacity={0.88}
+      >
+        <View style={styles.analyticsShortcutLeft}>
+          <View style={styles.analyticsShortcutIconWrap}>
+            <Ionicons name="bar-chart" size={22} color="#4338CA" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.analyticsShortcutTitle}>Laundry Analytics & Wash Trends</Text>
+              <View style={styles.analyticsBadgeNew}>
+                <Text style={styles.analyticsBadgeNewText}>DEDICATED HUB</Text>
+              </View>
+            </View>
+            <Text style={styles.analyticsShortcutSub}>
+              Tap to view month-wise breakdown, wash charts & item history
             </Text>
           </View>
         </View>
-
-        {/* 1. Timeframe Filter Tabs */}
-        <View style={styles.timeframeTabs}>
-          {[
-            { id: 'ALL', label: 'All-Time', icon: 'stats-chart-outline' },
-            { id: 'MONTH', label: 'Month-Wise', icon: 'calendar-outline' },
-            { id: 'DAY', label: 'Day-Wise', icon: 'today-outline' },
-            { id: 'YEAR', label: 'Yearly', icon: 'time-outline' },
-          ].map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[styles.timeframeTab, calendarMode === tab.id && styles.timeframeTabActive]}
-              onPress={() => setCalendarMode(tab.id)}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name={tab.icon}
-                size={14}
-                color={calendarMode === tab.id ? '#4338CA' : '#64748B'}
-              />
-              <Text style={[styles.timeframeTabText, calendarMode === tab.id && styles.timeframeTabTextActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.analyticsShortcutAction}>
+          <Text style={styles.analyticsShortcutBtnText}>View</Text>
+          <Ionicons name="chevron-forward" size={16} color="#4338CA" />
         </View>
-
-        {/* 2. Date / Month Pickers (Only when Day, Month, or Year is active) */}
-        {calendarMode === 'DAY' && (
-          <View style={styles.pickerRow}>
-            <View style={styles.quickDatesWrap}>
-              <TouchableOpacity
-                style={[styles.quickDateChip, selectedDate === new Date().toISOString().slice(0, 10) && styles.quickDateChipActive]}
-                onPress={() => setSelectedDate(new Date().toISOString().slice(0, 10))}
-              >
-                <Text style={[styles.quickDateChipText, selectedDate === new Date().toISOString().slice(0, 10) && styles.quickDateChipTextActive]}>
-                  Today
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.quickDateChip, selectedDate === new Date(Date.now() - 86400000).toISOString().slice(0, 10) && styles.quickDateChipActive]}
-                onPress={() => setSelectedDate(new Date(Date.now() - 86400000).toISOString().slice(0, 10))}
-              >
-                <Text style={[styles.quickDateChipText, selectedDate === new Date(Date.now() - 86400000).toISOString().slice(0, 10) && styles.quickDateChipTextActive]}>
-                  Yesterday
-                </Text>
-              </TouchableOpacity>
-
-              <TextInput
-                style={styles.dateInputBox}
-                value={selectedDate}
-                onChangeText={setSelectedDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#94A3B8"
-              />
-            </View>
-          </View>
-        )}
-
-        {calendarMode === 'MONTH' && (
-          <View style={styles.pickerRow}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              {availableMonths.map((m) => {
-                const d = new Date(`${m}-01T00:00:00Z`);
-                const monthName = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-                const isSel = selectedMonth === m;
-
-                return (
-                  <TouchableOpacity
-                    key={m}
-                    style={[styles.quickDateChip, isSel && styles.quickDateChipActive]}
-                    onPress={() => setSelectedMonth(m)}
-                  >
-                    <Text style={[styles.quickDateChipText, isSel && styles.quickDateChipTextActive]}>
-                      {monthName}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        {calendarMode === 'YEAR' && (
-          <View style={styles.pickerRow}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              {availableYears.map((yr) => {
-                const isSel = selectedYear === yr;
-                return (
-                  <TouchableOpacity
-                    key={yr}
-                    style={[styles.quickDateChip, isSel && styles.quickDateChipActive]}
-                    onPress={() => setSelectedYear(yr)}
-                  >
-                    <Text style={[styles.quickDateChipText, isSel && styles.quickDateChipTextActive]}>
-                      Year {yr}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* 3. THE SINGLE UNIFIED STATS GRID (Updates dynamically!) */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: '#4338CA' }]}>{timeframeClothesCount}</Text>
-            <Text style={styles.statLabel}>Clothes Washed</Text>
-          </View>
-
-          <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: '#15803D' }]}>{timeframeCompletedCount}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
-          </View>
-
-          <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: '#D97706' }]}>{timeframeActiveCount}</Text>
-            <Text style={styles.statLabel}>In Progress</Text>
-          </View>
-        </View>
-
-        {/* 4. Drop-off Log in this Period */}
-        {calendarFilteredBookings.length === 0 ? (
-          <View style={styles.emptyLogBox}>
-            <Ionicons name="calendar-outline" size={26} color="#94A3B8" />
-            <Text style={styles.emptyLogTitle}>No Laundry for this Selection</Text>
-            <Text style={styles.emptyLogSub}>No drop-offs recorded for the chosen timeframe.</Text>
-          </View>
-        ) : (
-          <View style={styles.calendarLogList}>
-            {calendarFilteredBookings.map((b) => {
-              const badge = getStatusBadge(b.status);
-              const dropDate = b.created_at ? new Date(b.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Drop Date';
-
-              return (
-                <View key={b.id} style={styles.calendarLogRow}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={styles.calendarLogDate}>{dropDate}</Text>
-                      <Text style={styles.calendarLogToken}>#{b.pickup_token}</Text>
-                    </View>
-                    <Text style={styles.calendarLogItems}>
-                      🧺 <Text style={{ fontWeight: '800', color: '#1E293B' }}>{b.total_items}</Text> Clothes Cleaned
-                    </Text>
-                  </View>
-
-                  <View style={[styles.calendarLogBadge, { backgroundColor: badge.bg }]}>
-                    <Text style={[styles.calendarLogBadgeText, { color: badge.color }]}>
-                      {badge.label}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
-      </View>
+      </TouchableOpacity>
 
       {/* 🔒 Privacy, Security & Account Management */}
       <View style={styles.settingsCard}>
@@ -2058,6 +1910,74 @@ const styles = StyleSheet.create({
   pickerItemTextActive: {
     color: '#4338CA',
     fontWeight: '900',
+  },
+  analyticsShortcutCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#E0E7FF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 3,
+    shadowColor: '#4338CA',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+  },
+  analyticsShortcutLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  analyticsShortcutIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  analyticsShortcutTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  analyticsBadgeNew: {
+    backgroundColor: '#E0E7FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  analyticsBadgeNewText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#4338CA',
+    letterSpacing: 0.5,
+  },
+  analyticsShortcutSub: {
+    fontSize: 11.5,
+    fontWeight: '500',
+    color: '#64748B',
+    marginTop: 2,
+  },
+  analyticsShortcutAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F3FF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 2,
+  },
+  analyticsShortcutBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#4338CA',
   },
 });
 

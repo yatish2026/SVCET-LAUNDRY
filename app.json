@@ -38,7 +38,8 @@
         {
           "cameraPermission": "Allow VASTRA to access your camera to take clothes verification photos for laundry intake."
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "web": {
       "favicon": "./assets/favicon.png"

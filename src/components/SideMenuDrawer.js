@@ -21,6 +21,7 @@ export const SideMenuDrawer = ({
   onNavigate,
   onOpenSchedule,
   onOpenGuidelines,
+  onOpenAnalytics,
 }) => {
   const { profile, role, signOut, isStaff, setRole } = useAuth();
   const { bookings } = useLaundry();
@@ -166,6 +167,18 @@ export const SideMenuDrawer = ({
                     <Ionicons name="home-outline" size={18} color="#1D4ED8" />
                   </View>
                   <Text style={styles.menuItemText}>Student Home</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleItemPress(onOpenAnalytics)}
+                >
+                  <View style={[styles.menuIconBox, { backgroundColor: '#EEF2FF' }]}>
+                    <Ionicons name="stats-chart-outline" size={18} color="#4338CA" />
+                  </View>
+                  <Text style={[styles.menuItemText, { color: '#4338CA', fontWeight: '800' }]}>
+                    📊 Laundry Analytics & Wash Trends
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity

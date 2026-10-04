@@ -18,6 +18,7 @@ import { LaundryProvider, useLaundry } from './src/context/LaundryContext';
 import Header from './src/components/Header';
 import SideMenuDrawer from './src/components/SideMenuDrawer';
 import WelcomeSplashScreen from './src/components/WelcomeSplashScreen';
+import StudentAnalyticsModal from './src/components/StudentAnalyticsModal';
 
 // Auth Screen
 import AuthScreen from './src/screens/auth/AuthScreen';
@@ -46,6 +47,7 @@ const MainApp = () => {
   const [adminTab, setAdminTab] = useState('overview'); // 'overview' | 'approvals' | 'submissions' | 'reports'
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [menuDrawerVisible, setMenuDrawerVisible] = useState(false);
+  const [studentAnalyticsVisible, setStudentAnalyticsVisible] = useState(false);
 
   // 📱 Android Hardware Back Button Handling
   useEffect(() => {
@@ -53,6 +55,12 @@ const MainApp = () => {
       // 1. If side menu drawer is open, close it
       if (menuDrawerVisible) {
         setMenuDrawerVisible(false);
+        return true;
+      }
+
+      // 1b. If student analytics modal is open, close it
+      if (studentAnalyticsVisible) {
+        setStudentAnalyticsVisible(false);
         return true;
       }
 
@@ -84,7 +92,7 @@ const MainApp = () => {
     );
 
     return () => backSubscription.remove();
-  }, [menuDrawerVisible, selectedBookingId, studentTab, adminTab, isStudent, isStaff]);
+  }, [menuDrawerVisible, studentAnalyticsVisible, selectedBookingId, studentTab, adminTab, isStudent, isStaff]);
 
   // Helper to open details modal or screen
   const handleSelectBooking = (bookingId) => {
@@ -163,6 +171,16 @@ const MainApp = () => {
           onOpenGuidelines={() => {
             if (isStudent) setStudentTab('home');
           }}
+          onOpenAnalytics={() => {
+            setStudentAnalyticsVisible(true);
+          }}
+        />
+
+        {/* 📊 Student Analytics & Wash Trends Modal */}
+        <StudentAnalyticsModal
+          visible={studentAnalyticsVisible}
+          onClose={() => setStudentAnalyticsVisible(false)}
+          onSelectBooking={handleSelectBooking}
         />
 
         {/* Main Screen Body */}
@@ -200,7 +218,9 @@ const MainApp = () => {
               {studentTab === 'history' && (
                 <HistoryScreen onSelectBooking={handleSelectBooking} />
               )}
-              {studentTab === 'profile' && <ProfileScreen />}
+              {studentTab === 'profile' && (
+                <ProfileScreen onOpenAnalytics={() => setStudentAnalyticsVisible(true)} />
+              )}
             </>
           ) : (
             /* Staff View Tabs */
