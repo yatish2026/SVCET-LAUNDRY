@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   TouchableOpacity,
@@ -10,6 +9,7 @@ import {
   BackHandler,
   ToastAndroid,
 } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import THEME from './src/constants/theme';
@@ -505,11 +505,13 @@ const MainApp = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <LaundryProvider>
-        <MainApp />
-      </LaundryProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <LaundryProvider>
+          <MainApp />
+        </LaundryProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
@@ -517,7 +519,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Platform.OS === 'web' ? '#0F172A' : '#F1F5F9',
-    paddingTop: Platform.OS === 'android' ? 25 : 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
