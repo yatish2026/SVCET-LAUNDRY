@@ -7,6 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
   Modal,
+  Image,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -92,11 +93,13 @@ export const StudentHomeScreen = ({
           <Text style={styles.greetingSubtitle}>Fresh clothes,{"\n"}bright days!</Text>
         </View>
 
-        {/* Botanical Organic Illustration Badge */}
+        {/* 🧺 Cute Laundry Basket Illustration (Replaces leaf badge) */}
         <View style={styles.heroDecorWrapper}>
-          <View style={styles.leafCircle}>
-            <Ionicons name="leaf" size={26} color="#0D9488" />
-          </View>
+          <Image
+            source={require('../../assets/laundry_hero_basket.png')}
+            style={styles.heroBasketImage}
+            resizeMode="contain"
+          />
         </View>
       </View>
 
@@ -121,7 +124,7 @@ export const StudentHomeScreen = ({
         </View>
       </TouchableOpacity>
 
-      {/* 🌟 3. MAIN SERVICES SECTION (2x2 Organic Pastel Wave Grid) */}
+      {/* 🌟 3. MAIN SERVICES SECTION (2x2 Organic Fluid Squircle Grid) */}
       <View style={styles.sectionHeaderRow}>
         <Text style={styles.sectionTitle}>Main Services</Text>
       </View>
@@ -129,20 +132,22 @@ export const StudentHomeScreen = ({
       <View style={styles.servicesGrid}>
         {/* Card 1: Book a Slot (Soft Pastel Ice Blue) */}
         <TouchableOpacity
-          style={[styles.serviceCard, styles.cardIceBlue]}
+          style={[styles.serviceCard, styles.cardIceBlue, styles.squircle1]}
           onPress={onNavigateToNewBooking}
-          activeOpacity={0.85}
+          activeOpacity={0.82}
         >
-          <View style={[styles.serviceIconCircle, { backgroundColor: '#BAE6FD' }]}>
-            <Ionicons name="calendar" size={22} color="#0284C7" />
+          <View style={styles.cardIconDirectWrap}>
+            <Ionicons name="calendar-outline" size={30} color="#0F4C5C" />
           </View>
-          <Text style={styles.serviceCardTitle}>Book a Slot</Text>
-          <Text style={styles.serviceCardSub}>Schedule pickup</Text>
+          <View style={styles.cardTextContent}>
+            <Text style={styles.serviceCardTitle}>Book a Slot</Text>
+            <Text style={styles.serviceCardSub}>Schedule pickup</Text>
+          </View>
         </TouchableOpacity>
 
         {/* Card 2: Pickup Tokens (Soft Pastel Sunset Peach) */}
         <TouchableOpacity
-          style={[styles.serviceCard, styles.cardSunsetPeach]}
+          style={[styles.serviceCard, styles.cardSunsetPeach, styles.squircle2]}
           onPress={() => {
             if (readyBookings.length > 0) {
               setSelectedTokenBooking(readyBookings[0]);
@@ -152,39 +157,45 @@ export const StudentHomeScreen = ({
               setScheduleModalVisible(true);
             }
           }}
-          activeOpacity={0.85}
+          activeOpacity={0.82}
         >
-          <View style={[styles.serviceIconCircle, { backgroundColor: '#FED7AA' }]}>
-            <Ionicons name="qr-code" size={22} color="#EA580C" />
+          <View style={styles.cardIconDirectWrap}>
+            <Ionicons name="qr-code-outline" size={30} color="#0F4C5C" />
           </View>
-          <Text style={styles.serviceCardTitle}>Pickup Tokens</Text>
-          <Text style={styles.serviceCardSub}>Get token</Text>
+          <View style={styles.cardTextContent}>
+            <Text style={styles.serviceCardTitle}>Pickup Tokens</Text>
+            <Text style={styles.serviceCardSub}>Get token</Text>
+          </View>
         </TouchableOpacity>
 
         {/* Card 3: Wash History (Soft Pastel Fresh Mint) */}
         <TouchableOpacity
-          style={[styles.serviceCard, styles.cardFreshMint]}
+          style={[styles.serviceCard, styles.cardFreshMint, styles.squircle3]}
           onPress={onNavigateToHistory}
-          activeOpacity={0.85}
+          activeOpacity={0.82}
         >
-          <View style={[styles.serviceIconCircle, { backgroundColor: '#BBF7D0' }]}>
-            <Ionicons name="time" size={22} color="#16A34A" />
+          <View style={styles.cardIconDirectWrap}>
+            <Ionicons name="time-outline" size={30} color="#0F4C5C" />
           </View>
-          <Text style={styles.serviceCardTitle}>Wash History</Text>
-          <Text style={styles.serviceCardSub}>View requests</Text>
+          <View style={styles.cardTextContent}>
+            <Text style={styles.serviceCardTitle}>Wash History</Text>
+            <Text style={styles.serviceCardSub}>View requests</Text>
+          </View>
         </TouchableOpacity>
 
         {/* Card 4: Help & Support (Soft Pastel Blush Pink) */}
         <TouchableOpacity
-          style={[styles.serviceCard, styles.cardBlushPink]}
+          style={[styles.serviceCard, styles.cardBlushPink, styles.squircle4]}
           onPress={() => setHelpModalVisible(true)}
-          activeOpacity={0.85}
+          activeOpacity={0.82}
         >
-          <View style={[styles.serviceIconCircle, { backgroundColor: '#FECDD3' }]}>
-            <Ionicons name="headset" size={22} color="#E11D48" />
+          <View style={styles.cardIconDirectWrap}>
+            <Ionicons name="headset-outline" size={30} color="#0F4C5C" />
           </View>
-          <Text style={styles.serviceCardTitle}>Help & Support</Text>
-          <Text style={styles.serviceCardSub}>We're here for you</Text>
+          <View style={styles.cardTextContent}>
+            <Text style={styles.serviceCardTitle}>Help & Support</Text>
+            <Text style={styles.serviceCardSub}>We're here for you</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -369,40 +380,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 10,
     marginBottom: 10,
   },
   heroTextContainer: {
     flex: 1,
   },
   greetingTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 34,
+    fontWeight: '700',
     color: '#0F4C5C',
-    fontFamily: Platform.OS === 'ios' ? 'Snell Roundhand' : 'serif',
-    letterSpacing: -0.5,
+    fontFamily: Platform.select({
+      ios: 'Caveat-Bold, Snell Roundhand, cursive',
+      android: 'Caveat_700Bold',
+      web: 'Caveat, "Dancing Script", "Segoe Print", cursive, sans-serif',
+      default: 'Caveat_700Bold',
+    }),
+    letterSpacing: -0.3,
+    lineHeight: 38,
   },
   greetingSubtitle: {
     fontSize: 14,
     color: '#334155',
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 3,
     lineHeight: 20,
   },
   heroDecorWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingLeft: 12,
+    paddingLeft: 8,
   },
-  leafCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#E6F4F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#BEE3EA',
+  heroBasketImage: {
+    width: 95,
+    height: 95,
   },
   collectionPillCard: {
     flexDirection: 'row',
@@ -412,7 +423,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingVertical: 14,
     paddingHorizontal: 18,
-    marginBottom: 26,
+    marginBottom: 24,
     ...Platform.select({
       ios: {
         shadowColor: '#0F4C5C',
@@ -464,7 +475,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sectionHeaderRow: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   sectionTitle: {
     fontSize: 18,
@@ -481,52 +492,75 @@ const styles = StyleSheet.create({
   },
   serviceCard: {
     width: '48%',
-    borderRadius: 28, // Organic fluid squircle shape
-    padding: 18,
-    minHeight: 140,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    minHeight: 128,
     justifyContent: 'space-between',
     borderWidth: 1.5,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
+        shadowColor: '#0F4C5C',
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
-        shadowRadius: 8,
+        shadowRadius: 10,
       },
       android: {
         elevation: 2,
       },
       web: {
-        boxShadow: '0 3px 12px rgba(0,0,0,0.04)',
+        boxShadow: '0 4px 14px rgba(15, 76, 92, 0.05)',
       },
     }),
   },
+  squircle1: {
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 36,
+    borderBottomLeftRadius: 22,
+  },
+  squircle2: {
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 36,
+    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 36,
+  },
+  squircle3: {
+    borderTopLeftRadius: 34,
+    borderTopRightRadius: 22,
+    borderBottomRightRadius: 36,
+    borderBottomLeftRadius: 20,
+  },
+  squircle4: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 36,
+    borderBottomRightRadius: 22,
+    borderBottomLeftRadius: 34,
+  },
   cardIceBlue: {
-    backgroundColor: '#E8F5FD',
-    borderColor: '#BAE6FD',
+    backgroundColor: '#EBF6FC',
+    borderColor: '#D4ECFA',
   },
   cardSunsetPeach: {
-    backgroundColor: '#FFF2E8',
-    borderColor: '#FED7AA',
+    backgroundColor: '#FFF4EB',
+    borderColor: '#FFE4D2',
   },
   cardFreshMint: {
-    backgroundColor: '#EBF8F2',
-    borderColor: '#BBF7D0',
+    backgroundColor: '#ECFBF3',
+    borderColor: '#D2F5E2',
   },
   cardBlushPink: {
-    backgroundColor: '#FFF0F3',
-    borderColor: '#FECDD3',
+    backgroundColor: '#FFF1F4',
+    borderColor: '#FFE3E9',
   },
-  serviceIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
+  cardIconDirectWrap: {
+    alignSelf: 'flex-start',
+    marginBottom: 14,
+  },
+  cardTextContent: {
+    justifyContent: 'flex-end',
   },
   serviceCardTitle: {
-    fontSize: 15.5,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 2,

@@ -21,6 +21,8 @@ import WelcomeSplashScreen from './src/components/WelcomeSplashScreen';
 import StudentAnalyticsModal from './src/components/StudentAnalyticsModal';
 import MonthlyAnalyticsReportModal from './src/components/MonthlyAnalyticsReportModal';
 
+import { useFonts, Caveat_700Bold, Caveat_600SemiBold } from '@expo-google-fonts/caveat';
+
 // Auth Screen
 import AuthScreen from './src/screens/auth/AuthScreen';
 
@@ -41,6 +43,25 @@ import RequestDetailScreen from './src/screens/admin/RequestDetailScreen';
 const MainApp = () => {
   const { isAuthenticated, isLoading: authLoading, isStudent, isStaff } = useAuth();
   const { bookings } = useLaundry();
+
+  const [fontsLoaded] = useFonts({
+    Caveat_700Bold,
+    Caveat_600SemiBold,
+  });
+
+  // Inject web font for instant high-quality handwriting rendering in browser preview
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const linkId = 'google-font-caveat';
+      if (!document.getElementById(linkId)) {
+        const link = document.createElement('link');
+        link.id = linkId;
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap';
+        document.head.appendChild(link);
+      }
+    }
+  }, []);
 
   // Navigation states
   const [showSplash, setShowSplash] = useState(true);
