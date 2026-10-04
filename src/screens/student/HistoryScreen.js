@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import THEME from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
 import { useLaundry } from '../../context/LaundryContext';
+import WavyOrderCard from '../../components/WavyOrderCard';
 
 export const HistoryScreen = ({ onSelectBooking }) => {
   const { profile } = useAuth();
@@ -98,40 +99,6 @@ export const HistoryScreen = ({ onSelectBooking }) => {
   const totalClothesInView = useMemo(() => {
     return filteredBookings.reduce((sum, b) => sum + (b.total_items || 0), 0);
   }, [filteredBookings]);
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'completed':
-        return { label: 'Collected & Completed', color: '#15803D', bg: '#DCFCE7', icon: 'checkmark-circle' };
-      case 'ready_for_pickup':
-        return { label: 'Ready for Pickup', color: '#B45309', bg: '#FEF3C7', icon: 'sparkles' };
-      case 'drying_ironing':
-        return { label: 'Drying & Ironing', color: '#7E22CE', bg: '#F3E8FF', icon: 'shirt' };
-      case 'in_wash':
-        return { label: 'In Washing Machine', color: '#1D4ED8', bg: '#DBEAFE', icon: 'water' };
-      case 'cancelled':
-        return { label: 'Cancelled Request', color: '#991B1B', bg: '#FEE2E2', icon: 'close-circle' };
-      default:
-        return { label: 'Drop-off Scheduled', color: '#475569', bg: '#F1F5F9', icon: 'time-outline' };
-    }
-  };
-
-  const formatSubmitDate = (isoString) => {
-    if (!isoString) return 'Recent Drop';
-    try {
-      const d = new Date(isoString);
-      return d.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch (e) {
-      return isoString;
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -228,11 +195,11 @@ export const HistoryScreen = ({ onSelectBooking }) => {
       <View style={styles.summaryRow}>
         <Text style={styles.summaryText}>
           Showing <Text style={{ fontWeight: '800', color: '#1E293B' }}>{filteredBookings.length}</Text> Orders •{' '}
-          <Text style={{ fontWeight: '800', color: '#4338CA' }}>{totalClothesInView}</Text> Clothes
+          <Text style={{ fontWeight: '800', color: '#0F4C5C' }}>{totalClothesInView}</Text> Clothes
         </Text>
       </View>
 
-      {/* Orders List */}
+      {/* Orders List (Sleek Horizontal Wavy Cards) */}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -264,69 +231,17 @@ export const HistoryScreen = ({ onSelectBooking }) => {
             )}
           </View>
         ) : (
-          filteredBookings.map((b) => {
-            const badge = getStatusBadge(b.status);
-            const itemsList = Object.entries(b.items || {})
-              .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
-              .join(' • ');
-
-            return (
-              <TouchableOpacity
-                key={b.id}
-                style={styles.historyCard}
-                onPress={() => onSelectBooking && onSelectBooking(b.id)}
-                activeOpacity={0.85}
-              >
-                {/* Card Top Row */}
-                <View style={styles.cardTopRow}>
-                  <View style={styles.tokenBox}>
-                    <Text style={styles.tokenNum}>#{b.pickup_token}</Text>
-                    <View style={styles.yearTag}>
-                      <Text style={styles.yearTagText}>{b.academic_year || '1st Year'}</Text>
-                    </View>
-                  </View>
-
-                  <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-                    <Ionicons name={badge.icon} size={13} color={badge.color} />
-                    <Text style={[styles.statusBadgeText, { color: badge.color }]}>
-                      {badge.label}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Submission Date & Time (Neat & Clear) */}
-                <View style={styles.submittedRow}>
-                  <Ionicons name="time-outline" size={14} color="#64748B" />
-                  <Text style={styles.submittedText}>
-                    Submitted: <Text style={{ fontWeight: '700', color: '#1E293B' }}>{formatSubmitDate(b.created_at)}</Text>
-                  </Text>
-                </View>
-
-                {/* Clothes Count & Item Breakdown */}
-                <View style={styles.clothesBox}>
-                  <View style={styles.clothesNumBadge}>
-                    <Ionicons name="shirt" size={14} color="#4338CA" />
-                    <Text style={styles.clothesNumText}>{b.total_items} Clothes</Text>
-                  </View>
-                  <Text style={styles.itemsSummaryText} numberOfLines={1}>
-                    {itemsList || 'Mixed Clothes Wash'}
-                  </Text>
-                </View>
-
-                {/* Schedule / Dropoff Info */}
-                <View style={styles.cardFooter}>
-                  <Text style={styles.footerSlotText}>
-                    📍 {b.hostel_block?.split(' ')[0]} • Rm {b.room_number}
-                  </Text>
-
-                  <View style={styles.viewDetailBtn}>
-                    <Text style={styles.viewDetailBtnText}>View Details</Text>
-                    <Ionicons name="chevron-forward" size={14} color="#4338CA" />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })
+          filteredBookings.map((b, idx) => (
+            <WavyOrderCard
+              key={b.id}
+              token={b.pickup_token}
+              status={b.status}
+              totalItems={b.total_items || 1}
+              academicYear={b.academic_year}
+              variantIndex={idx}
+              onPress={() => onSelectBooking && onSelectBooking(b.id)}
+            />
+          ))
         )}
       </ScrollView>
     </View>

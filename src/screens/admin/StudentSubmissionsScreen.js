@@ -16,6 +16,7 @@ import { useLaundry } from '../../context/LaundryContext';
 import { ACADEMIC_COURSES } from '../../constants/schedule';
 import StatusBadge from '../../components/StatusBadge';
 import QRScannerModal from '../../components/QRScannerModal';
+import WavyOrderCard from '../../components/WavyOrderCard';
 
 export const ORDER_FILTER_SECTIONS = [
   { id: 'STATUS', label: 'Order Status', icon: 'sync' },
@@ -247,89 +248,18 @@ export const StudentSubmissionsScreen = ({ onSelectBooking }) => {
             )}
           </View>
         ) : (
-          filteredBookings.map((b) => {
-            const nextAction = getNextStageLabel(b.status);
-            const itemsList = Object.entries(b.items || {})
-              .map(([k, v]) => `${k}: ${v}`)
-              .join(' • ');
-
-            return (
-              <TouchableOpacity
-                key={b.id}
-                style={styles.orderCard}
-                onPress={() => onSelectBooking && onSelectBooking(b.id)}
-                activeOpacity={0.85}
-              >
-                {/* Header: Token, Student Info & Status Badge */}
-                <View style={styles.orderCardHeader}>
-                  <View style={styles.tokenPill}>
-                    <Text style={styles.tokenText}>#{b.pickup_token}</Text>
-                  </View>
-
-                  <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={styles.studentName} numberOfLines={1}>
-                      {b.student_name}
-                    </Text>
-                    <Text style={styles.studentMeta}>
-                      {b.student_id} • {b.academic_year || '1st Year'}
-                    </Text>
-                  </View>
-
-                  <StatusBadge status={b.status} />
-                </View>
-
-                {/* Meta details */}
-                <View style={styles.cardDetailsRow}>
-                  <View style={styles.detailItem}>
-                    <Ionicons name="business-outline" size={13} color="#64748B" />
-                    <Text style={styles.detailText}>
-                      {b.hostel_block || 'Hostel'} Rm {b.room_number || 'N/A'}
-                    </Text>
-                  </View>
-                  <View style={styles.detailItem}>
-                    <Ionicons name="shirt-outline" size={13} color="#4338CA" />
-                    <Text style={[styles.detailText, { fontWeight: '800', color: '#4338CA' }]}>
-                      {b.total_items || 1} Clothes
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Items preview */}
-                <View style={styles.itemsBox}>
-                  <Text style={styles.itemsText} numberOfLines={2}>
-                    {itemsList || 'Regular wash load'}
-                  </Text>
-                </View>
-
-                {/* Special Instructions Note */}
-                {b.special_instructions ? (
-                  <View style={styles.instructionsBox}>
-                    <Text style={styles.instructionsText}>
-                      💬 {b.special_instructions}
-                    </Text>
-                  </View>
-                ) : null}
-
-                {/* Next Stage Action Button */}
-                {nextAction && (
-                  <TouchableOpacity
-                    style={[styles.nextStageBtn, { backgroundColor: nextAction.color }]}
-                    onPress={async () => {
-                      try {
-                        await advanceBookingStatus(b.id, nextAction.next);
-                      } catch (e) {
-                        console.error('Advance error:', e);
-                      }
-                    }}
-                    activeOpacity={0.85}
-                  >
-                    <Ionicons name={nextAction.icon} size={15} color="#FFF" />
-                    <Text style={styles.nextStageBtnText}>{nextAction.label}</Text>
-                  </TouchableOpacity>
-                )}
-              </TouchableOpacity>
-            );
-          })
+          filteredBookings.map((b, idx) => (
+            <WavyOrderCard
+              key={b.id}
+              token={b.pickup_token}
+              status={b.status}
+              totalItems={b.total_items || 1}
+              academicYear={b.academic_year}
+              studentName={b.student_name}
+              variantIndex={idx}
+              onPress={() => onSelectBooking && onSelectBooking(b.id)}
+            />
+          ))
         )}
       </ScrollView>
 
