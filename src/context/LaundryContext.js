@@ -25,11 +25,11 @@ export const LaundryProvider = ({ children }) => {
       setNotifications(fetchedNotifs);
       setTickets(fetchedTickets);
       setIsServerConnected(true);
-      setServerStatusMessage('GoDaddy rvsu.org Live');
+      setServerStatusMessage('rvsu.ac.in Live');
     } catch (err) {
-      console.log('Error refreshing GoDaddy data:', err);
+      console.log('Error refreshing server data:', err);
       setIsServerConnected(false);
-      setServerStatusMessage('Connecting to GoDaddy...');
+      setServerStatusMessage('Connecting to Server...');
     }
   }, []);
 

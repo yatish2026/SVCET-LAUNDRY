@@ -70,7 +70,7 @@ export const PrivacyPolicyModal = ({ visible, onClose }) => {
             <Text style={styles.sectionHeading}>6. Contact Information</Text>
             <Text style={styles.bodyText}>
               For any questions regarding privacy or hostel laundry management, please contact:{"\n"}
-              📧 Email: <Text style={styles.boldText}>laundry@rvsu.org</Text>{"\n"}
+              📧 Email: <Text style={styles.boldText}>laundry@rvsu.ac.in</Text>{"\n"}
               📍 RVS University Campus Hostel Office, Counter 1
             </Text>
           </ScrollView>

@@ -73,7 +73,7 @@ export const TermsConditionsModal = ({ visible, onClose }) => {
             <Text style={styles.sectionHeading}>7. Campus Contact</Text>
             <Text style={styles.bodyText}>
               Hostel Laundry Administration Desk{"\n"}
-              📧 Email: <Text style={styles.boldText}>laundry@rvsu.org</Text>{"\n"}
+              📧 Email: <Text style={styles.boldText}>laundry@rvsu.ac.in</Text>{"\n"}
               📍 RVS University Campus Hostel Office
             </Text>
           </ScrollView>
