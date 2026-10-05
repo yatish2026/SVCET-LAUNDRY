@@ -104,7 +104,7 @@ export const PhotoUploader = ({
       try {
         // Attempt launch with multiple selection support
         result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           allowsMultipleSelection: true,
           quality: 0.35,
           base64: false,
@@ -113,7 +113,7 @@ export const PhotoUploader = ({
         console.log('Multi-selection fallback triggered:', multiErr);
         // Fallback for custom Android OEM ROMs (MIUI, ColorOS, FunTouch)
         result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           allowsMultipleSelection: false,
           quality: 0.35,
           base64: false,
@@ -136,8 +136,8 @@ export const PhotoUploader = ({
     } catch (error) {
       console.log('Error picking images:', error);
       Alert.alert(
-        'Gallery Permission',
-        'Please allow Photo & Storage permissions for VASTRA in Phone Settings -> Apps -> VASTRA -> Permissions.'
+        'Gallery Picker',
+        'Unable to select photos from gallery. Please try again.'
       );
     }
   };
@@ -160,7 +160,7 @@ export const PhotoUploader = ({
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         quality: 0.35,
         base64: false,
       });

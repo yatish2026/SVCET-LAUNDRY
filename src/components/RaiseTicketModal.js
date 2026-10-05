@@ -57,7 +57,7 @@ export const RaiseTicketModal = ({ visible, onClose }) => {
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       }
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: false,
         quality: 0.6,
       });
@@ -81,7 +81,7 @@ export const RaiseTicketModal = ({ visible, onClose }) => {
         }
       }
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: false,
         quality: 0.6,
       });
