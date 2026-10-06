@@ -41,11 +41,26 @@ const safeFetch = async (url, options = {}, timeoutMs = 15000) => {
     return { ok: response.ok, status: response.status, data };
   } catch (err) {
     clearTimeout(timeoutId);
-    if (err.name === 'AbortError') {
-      throw new Error('Connection timed out. Please check your internet connection and try again.');
+    const msg = (err.message || '').toLowerCase();
+    if (
+      err.name === 'AbortError' ||
+      msg.includes('cancel') ||
+      msg.includes('abort') ||
+      msg.includes('timeout') ||
+      msg.includes('timed out')
+    ) {
+      throw new Error(
+        'Connection timed out. If you are connected to restricted college Wi-Fi, please try switching to Mobile Data or check your internet connection.'
+      );
     }
-    if (err.message && (err.message.includes('Network request failed') || err.message.includes('Failed to fetch'))) {
-      throw new Error('Network connection error. Please check your mobile data or Wi-Fi.');
+    if (
+      msg.includes('network request failed') ||
+      msg.includes('failed to fetch') ||
+      msg.includes('network error')
+    ) {
+      throw new Error(
+        'Unable to reach server. Please check your mobile data / Wi-Fi connection and try again.'
+      );
     }
     throw err;
   }
