@@ -43,23 +43,37 @@ const safeFetch = async (url, options = {}, timeoutMs = 15000) => {
     clearTimeout(timeoutId);
     const msg = (err.message || '').toLowerCase();
     if (
+      msg.includes('unknownhostexception') ||
+      msg.includes('unable to resolve host') ||
+      msg.includes('no address associated') ||
+      msg.includes('dns')
+    ) {
+      throw new Error(
+        'DNS resolution failed. Please check your internet connection or switch from Wi-Fi to Mobile Data and try again.'
+      );
+    }
+    if (
       err.name === 'AbortError' ||
       msg.includes('cancel') ||
       msg.includes('abort') ||
       msg.includes('timeout') ||
-      msg.includes('timed out')
+      msg.includes('timed out') ||
+      msg.includes('sockettimeoutexception')
     ) {
       throw new Error(
-        'Connection timed out. If you are connected to restricted college Wi-Fi, please try switching to Mobile Data or check your internet connection.'
+        'Connection timed out. If you are on restricted college Wi-Fi, please switch to Mobile Data or check your connection.'
       );
     }
     if (
       msg.includes('network request failed') ||
       msg.includes('failed to fetch') ||
-      msg.includes('network error')
+      msg.includes('network error') ||
+      msg.includes('connectexception') ||
+      msg.includes('failed to connect') ||
+      msg.includes('connection refused')
     ) {
       throw new Error(
-        'Unable to reach server. Please check your mobile data / Wi-Fi connection and try again.'
+        'Unable to reach laundry server. Please check your internet connection or switch to Mobile Data.'
       );
     }
     throw err;
