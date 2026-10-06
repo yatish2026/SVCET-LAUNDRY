@@ -11,12 +11,11 @@
 require_once __DIR__ . '/db.php';
 
 // ==========================================
-// 🛡️ CONFIGURABLE RATE LIMITING SYSTEM
+// 🛡️ CAMPUS-OPTIMIZED HIGH-CONCURRENCY RATE LIMITING
 // ==========================================
-define('AUTH_MAX_ATTEMPTS', 5);        // Max 5 attempts before backoff
-define('AUTH_WINDOW_MINUTES', 15);     // 15 minute sliding window
-define('PUBLIC_MAX_PER_MINUTE', 60);   // 60 requests/min for public GET
-define('USER_MAX_PER_MINUTE', 40);     // 40 requests/min for bookings
+define('AUTH_MAX_ATTEMPTS', 8);        // 8 failed attempts per specific account before backoff
+define('AUTH_WINDOW_MINUTES', 10);     // 10 minute sliding window
+define('CAMPUS_MAX_PER_MINUTE', 600);  // 600 requests/min to accommodate 100+ students on same hostel Wi-Fi NAT
 
 function getClientIp() {
     if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) return $_SERVER['HTTP_CF_CONNECTING_IP'];
@@ -28,16 +27,22 @@ function getClientIp() {
 }
 
 function checkRateLimit($conn, $endpointType, $accountKey = '') {
+    // Only apply rate limiting to authentication endpoints per specific account to protect against brute force
+    // For general API requests, allow high-speed throughput for all hostel students
+    if ($endpointType !== 'auth' || empty($accountKey)) {
+        return;
+    }
+
     $ip = getClientIp();
     $now = new DateTime('now', new DateTimeZone('UTC'));
     $nowStr = $now->format('Y-m-d H:i:s');
 
-    // 1. Check if currently blocked by exponential backoff
+    // 1. Check if specific account is currently locked by repeated failed passwords
     $stmt = $conn->prepare("SELECT id, attempt_count, first_attempt_time, blocked_until 
                             FROM laundry_rate_limits 
-                            WHERE ip_address = ? AND endpoint_type = ? AND (account_key = ? OR account_key = '')
+                            WHERE endpoint_type = 'auth' AND account_key = ? 
                             ORDER BY id DESC LIMIT 1");
-    $stmt->execute([$ip, $endpointType, $accountKey]);
+    $stmt->execute([$accountKey]);
     $record = $stmt->fetch();
 
     if ($record && !empty($record['blocked_until'])) {
@@ -48,57 +53,62 @@ function checkRateLimit($conn, $endpointType, $accountKey = '') {
             header("Retry-After: " . max(1, $retryAfterSeconds));
             echo json_encode([
                 "success" => false,
-                "error" => "Too many attempts. Rate limit exceeded. Please wait " . max(1, $retryAfterSeconds) . " seconds.",
+                "error" => "Too many failed login attempts for this account. Please wait " . max(1, $retryAfterSeconds) . " seconds.",
                 "retry_after" => max(1, $retryAfterSeconds)
             ]);
             exit();
         }
     }
+}
 
-    // 2. Auth Endpoint Exponential Backoff Check
-    if ($endpointType === 'auth') {
-        if ($record) {
-            $firstAttempt = new DateTime($record['first_attempt_time'], new DateTimeZone('UTC'));
-            $diffMinutes = ($now->getTimestamp() - $firstAttempt->getTimestamp()) / 60;
+function recordFailedAuth($conn, $accountKey) {
+    if (empty($accountKey)) return;
+    $ip = getClientIp();
+    $now = new DateTime('now', new DateTimeZone('UTC'));
+    $nowStr = $now->format('Y-m-d H:i:s');
 
-            if ($diffMinutes < AUTH_WINDOW_MINUTES) {
-                $newCount = $record['attempt_count'] + 1;
-                $blockedUntilStr = null;
+    $stmt = $conn->prepare("SELECT id, attempt_count, first_attempt_time, blocked_until 
+                            FROM laundry_rate_limits 
+                            WHERE endpoint_type = 'auth' AND account_key = ? 
+                            ORDER BY id DESC LIMIT 1");
+    $stmt->execute([$accountKey]);
+    $record = $stmt->fetch();
 
-                if ($newCount >= AUTH_MAX_ATTEMPTS) {
-                    // Exponential backoff calculation: 30s, 60s, 300s, 900s
-                    $backoffSeconds = 30;
-                    if ($newCount === 6) $backoffSeconds = 60;
-                    elseif ($newCount === 7) $backoffSeconds = 300;
-                    elseif ($newCount >= 8) $backoffSeconds = 900;
+    if ($record) {
+        $firstAttempt = new DateTime($record['first_attempt_time'], new DateTimeZone('UTC'));
+        $diffMinutes = ($now->getTimestamp() - $firstAttempt->getTimestamp()) / 60;
 
-                    $blockDate = clone $now;
-                    $blockDate->modify("+{$backoffSeconds} seconds");
-                    $blockedUntilStr = $blockDate->format('Y-m-d H:i:s');
-                }
+        if ($diffMinutes < AUTH_WINDOW_MINUTES) {
+            $newCount = $record['attempt_count'] + 1;
+            $blockedUntilStr = null;
 
-                $upd = $conn->prepare("UPDATE laundry_rate_limits 
-                                       SET attempt_count = ?, last_attempt_time = ?, blocked_until = ? 
-                                       WHERE id = ?");
-                $upd->execute([$newCount, $nowStr, $blockedUntilStr, $record['id']]);
-            } else {
-                // Reset window after 15 mins
-                $ins = $conn->prepare("INSERT INTO laundry_rate_limits (ip_address, endpoint_type, account_key, attempt_count, first_attempt_time, last_attempt_time) 
-                                       VALUES (?, 'auth', ?, 1, ?, ?)");
-                $ins->execute([$ip, $accountKey, $nowStr, $nowStr]);
+            if ($newCount >= AUTH_MAX_ATTEMPTS) {
+                $backoffSeconds = ($newCount >= 10) ? 300 : 60;
+                $blockDate = clone $now;
+                $blockDate->modify("+{$backoffSeconds} seconds");
+                $blockedUntilStr = $blockDate->format('Y-m-d H:i:s');
             }
+
+            $upd = $conn->prepare("UPDATE laundry_rate_limits 
+                                   SET attempt_count = ?, last_attempt_time = ?, blocked_until = ? 
+                                   WHERE id = ?");
+            $upd->execute([$newCount, $nowStr, $blockedUntilStr, $record['id']]);
         } else {
             $ins = $conn->prepare("INSERT INTO laundry_rate_limits (ip_address, endpoint_type, account_key, attempt_count, first_attempt_time, last_attempt_time) 
                                    VALUES (?, 'auth', ?, 1, ?, ?)");
             $ins->execute([$ip, $accountKey, $nowStr, $nowStr]);
         }
+    } else {
+        $ins = $conn->prepare("INSERT INTO laundry_rate_limits (ip_address, endpoint_type, account_key, attempt_count, first_attempt_time, last_attempt_time) 
+                               VALUES (?, 'auth', ?, 1, ?, ?)");
+        $ins->execute([$ip, $accountKey, $nowStr, $nowStr]);
     }
 }
 
 function clearAuthRateLimit($conn, $accountKey = '') {
-    $ip = getClientIp();
-    $del = $conn->prepare("DELETE FROM laundry_rate_limits WHERE ip_address = ? AND endpoint_type = 'auth'");
-    $del->execute([$ip]);
+    if (empty($accountKey)) return;
+    $del = $conn->prepare("DELETE FROM laundry_rate_limits WHERE account_key = ? AND endpoint_type = 'auth'");
+    $del->execute([$accountKey]);
 }
 
 // ==========================================
