@@ -16,7 +16,7 @@ import { useLaundry } from '../context/LaundryContext';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
 export const QRScannerModal = ({ visible, onClose }) => {
-  const { bookings, advanceBookingStatus } = useLaundry();
+  const { bookings, advanceBookingStatus, refreshData } = useLaundry();
 
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -32,8 +32,9 @@ export const QRScannerModal = ({ visible, onClose }) => {
       setMatchedBooking(null);
       setCompletedSuccess(false);
       setInputToken('');
+      if (refreshData) refreshData();
     }
-  }, [visible]);
+  }, [visible, refreshData]);
 
   // Handle live barcode scanning from camera
   const handleBarCodeScanned = ({ data }) => {
@@ -55,20 +56,35 @@ export const QRScannerModal = ({ visible, onClose }) => {
     }
   };
 
-  const lookupBooking = (searchQuery) => {
+  const lookupBooking = async (searchQuery) => {
     const clean = (searchQuery || inputToken)
       .trim()
       .toUpperCase()
       .replace('#', '');
     if (!clean) return;
 
-    const found = bookings.find(
-      (b) =>
-        b.pickup_token?.toUpperCase().replace('#', '') === clean ||
-        b.id === clean ||
-        b.student_id?.toUpperCase() === clean ||
-        b.phone_number?.replace(/\s+/g, '') === clean.replace(/\s+/g, '')
-    );
+    const findMatch = (list) =>
+      (list || []).find(
+        (b) =>
+          b.pickup_token?.toUpperCase().replace('#', '') === clean ||
+          b.id === clean ||
+          b.student_id?.toUpperCase() === clean ||
+          b.phone_number?.replace(/\s+/g, '') === clean.replace(/\s+/g, '')
+      );
+
+    let found = findMatch(bookings);
+
+    // If not found in local state, fetch latest from server immediately
+    if (!found && refreshData) {
+      try {
+        setIsProcessing(true);
+        await refreshData();
+      } catch (e) {
+      } finally {
+        setIsProcessing(false);
+      }
+      found = findMatch(bookings);
+    }
 
     if (found) {
       setMatchedBooking(found);
@@ -89,6 +105,7 @@ export const QRScannerModal = ({ visible, onClose }) => {
     try {
       setIsProcessing(true);
       await advanceBookingStatus(matchedBooking.id, 'completed');
+      if (refreshData) refreshData();
       setCompletedSuccess(true);
     } catch (err) {
       Alert.alert('Error', 'Unable to complete order.');

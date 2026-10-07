@@ -15,7 +15,7 @@ import THEME from '../constants/theme';
 import { useLaundry } from '../context/LaundryContext';
 
 export const QRScannerModal = ({ visible, onClose }) => {
-  const { bookings, advanceBookingStatus } = useLaundry();
+  const { bookings, advanceBookingStatus, refreshData } = useLaundry();
 
   const [inputToken, setInputToken] = useState('');
   const [matchedBooking, setMatchedBooking] = useState(null);
@@ -27,23 +27,38 @@ export const QRScannerModal = ({ visible, onClose }) => {
       setMatchedBooking(null);
       setCompletedSuccess(false);
       setInputToken('');
+      if (refreshData) refreshData();
     }
-  }, [visible]);
+  }, [visible, refreshData]);
 
-  const lookupBooking = (searchQuery) => {
+  const lookupBooking = async (searchQuery) => {
     const clean = (searchQuery || inputToken)
       .trim()
       .toUpperCase()
       .replace('#', '');
     if (!clean) return;
 
-    const found = bookings.find(
-      (b) =>
-        b.pickup_token?.toUpperCase().replace('#', '') === clean ||
-        b.id === clean ||
-        b.student_id?.toUpperCase() === clean ||
-        b.phone_number?.replace(/\s+/g, '') === clean.replace(/\s+/g, '')
-    );
+    const findMatch = (list) =>
+      (list || []).find(
+        (b) =>
+          b.pickup_token?.toUpperCase().replace('#', '') === clean ||
+          b.id === clean ||
+          b.student_id?.toUpperCase() === clean ||
+          b.phone_number?.replace(/\s+/g, '') === clean.replace(/\s+/g, '')
+      );
+
+    let found = findMatch(bookings);
+
+    if (!found && refreshData) {
+      try {
+        setIsProcessing(true);
+        await refreshData();
+      } catch (e) {
+      } finally {
+        setIsProcessing(false);
+      }
+      found = findMatch(bookings);
+    }
 
     if (found) {
       setMatchedBooking(found);
@@ -63,6 +78,7 @@ export const QRScannerModal = ({ visible, onClose }) => {
     try {
       setIsProcessing(true);
       await advanceBookingStatus(matchedBooking.id, 'completed');
+      if (refreshData) refreshData();
       setCompletedSuccess(true);
     } catch (err) {
       Alert.alert('Error', 'Unable to complete order.');

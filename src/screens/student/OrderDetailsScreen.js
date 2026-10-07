@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,9 +20,18 @@ import PickupTokenModal from '../../components/PickupTokenModal';
 import QRCodeDisplay from '../../components/QRCodeDisplay';
 
 export const OrderDetailsScreen = ({ bookingId, onBack }) => {
-  const { bookings, cancelBooking } = useLaundry();
+  const { bookings, cancelBooking, refreshData } = useLaundry();
   const [tokenModalVisible, setTokenModalVisible] = useState(false);
   const [previewPhotoUri, setPreviewPhotoUri] = useState(null);
+
+  // ⚡ Live auto-sync every 5 seconds so counter QR scan updates show immediately on student screen
+  useEffect(() => {
+    if (refreshData) {
+      refreshData();
+      const pollTimer = setInterval(refreshData, 5000);
+      return () => clearInterval(pollTimer);
+    }
+  }, [refreshData]);
 
   const targetId =
     typeof bookingId === 'object' && bookingId !== null

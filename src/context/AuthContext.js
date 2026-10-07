@@ -45,10 +45,14 @@ export const AuthProvider = ({ children }) => {
       setRole(authenticatedUser.role || 'student');
       setAcademicYear(authenticatedUser.academic_year || '1st Year');
 
-      await AsyncStorage.setItem(
-        '@campuswash_user_session',
-        JSON.stringify(authenticatedUser)
-      );
+      try {
+        await AsyncStorage.setItem(
+          '@campuswash_user_session',
+          JSON.stringify(authenticatedUser)
+        );
+      } catch (storageErr) {
+        console.warn('AsyncStorage cache full, keeping session in memory:', storageErr);
+      }
 
       setIsLoading(false);
       return authenticatedUser;
@@ -70,10 +74,14 @@ export const AuthProvider = ({ children }) => {
       setRole(registeredUser.role || 'student');
       setAcademicYear(registeredUser.academic_year || '1st Year');
 
-      await AsyncStorage.setItem(
-        '@campuswash_user_session',
-        JSON.stringify(registeredUser)
-      );
+      try {
+        await AsyncStorage.setItem(
+          '@campuswash_user_session',
+          JSON.stringify(registeredUser)
+        );
+      } catch (storageErr) {
+        console.warn('AsyncStorage cache full, keeping session in memory:', storageErr);
+      }
 
       setIsLoading(false);
       return registeredUser;
@@ -108,10 +116,14 @@ export const AuthProvider = ({ children }) => {
       if (mergedUser.role) setRole(mergedUser.role);
       if (mergedUser.academic_year) setAcademicYear(mergedUser.academic_year);
 
-      await AsyncStorage.setItem(
-        '@campuswash_user_session',
-        JSON.stringify(mergedUser)
-      );
+      try {
+        await AsyncStorage.setItem(
+          '@campuswash_user_session',
+          JSON.stringify(mergedUser)
+        );
+      } catch (storageErr) {
+        console.warn('AsyncStorage cache full:', storageErr);
+      }
 
       return mergedUser;
     } catch (err) {
