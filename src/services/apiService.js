@@ -1,82 +1,93 @@
 import { API_ENDPOINTS } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 🛡️ Helper for timeout-protected, safe JSON fetching
-const safeFetch = async (url, options = {}, timeoutMs = 15000) => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...(options.headers || {}),
-      },
-    });
-
-    clearTimeout(timeoutId);
-
-    const text = await response.text();
-    let data = null;
+// 🛡️ Helper for timeout-protected, resilient JSON fetching with automatic retry
+const safeFetch = async (url, options = {}, timeoutMs = 40000, retryCount = 2) => {
+  for (let attempt = 0; attempt <= retryCount; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      data = text ? JSON.parse(text) : {};
-    } catch (parseErr) {
-      console.warn('Non-JSON response received from server:', text?.slice(0, 150));
-      if (response.status === 405) {
-        throw new Error('Server configuration error (405 Method Not Allowed). Please try again shortly.');
-      }
-      if (response.status === 404) {
-        throw new Error('Service endpoint temporarily unavailable. Please try again shortly.');
-      }
-      if (response.status >= 500) {
-        throw new Error('Server maintenance in progress. Please try again in a few moments.');
-      }
-      throw new Error('Unable to communicate with laundry server. Please check your network connection.');
-    }
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(options.headers || {}),
+        },
+      });
 
-    return { ok: response.ok, status: response.status, data };
-  } catch (err) {
-    clearTimeout(timeoutId);
-    const msg = (err.message || '').toLowerCase();
-    if (
-      msg.includes('unknownhostexception') ||
-      msg.includes('unable to resolve host') ||
-      msg.includes('no address associated') ||
-      msg.includes('dns')
-    ) {
-      throw new Error(
-        'DNS resolution failed. Please check your internet connection or switch from Wi-Fi to Mobile Data and try again.'
-      );
+      clearTimeout(timeoutId);
+
+      const text = await response.text();
+      let data = null;
+
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (parseErr) {
+        console.warn('Non-JSON response received from server:', text?.slice(0, 150));
+        if (response.status === 405) {
+          throw new Error('Server configuration error (405 Method Not Allowed). Please try again shortly.');
+        }
+        if (response.status === 404) {
+          throw new Error('Service endpoint temporarily unavailable. Please try again shortly.');
+        }
+        if (response.status >= 500) {
+          throw new Error('Server maintenance in progress. Please try again in a few moments.');
+        }
+        throw new Error('Unable to communicate with laundry server. Please check your network connection.');
+      }
+
+      return { ok: response.ok, status: response.status, data };
+    } catch (err) {
+      clearTimeout(timeoutId);
+
+      // If this was a transient failure and we have retries left, retry with backoff
+      if (attempt < retryCount) {
+        const delayMs = (attempt + 1) * 1200;
+        console.log(`Fetch attempt ${attempt + 1} failed (${err.message}). Retrying in ${delayMs}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+
+      const msg = (err.message || '').toLowerCase();
+      if (
+        msg.includes('unknownhostexception') ||
+        msg.includes('unable to resolve host') ||
+        msg.includes('no address associated') ||
+        msg.includes('dns')
+      ) {
+        throw new Error(
+          'DNS resolution failed. Please check your mobile data or Wi-Fi internet connection and try again.'
+        );
+      }
+      if (
+        err.name === 'AbortError' ||
+        msg.includes('cancel') ||
+        msg.includes('abort') ||
+        msg.includes('timeout') ||
+        msg.includes('timed out') ||
+        msg.includes('sockettimeoutexception')
+      ) {
+        throw new Error(
+          'Connection timed out. If you are on restricted college Wi-Fi, please switch to Mobile Data or check your connection.'
+        );
+      }
+      if (
+        msg.includes('network request failed') ||
+        msg.includes('failed to fetch') ||
+        msg.includes('network error') ||
+        msg.includes('connectexception') ||
+        msg.includes('failed to connect') ||
+        msg.includes('connection refused')
+      ) {
+        throw new Error(
+          'Unable to reach laundry server. Please check your internet connection or switch to Mobile Data.'
+        );
+      }
+      throw err;
     }
-    if (
-      err.name === 'AbortError' ||
-      msg.includes('cancel') ||
-      msg.includes('abort') ||
-      msg.includes('timeout') ||
-      msg.includes('timed out') ||
-      msg.includes('sockettimeoutexception')
-    ) {
-      throw new Error(
-        'Connection timed out. If you are on restricted college Wi-Fi, please switch to Mobile Data or check your connection.'
-      );
-    }
-    if (
-      msg.includes('network request failed') ||
-      msg.includes('failed to fetch') ||
-      msg.includes('network error') ||
-      msg.includes('connectexception') ||
-      msg.includes('failed to connect') ||
-      msg.includes('connection refused')
-    ) {
-      throw new Error(
-        'Unable to reach laundry server. Please check your internet connection or switch to Mobile Data.'
-      );
-    }
-    throw err;
   }
 };
 
