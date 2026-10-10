@@ -1,20 +1,31 @@
 import { API_ENDPOINTS } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuthToken, notifyUnauthorized } from './authToken';
+
+// Device cache of the signed-in user's tickets. The old key held every student's
+// tickets (the server used to return all of them), so it is discarded.
+export const TICKETS_CACHE_KEY = '@vastra_support_tickets_v2';
+AsyncStorage.removeItem('@vastra_support_tickets').catch(() => {});
 
 // 🛡️ Helper for timeout-protected, resilient JSON fetching with automatic retry
+// Pass `auth: false` for endpoints that must not carry the session token (login, register, reset).
 const safeFetch = async (url, options = {}, timeoutMs = 40000, retryCount = 2) => {
+  const { auth = true, ...fetchOptions } = options;
+  const token = auth ? getAuthToken() : null;
+
   for (let attempt = 0; attempt <= retryCount; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const response = await fetch(url, {
-        ...options,
+        ...fetchOptions,
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          ...(options.headers || {}),
+          ...(token ? { 'X-Auth-Token': token } : {}),
+          ...(fetchOptions.headers || {}),
         },
       });
 
@@ -37,6 +48,17 @@ const safeFetch = async (url, options = {}, timeoutMs = 40000, retryCount = 2) =
           throw new Error('Server maintenance in progress. Please try again in a few moments.');
         }
         throw new Error('Unable to communicate with laundry server. Please check your network connection.');
+      }
+
+      // Only act if the request was sent with the token that is still current; a reply to a
+      // request that started before login/restore says nothing about the current session.
+      // AuthContext only signs out if someone is actually logged in.
+      if (
+        response.status === 401 &&
+        (token || null) === getAuthToken() &&
+        ['SESSION_EXPIRED', 'AUTH_REQUIRED'].includes(data?.code)
+      ) {
+        notifyUnauthorized();
       }
 
       return { ok: response.ok, status: response.status, data };
@@ -104,6 +126,7 @@ export const apiService = {
 
     const { ok, data } = await safeFetch(API_ENDPOINTS.REGISTER, {
       method: 'POST',
+      auth: false,
       body: JSON.stringify(sanitizedData),
     });
 
@@ -118,6 +141,7 @@ export const apiService = {
 
         const retryRes = await safeFetch(API_ENDPOINTS.REGISTER, {
           method: 'POST',
+          auth: false,
           body: JSON.stringify({ ...sanitizedData, academic_year: legacyYear }),
         });
 
@@ -156,6 +180,7 @@ export const apiService = {
 
     const { ok, data } = await safeFetch(API_ENDPOINTS.LOGIN, {
       method: 'POST',
+      auth: false,
       body: JSON.stringify({
         email: cleanId,
         student_id: cleanId,
@@ -229,7 +254,7 @@ export const apiService = {
   async getTickets() {
     let localTickets = [];
     try {
-      const stored = await AsyncStorage.getItem('@vastra_support_tickets');
+      const stored = await AsyncStorage.getItem(TICKETS_CACHE_KEY);
       if (stored) localTickets = JSON.parse(stored);
     } catch (e) {}
 
@@ -241,7 +266,7 @@ export const apiService = {
         const serverIds = new Set(data.tickets.map((t) => t.id));
         const unsynced = localTickets.filter((t) => !serverIds.has(t.id));
         const merged = [...unsynced, ...data.tickets];
-        await AsyncStorage.setItem('@vastra_support_tickets', JSON.stringify(merged)).catch(() => {});
+        await AsyncStorage.setItem(TICKETS_CACHE_KEY, JSON.stringify(merged)).catch(() => {});
         return merged;
       }
     } catch (err) {
@@ -263,10 +288,10 @@ export const apiService = {
     // Save locally first for instant offline/server-down resilience
     let localTickets = [];
     try {
-      const stored = await AsyncStorage.getItem('@vastra_support_tickets');
+      const stored = await AsyncStorage.getItem(TICKETS_CACHE_KEY);
       if (stored) localTickets = JSON.parse(stored);
       localTickets = [newTicket, ...localTickets];
-      await AsyncStorage.setItem('@vastra_support_tickets', JSON.stringify(localTickets));
+      await AsyncStorage.setItem(TICKETS_CACHE_KEY, JSON.stringify(localTickets));
     } catch (e) {}
 
     // Send to server in background
@@ -287,11 +312,11 @@ export const apiService = {
   async updateTicketStatus(ticketId, newStatus) {
     // Update local storage
     try {
-      const stored = await AsyncStorage.getItem('@vastra_support_tickets');
+      const stored = await AsyncStorage.getItem(TICKETS_CACHE_KEY);
       if (stored) {
         const list = JSON.parse(stored);
         const updated = list.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t));
-        await AsyncStorage.setItem('@vastra_support_tickets', JSON.stringify(updated));
+        await AsyncStorage.setItem(TICKETS_CACHE_KEY, JSON.stringify(updated));
       }
     } catch (e) {}
 
@@ -310,11 +335,11 @@ export const apiService = {
   async deleteTicket(ticketId) {
     // Delete from local AsyncStorage
     try {
-      const stored = await AsyncStorage.getItem('@vastra_support_tickets');
+      const stored = await AsyncStorage.getItem(TICKETS_CACHE_KEY);
       if (stored) {
         const list = JSON.parse(stored);
         const filtered = list.filter((t) => t.id !== ticketId);
-        await AsyncStorage.setItem('@vastra_support_tickets', JSON.stringify(filtered));
+        await AsyncStorage.setItem(TICKETS_CACHE_KEY, JSON.stringify(filtered));
       }
     } catch (e) {}
 
@@ -329,38 +354,54 @@ export const apiService = {
     }
   },
 
-  // 10. Student Password Reset / Account Recovery
-  async resetPassword({ email, student_id, new_password }) {
-    try {
-      const { ok, data } = await safeFetch(API_ENDPOINTS.RESET_PASSWORD, {
-        method: 'POST',
-        body: JSON.stringify({
-          email: (email || '').trim(),
-          student_id: (student_id || '').trim(),
-          new_password,
-        }),
-      });
-
-      if (ok && data?.success) {
-        return data;
-      }
-
-      if (data?.error && !data.error.includes('Method not allowed') && !data.error.includes('Endpoint not found')) {
-        throw new Error(data.error);
-      }
-    } catch (err) {
-      if (
-        err.message &&
-        !err.message.includes('Method not allowed') &&
-        !err.message.includes('Endpoint not found') &&
-        !err.message.includes('Network') &&
-        !err.message.includes('Failed to fetch')
-      ) {
-        throw err;
-      }
+  // 10. Password reset, step 1: email a 6-digit code
+  async requestPasswordReset(email) {
+    const { ok, data } = await safeFetch(API_ENDPOINTS.REQUEST_PASSWORD_RESET, {
+      method: 'POST',
+      auth: false,
+      body: JSON.stringify({ email: (email || '').trim().toLowerCase() }),
+    });
+    if (!ok || !data?.success) {
+      throw new Error(data?.error || 'Could not send the reset code. Please try again.');
     }
+    return data;
+  },
 
-    return { success: true, message: 'Password reset request processed.' };
+  // 10b. Password reset, step 2: code from the email + new password
+  async resetPassword({ email, code, new_password }) {
+    const { ok, data } = await safeFetch(API_ENDPOINTS.RESET_PASSWORD, {
+      method: 'POST',
+      auth: false,
+      body: JSON.stringify({
+        email: (email || '').trim().toLowerCase(),
+        code: (code || '').trim(),
+        new_password,
+      }),
+    });
+    if (!ok || !data?.success) {
+      throw new Error(data?.error || 'Unable to reset password. Please try again.');
+    }
+    return data;
+  },
+
+  // 10c. Sign out this device on the server (best effort)
+  async logout() {
+    try {
+      await safeFetch(API_ENDPOINTS.LOGOUT, { method: 'POST' }, 10000, 0);
+    } catch (e) {}
+  },
+
+  // 10d. Permanently delete the signed-in account and all its data
+  async deleteAccount() {
+    if (!getAuthToken()) {
+      // Signed in before login tokens existed: the server cannot verify who is asking
+      throw new Error('For your security, please sign out, sign in again, and then delete your account.');
+    }
+    const { ok, data } = await safeFetch(API_ENDPOINTS.DELETE_ACCOUNT, { method: 'POST' });
+    if (!ok || !data?.success) {
+      throw new Error(data?.error || 'Could not delete your account. Please try again.');
+    }
+    return data;
   },
 
   // 11. Fetch All Registered Student Accounts for Admin Census

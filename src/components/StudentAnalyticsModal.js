@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import THEME from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 import { useLaundry } from '../context/LaundryContext';
@@ -19,6 +20,7 @@ import StatusBadge from './StatusBadge';
 const { width } = Dimensions.get('window');
 
 export const StudentAnalyticsModal = ({ visible, onClose, onSelectBooking }) => {
+  const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { bookings, refreshData } = useLaundry();
 
@@ -152,7 +154,7 @@ export const StudentAnalyticsModal = ({ visible, onClose, onSelectBooking }) => 
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
       <View style={styles.container}>
         {/* Top Header Bar */}
-        <View style={styles.header}>
+        <View style={[styles.header, Platform.OS === 'ios' && { paddingTop: insets.top + 10 }]}>
           <TouchableOpacity onPress={onClose} style={styles.backBtn} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={24} color="#0F172A" />
           </TouchableOpacity>

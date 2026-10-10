@@ -7,17 +7,25 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
 export const ImagePreviewModal = ({ visible, imageUri, onClose, title = 'Clothes Photo' }) => {
+  const insets = useSafeAreaInsets();
   if (!imageUri) return null;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View
+        style={[
+          styles.overlay,
+          Platform.OS === 'ios' && { paddingTop: Math.max(40, insets.top + 8), paddingBottom: Math.max(40, insets.bottom + 8) },
+        ]}
+      >
         {/* Top Bar */}
         <View style={styles.topBar}>
           <Text style={styles.title}>{title}</Text>

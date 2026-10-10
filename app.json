@@ -2,22 +2,24 @@
   "expo": {
     "name": "VASTRA - Hostel Laundry",
     "slug": "rvsu-svcet",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
-    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rvsu.vastra"
+      "bundleIdentifier": "com.rvsu.vastra",
+      "icon": "./assets/ios/icon-1024.png",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "CFBundleDisplayName": "VASTRA"
+      }
     },
     "android": {
       "package": "com.rvsu.vastra",
-      "versionCode": 6,
+      "versionCode": 7,
       "permissions": [
         "CAMERA"
       ],
@@ -30,17 +32,38 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow VASTRA to access the camera to scan student laundry token QR codes and capture verification photos."
+          "cameraPermission": "Allow VASTRA to access the camera to scan student laundry token QR codes and capture verification photos.",
+          "microphonePermission": "VASTRA does not record audio. The camera is used only to scan laundry token QR codes and take clothes verification photos."
         }
       ],
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Allow VASTRA to access your camera to take clothes verification photos for laundry intake."
+          "cameraPermission": "Allow VASTRA to access your camera to take clothes verification photos for laundry intake.",
+          "photosPermission": "Allow VASTRA to access your photos so you can attach pictures of your clothes to a laundry request or set your profile photo.",
+          "microphonePermission": false
         }
       ],
       "expo-status-bar",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/ios/splash-logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ],
+      "expo-secure-store"
     ],
     "web": {
       "favicon": "./assets/favicon.png"

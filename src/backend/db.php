@@ -6,7 +6,7 @@
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token, X-Requested-With");
 header("Content-Type: application/json; charset=UTF-8");
 header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: SAMEORIGIN");
@@ -17,42 +17,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Load custom config if present
-if (file_exists(__DIR__ . '/config.php')) {
-    require_once __DIR__ . '/config.php';
+// Database credentials live only in config.php on the server (never commit it).
+// Copy config.sample.php to config.php and fill in the cPanel MySQL details.
+if (!file_exists(__DIR__ . '/config.php')) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => "Server is not configured (config.php missing)."]);
+    exit();
 }
-
-$host = defined('DB_HOST') ? DB_HOST : (getenv('DB_HOST') ?: 'localhost');
-$password = defined('DB_PASS') ? DB_PASS : (getenv('DB_PASS') ?: 'yatish@2026');
-$primaryUser = defined('DB_USER') ? DB_USER : 'ommx7iasogql_yatish_laundry_user';
-$primaryDb = defined('DB_NAME') ? DB_NAME : 'ommx7iasogql_laundry_db';
+require_once __DIR__ . '/config.php';
 
 $conn = null;
 
-// High-speed direct connection with prepared statement emulation disabled for native speed
 try {
-    $conn = new PDO("mysql:host=$host;dbname=$primaryDb;charset=utf8mb4", $primaryUser, $password, [
+    $conn = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
 } catch (PDOException $e) {
-    // Fallback if primary credentials changed
-    $fallbackUsers = ['ommx7iasogql_yatish', 'yatish_laundry_user'];
-    $fallbackDbs = ['ommx7iasogql_laundry_db', 'laundry_db'];
-    foreach ($fallbackUsers as $u) {
-        foreach ($fallbackDbs as $d) {
-            try {
-                $conn = new PDO("mysql:host=$host;dbname=$d;charset=utf8mb4", $u, $password, [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-                ]);
-                break 2;
-            } catch (PDOException $e2) {
-                continue;
-            }
-        }
-    }
+    $conn = null;
 }
 
 if (!$conn) {
@@ -158,6 +141,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'init_schema') {
             INDEX idx_ticket_email (student_email),
             INDEX idx_ticket_created (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+        require_once __DIR__ . '/auth.php';
+        ensureAuthTables($conn);
 
         echo json_encode(["success" => true, "message" => "Database schema initialized successfully"]);
         exit();

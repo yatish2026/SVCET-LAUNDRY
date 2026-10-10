@@ -13,6 +13,7 @@ import {
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import THEME from '../../constants/theme';
@@ -28,12 +29,14 @@ import { useAuth } from '../../context/AuthContext';
 import { useLaundry } from '../../context/LaundryContext';
 import { apiService } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import PrivacyPolicyModal from '../common/PrivacyPolicyModal';
 import TermsConditionsModal from '../common/TermsConditionsModal';
 import RaiseTicketModal from '../../components/RaiseTicketModal';
 
 export const ProfileScreen = ({ onOpenAnalytics }) => {
   const { profile, updateProfile, signOut } = useAuth();
+  const insets = useSafeAreaInsets();
   const { bookings, tickets } = useLaundry();
 
   // Helper to parse country code and digits
@@ -332,7 +335,7 @@ export const ProfileScreen = ({ onOpenAnalytics }) => {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.5,
@@ -442,22 +445,23 @@ export const ProfileScreen = ({ onOpenAnalytics }) => {
 
   const executeAccountDeletion = async () => {
     try {
-      if (profile?.email) {
-        await apiService.post('delete_account', {
-          email: profile.email,
-          password: profile.password || 'deleted',
-        });
-      }
-      await AsyncStorage.clear();
-      signOut();
-      if (Platform.OS === 'web') {
-        window.alert('Your account and personal data have been permanently deleted.');
-      } else {
-        Alert.alert('Account Deleted', 'Your account and personal data have been permanently deleted.');
-      }
+      await apiService.deleteAccount();
     } catch (e) {
-      await AsyncStorage.clear();
-      signOut();
+      const message = e.message || 'Could not delete your account. Please check your connection and try again.';
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert('Deletion Failed', message);
+      }
+      return;
+    }
+
+    await AsyncStorage.clear();
+    signOut({ remote: false });
+    if (Platform.OS === 'web') {
+      window.alert('Your account and personal data have been permanently deleted.');
+    } else {
+      Alert.alert('Account Deleted', 'Your account and personal data have been permanently deleted.');
     }
   };
 
@@ -595,8 +599,8 @@ export const ProfileScreen = ({ onOpenAnalytics }) => {
             <Ionicons name="bar-chart" size={22} color="#4338CA" />
           </View>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.analyticsShortcutTitle}>Laundry Analytics & Wash Trends</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+              <Text style={[styles.analyticsShortcutTitle, { flexShrink: 1 }]}>Laundry Analytics & Wash Trends</Text>
               <View style={styles.analyticsBadgeNew}>
                 <Text style={styles.analyticsBadgeNewText}>DEDICATED HUB</Text>
               </View>
@@ -747,7 +751,7 @@ export const ProfileScreen = ({ onOpenAnalytics }) => {
       {/* App Version Info */}
       <View style={styles.footerVersion}>
         <Text style={styles.footerVersionText}>
-          VASTRA v1.0.0 • RVS University Hostel Laundry Portal
+          VASTRA v{Constants.expoConfig?.version} • RVS University Hostel Laundry Portal
         </Text>
       </View>
 
@@ -760,7 +764,7 @@ export const ProfileScreen = ({ onOpenAnalytics }) => {
       >
         <View style={styles.editModalContainer}>
           {/* Edit Modal Header */}
-          <View style={styles.editModalHeader}>
+          <View style={[styles.editModalHeader, Platform.OS === 'ios' && { paddingTop: insets.top + 10 }]}>
             <TouchableOpacity onPress={() => setEditModalVisible(false)} style={styles.editModalBackBtn}>
               <Ionicons name="arrow-back" size={22} color="#0F172A" />
             </TouchableOpacity>

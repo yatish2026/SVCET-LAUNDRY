@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import THEME from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 import { useLaundry } from '../context/LaundryContext';
@@ -24,6 +25,7 @@ export const SideMenuDrawer = ({
   onOpenAnalytics,
   onOpenMonthlyReport,
 }) => {
+  const insets = useSafeAreaInsets();
   const { profile, role, signOut, isStaff, setRole } = useAuth();
   const { bookings } = useLaundry();
 
@@ -75,7 +77,7 @@ export const SideMenuDrawer = ({
         {/* Drawer Content Panel (Slides from Left) */}
         <View style={styles.drawerPanel}>
           {/* Top Profile Header */}
-          <View style={styles.profileHeader}>
+          <View style={[styles.profileHeader, Platform.OS === 'ios' && { paddingTop: insets.top + 12 }]}>
             <View style={styles.profileRow}>
               <View style={styles.avatarCircle}>
                 <Text style={styles.avatarText}>

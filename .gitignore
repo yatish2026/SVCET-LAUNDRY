@@ -9,8 +9,8 @@ web-build/
 expo-env.d.ts
 
 # Native
-ios/
-android/
+/ios/
+/android/
 *.jks
 *.p8
 *.p12
@@ -30,3 +30,6 @@ src/backend/config.php
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+
+# iOS signing secrets
+Store Builds/iOS/05-Signing/

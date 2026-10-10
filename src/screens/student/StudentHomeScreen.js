@@ -40,9 +40,16 @@ export const StudentHomeScreen = ({
   const studentYear = profile?.academic_year || '1st Year B.Tech';
   const yearConfig = useMemo(() => getStudentSchedule(profile), [profile]);
 
-  // Current Date formatting
-  const today = new Date();
-  const nextCollectionDateStr = `${yearConfig.dropoffDay}, ${today.toLocaleDateString('en-US', {
+  // Next date that falls on the student's drop-off weekday (today if it matches)
+  const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const nextCollectionDate = new Date();
+  const dropoffDayIndex = WEEKDAYS.indexOf(yearConfig.dropoffDay);
+  if (dropoffDayIndex >= 0) {
+    nextCollectionDate.setDate(
+      nextCollectionDate.getDate() + ((dropoffDayIndex - nextCollectionDate.getDay() + 7) % 7)
+    );
+  }
+  const nextCollectionDateStr = `${yearConfig.dropoffDay}, ${nextCollectionDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
   })}`;

@@ -59,7 +59,9 @@ export const AuthScreen = () => {
   // Forgot Password States
   const [forgotModalVisible, setForgotModalVisible] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
-  const [resetStudentId, setResetStudentId] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [resetCodeSent, setResetCodeSent] = useState(false);
+  const [sendingResetCode, setSendingResetCode] = useState(false);
   const [newResetPassword, setNewResetPassword] = useState('');
   const [confirmResetPassword, setConfirmResetPassword] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -104,13 +106,30 @@ export const AuthScreen = () => {
     }
   };
 
+  const handleSendResetCode = async () => {
+    if (!resetEmail.trim()) {
+      Alert.alert('Missing Email', 'Please enter your registered Email ID / Gmail.');
+      return;
+    }
+    try {
+      setSendingResetCode(true);
+      const res = await apiService.requestPasswordReset(resetEmail.trim());
+      setResetCodeSent(true);
+      Alert.alert('Check Your Email', res.message || 'A 6-digit code has been sent to your email.');
+    } catch (err) {
+      Alert.alert('Could Not Send Code', err.message || 'Please try again.');
+    } finally {
+      setSendingResetCode(false);
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!resetEmail.trim()) {
       Alert.alert('Missing Email', 'Please enter your registered Email ID / Gmail.');
       return;
     }
-    if (!resetStudentId.trim()) {
-      Alert.alert('Missing Roll ID', 'Please enter your Student Roll Number or Phone.');
+    if (!/^\d{6}$/.test(resetCode.trim())) {
+      Alert.alert('Missing Code', 'Please enter the 6-digit code from your email.');
       return;
     }
     if (!newResetPassword || newResetPassword.length < 6) {
@@ -126,12 +145,14 @@ export const AuthScreen = () => {
       setResetting(true);
       await apiService.resetPassword({
         email: resetEmail.trim(),
-        student_id: resetStudentId.trim(),
+        code: resetCode.trim(),
         new_password: newResetPassword,
       });
 
       setResetting(false);
       setForgotModalVisible(false);
+      setResetCode('');
+      setResetCodeSent(false);
       setPassword(newResetPassword);
       setEmail(resetEmail.trim());
 
@@ -145,7 +166,7 @@ export const AuthScreen = () => {
       }
     } catch (err) {
       setResetting(false);
-      Alert.alert('Reset Failed', err.message || 'Unable to reset password. Please verify your Email and Roll Number.');
+      Alert.alert('Reset Failed', err.message || 'Unable to reset password. Please check the code and try again.');
     }
   };
 
@@ -968,7 +989,7 @@ export const AuthScreen = () => {
               showsVerticalScrollIndicator={true}
             >
               <Text style={{ fontSize: 13, color: '#64748B', lineHeight: 18, marginBottom: 16 }}>
-                Enter your registered Email ID and Student Roll Number / Phone to verify your identity and set a new password.
+                Enter your registered Email ID and tap Send Code. We will email you a 6-digit code to set a new password.
               </Text>
 
               {/* Email */}
@@ -988,17 +1009,36 @@ export const AuthScreen = () => {
                 </View>
               </View>
 
-              {/* Roll ID / Phone */}
+              <TouchableOpacity
+                style={[styles.primaryBtn, sendingResetCode && styles.btnDisabled, { marginTop: 0, marginBottom: 16 }]}
+                onPress={handleSendResetCode}
+                disabled={sendingResetCode}
+                activeOpacity={0.85}
+              >
+                {sendingResetCode ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.primaryBtnText}>{resetCodeSent ? 'Resend Code' : 'Send Code'}</Text>
+                    <Ionicons name="mail-unread-outline" size={18} color="#FFF" style={{ marginLeft: 6 }} />
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {/* 6-digit code from email */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Student Roll ID or Phone *</Text>
+                <Text style={styles.inputLabel}>6-Digit Code from Email *</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons name="card-outline" size={18} color="#64748B" style={styles.inputIcon} />
+                  <Ionicons name="keypad-outline" size={18} color="#64748B" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="e.g. 21RVS045"
+                    placeholder="e.g. 482913"
                     placeholderTextColor="#94A3B8"
-                    value={resetStudentId}
-                    onChangeText={setResetStudentId}
+                    value={resetCode}
+                    onChangeText={(v) => setResetCode(v.replace(/[^0-9]/g, '').slice(0, 6))}
+                    keyboardType="number-pad"
+                    textContentType="oneTimeCode"
+                    maxLength={6}
                   />
                 </View>
               </View>

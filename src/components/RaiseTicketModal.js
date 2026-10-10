@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import THEME from '../constants/theme';
@@ -28,6 +29,7 @@ const TICKET_CATEGORIES = [
 ];
 
 export const RaiseTicketModal = ({ visible, onClose }) => {
+  const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { createTicket } = useLaundry();
 
@@ -150,7 +152,7 @@ export const RaiseTicketModal = ({ visible, onClose }) => {
       transparent={false}
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, Platform.OS === 'ios' && { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.backBtn} activeOpacity={0.7}>

@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiService } from '../services/apiService';
+import { apiService, TICKETS_CACHE_KEY } from '../services/apiService';
+import {
+  loadAuthToken,
+  saveAuthToken,
+  clearAuthToken,
+  setUnauthorizedHandler,
+} from '../services/authToken';
 
 const AuthContext = createContext({});
 
@@ -15,6 +21,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const restoreSession = async () => {
       try {
+        await loadAuthToken();
         const storedUserJson = await AsyncStorage.getItem('@campuswash_user_session');
         if (storedUserJson) {
           const storedUser = JSON.parse(storedUserJson);
@@ -39,6 +46,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await apiService.login(email, password);
       const authenticatedUser = response.user;
+      await saveAuthToken(response.token);
 
       setUser(authenticatedUser);
       setProfile(authenticatedUser);
@@ -68,6 +76,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await apiService.register(userData);
       const registeredUser = response.user;
+      await saveAuthToken(response.token);
 
       setUser(registeredUser);
       setProfile(registeredUser);
@@ -91,9 +100,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Sign Out
-  const signOut = async () => {
+  // Sign Out. `remote: false` skips telling the server (used when the session already expired).
+  const signOut = async ({ remote = true } = {}) => {
     setIsLoading(true);
+    // Reads the token synchronously before it is cleared below; no need to wait for the server
+    if (remote) apiService.logout();
+    await clearAuthToken();
     setUser(null);
     setProfile(null);
     setRole('student');
@@ -101,11 +113,23 @@ export const AuthProvider = ({ children }) => {
     try {
       await AsyncStorage.removeItem('@campuswash_user_session');
       await AsyncStorage.removeItem('@vastra_user_avatar');
+      await AsyncStorage.removeItem(TICKETS_CACHE_KEY);
     } catch (e) {
       console.log('Error clearing session:', e);
     }
     setIsLoading(false);
   };
+
+  // Server says the session is missing/expired: return to the login screen,
+  // but only if someone is logged in (logged-out background polls also get 401s)
+  const userRef = useRef(null);
+  userRef.current = user;
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      if (userRef.current) signOut({ remote: false });
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   // Update Profile across the entire app instantly
   const updateProfile = async (updatedUserData) => {

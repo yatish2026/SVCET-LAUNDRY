@@ -9,6 +9,7 @@
  */
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/auth.php';
 
 // ==========================================
 // 🛡️ CAMPUS-OPTIMIZED HIGH-CONCURRENCY RATE LIMITING
@@ -179,6 +180,10 @@ $rawBody = file_get_contents('php://input');
 $body = json_decode($rawBody, true) ?? [];
 
 try {
+    // Every action except these needs to know who is calling
+    $publicActions = ['register', 'login', 'logout', 'request_password_reset', 'reset_password'];
+    $authUser = in_array($action, $publicActions, true) ? null : getAuthUser($conn);
+
     switch ($action) {
         // ----------------------------------------------------
         // 1. REGISTER STUDENT / STAFF
@@ -200,7 +205,9 @@ try {
             $hostelBlock = validateString($body['hostel_block'] ?? '', 'Hostel Block', 2, 60);
             $roomNumber = validateString($body['room_number'] ?? '', 'Room Number', 1, 20);
             $phone = validatePhone($body['phone_number'] ?? '');
-            $role = in_array($body['role'] ?? '', ['student', 'staff', 'admin']) ? $body['role'] : 'student';
+            // Self-registration always creates a student. Staff/admin roles are set by the
+            // college directly in the database (laundry_users.role), never by the app.
+            $role = 'student';
 
             // Check duplicate email
             $chk = $conn->prepare("SELECT id FROM laundry_users WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))");
@@ -231,9 +238,11 @@ try {
             $ins->execute([$userId, $email, $hash, $fullName, $role, $studentId, $academicYear, $hostelBlock, $roomNumber, $phone]);
 
             clearAuthRateLimit($conn, $email);
+            $token = issueSession($conn, $userId);
 
             echo json_encode([
                 "success" => true,
+                "token" => $token,
                 "user" => [
                     "id" => $userId,
                     "email" => $email,
@@ -323,11 +332,21 @@ try {
 
             clearAuthRateLimit($conn, $rawIdentifier);
             unset($user['password_hash']);
+            $token = issueSession($conn, $user['id']);
 
             echo json_encode([
                 "success" => true,
+                "token" => $token,
                 "user" => $user
             ]);
+            break;
+
+        // ----------------------------------------------------
+        // 2b. LOGOUT (revokes this device's token)
+        // ----------------------------------------------------
+        case 'logout':
+            revokeSession($conn);
+            echo json_encode(["success" => true]);
             break;
 
         // ----------------------------------------------------
@@ -352,6 +371,18 @@ try {
             $dropoffSlot = !empty($body['dropoff_slot_time']) ? htmlspecialchars(substr($body['dropoff_slot_time'], 0, 100), ENT_QUOTES, 'UTF-8') : 'Dropoff Scheduled';
             $pickupSlot = !empty($body['pickup_slot_time']) ? htmlspecialchars(substr($body['pickup_slot_time'], 0, 100), ENT_QUOTES, 'UTF-8') : 'Pickup in 2 Days';
             $instructions = htmlspecialchars(substr($body['special_instructions'] ?? '', 0, 500), ENT_QUOTES, 'UTF-8');
+
+            // A signed-in student can only book for themselves: identity comes from the token
+            requireAuthOrLegacy($authUser);
+            if ($authUser && !isStaffUser($authUser)) {
+                $userId = $authUser['id'];
+                $studentEmail = $authUser['email'];
+                $studentName = $authUser['full_name'] ?: $studentName;
+                $studentId = $authUser['student_id'] ?: $studentId;
+                $hostelBlock = $authUser['hostel_block'] ?: $hostelBlock;
+                $roomNumber = $authUser['room_number'] ?: $roomNumber;
+                $phone = $authUser['phone_number'] ?: $phone;
+            }
 
             $bookingId = 'bkg_' . uniqid();
             $tokenNumber = 'LND-' . str_pad(rand(1000, 9999), 4, '0', STR_PAD_LEFT);
@@ -396,7 +427,18 @@ try {
         // 4. GET BOOKINGS
         // ----------------------------------------------------
         case 'get_bookings':
-            $stmt = $conn->query("SELECT * FROM laundry_bookings ORDER BY created_at DESC");
+            requireAuthOrLegacy($authUser);
+            if ($authUser && !isStaffUser($authUser)) {
+                // Students only ever receive their own bookings
+                $stmt = $conn->prepare("SELECT * FROM laundry_bookings
+                    WHERE user_id = ?
+                       OR LOWER(student_email) = LOWER(?)
+                       OR (? <> '' AND LOWER(student_id) = LOWER(?))
+                    ORDER BY created_at DESC");
+                $stmt->execute([$authUser['id'], $authUser['email'], $authUser['student_id'], $authUser['student_id']]);
+            } else {
+                $stmt = $conn->query("SELECT * FROM laundry_bookings ORDER BY created_at DESC");
+            }
             $rows = $stmt->fetchAll();
             $results = [];
 
@@ -413,6 +455,7 @@ try {
         // 5. UPDATE STATUS
         // ----------------------------------------------------
         case 'update_status':
+            requireStaffOrLegacy($authUser);
             $bookingId = validateString($body['booking_id'] ?? '', 'Booking ID', 1, 64);
             $statusParam = $body['new_status'] ?? $body['status'] ?? '';
             $newStatus = validateStatus($statusParam);
@@ -428,8 +471,15 @@ try {
         // 6. GET NOTIFICATIONS
         // ----------------------------------------------------
         case 'get_notifications':
+            requireAuthOrLegacy($authUser);
             $phone = $body['phone_number'] ?? $_GET['phone_number'] ?? '';
-            if (!empty($phone)) {
+            if ($authUser && !isStaffUser($authUser)) {
+                $stmt = $conn->prepare("SELECT * FROM laundry_notifications
+                    WHERE recipient_role IN ('student', 'all')
+                      AND (target_user_phone = '' OR target_user_phone = ?)
+                    ORDER BY created_at DESC LIMIT 50");
+                $stmt->execute([$authUser['phone_number']]);
+            } elseif (!empty($phone)) {
                 $stmt = $conn->prepare("SELECT * FROM laundry_notifications WHERE phone_number = ? ORDER BY created_at DESC LIMIT 50");
                 $stmt->execute([$phone]);
             } else {
@@ -443,6 +493,7 @@ try {
         // 7. MARK NOTIFICATION READ
         // ----------------------------------------------------
         case 'mark_notification_read':
+            requireAuthOrLegacy($authUser);
             $notifId = $body['notification_id'] ?? '';
             if (!empty($notifId)) {
                 $upd = $conn->prepare("UPDATE laundry_notifications SET is_read = 1 WHERE id = ?");
@@ -455,22 +506,40 @@ try {
         // 8. GOOGLE PLAY COMPLIANCE: DELETE ACCOUNT & ALL DATA
         // ----------------------------------------------------
         case 'delete_account':
-            $email = validateEmail($body['email'] ?? '');
-            $password = $body['password'] ?? '';
+            if ($authUser) {
+                // Signed in: the token proves who is asking
+                $user = $authUser;
+            } else {
+                // Website deletion form / old app: email + password
+                $email = validateEmail($body['email'] ?? '');
+                $password = $body['password'] ?? '';
 
-            $chk = $conn->prepare("SELECT id, password_hash, phone_number FROM laundry_users WHERE email = ?");
-            $chk->execute([$email]);
-            $user = $chk->fetch();
+                $chk = $conn->prepare("SELECT id, email, student_id, password_hash, phone_number FROM laundry_users WHERE email = ?");
+                $chk->execute([$email]);
+                $user = $chk->fetch();
 
-            if (!$user || !password_verify($password, $user['password_hash'])) {
-                http_response_code(401);
-                echo json_encode(["success" => false, "error" => "Invalid credentials for account deletion."]);
-                exit();
+                if (!$user || !password_verify($password, $user['password_hash'])) {
+                    http_response_code(401);
+                    echo json_encode(["success" => false, "error" => "Invalid credentials for account deletion."]);
+                    exit();
+                }
             }
 
-            // Permanently delete user and their associated bookings
-            $delBookings = $conn->prepare("DELETE FROM laundry_bookings WHERE phone_number = ?");
-            $delBookings->execute([$user['phone_number']]);
+            // Permanently delete the user and everything linked to them
+            $delBookings = $conn->prepare("DELETE FROM laundry_bookings
+                WHERE user_id = ? OR LOWER(student_email) = LOWER(?) OR (? <> '' AND phone_number = ?)");
+            $delBookings->execute([$user['id'], $user['email'], $user['phone_number'], $user['phone_number']]);
+
+            try {
+                $delTickets = $conn->prepare("DELETE FROM laundry_tickets WHERE LOWER(student_email) = LOWER(?)");
+                $delTickets->execute([$user['email']]);
+                $delResets = $conn->prepare("DELETE FROM laundry_password_resets WHERE email = ?");
+                $delResets->execute([strtolower($user['email'])]);
+            } catch (PDOException $e) {
+                // Tables may not exist yet on older installs
+            }
+
+            revokeAllSessions($conn, $user['id']);
 
             $delUser = $conn->prepare("DELETE FROM laundry_users WHERE id = ?");
             $delUser->execute([$user['id']]);
@@ -506,7 +575,13 @@ try {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
-            $stmt = $conn->query("SELECT * FROM laundry_tickets ORDER BY created_at DESC");
+            requireAuthOrLegacy($authUser);
+            if ($authUser && !isStaffUser($authUser)) {
+                $stmt = $conn->prepare("SELECT * FROM laundry_tickets WHERE LOWER(student_email) = LOWER(?) ORDER BY created_at DESC");
+                $stmt->execute([$authUser['email']]);
+            } else {
+                $stmt = $conn->query("SELECT * FROM laundry_tickets ORDER BY created_at DESC");
+            }
             $tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             echo json_encode(["success" => true, "tickets" => $tickets]);
@@ -551,6 +626,16 @@ try {
             $photo = $body['photo_uri'] ?? null;
             $status = 'open';
 
+            requireAuthOrLegacy($authUser);
+            if ($authUser && !isStaffUser($authUser)) {
+                $sName = $authUser['full_name'] ?: $sName;
+                $sEmail = $authUser['email'];
+                $sId = $authUser['student_id'];
+                $rNum = $authUser['room_number'];
+                $hBlock = $authUser['hostel_block'];
+                $pNum = $authUser['phone_number'];
+            }
+
             $ins = $conn->prepare("INSERT INTO laundry_tickets (id, student_name, student_email, student_id, room_number, hostel_block, phone_number, category, category_id, title, description, photo_uri, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $ins->execute([$tId, $sName, $sEmail, $sId, $rNum, $hBlock, $pNum, $cat, $catId, $title, $desc, $photo, $status]);
 
@@ -584,6 +669,7 @@ try {
                 exit();
             }
 
+            requireStaffOrLegacy($authUser);
             $tId = $body['ticket_id'] ?? '';
             $status = in_array($body['status'] ?? '', ['open', 'in_progress', 'resolved']) ? $body['status'] : 'resolved';
 
@@ -606,6 +692,7 @@ try {
                 exit();
             }
 
+            requireStaffOrLegacy($authUser);
             $tId = $body['ticket_id'] ?? '';
             if (empty($tId)) {
                 http_response_code(400);
@@ -619,6 +706,45 @@ try {
             echo json_encode(["success" => true, "message" => "Ticket deleted successfully."]);
             break;
 
+        // ----------------------------------------------------
+        // 9. PASSWORD RESET STEP 1: email a one-time code
+        // ----------------------------------------------------
+        case 'request_password_reset':
+            if ($method !== 'POST') {
+                http_response_code(405);
+                echo json_encode(["success" => false, "error" => "Method not allowed"]);
+                exit();
+            }
+
+            $email = validateEmail($body['email'] ?? '');
+            checkRateLimit($conn, 'auth', 'reset:' . $email);
+
+            $chk = $conn->prepare("SELECT id, full_name FROM laundry_users WHERE LOWER(email) = LOWER(?)");
+            $chk->execute([$email]);
+            $user = $chk->fetch();
+
+            if ($user) {
+                $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+                withAuthTables($conn, function () use ($conn, $email, $code) {
+                    $up = $conn->prepare("REPLACE INTO laundry_password_resets (email, code_hash, attempts, expires_at, created_at)
+                        VALUES (?, ?, 0, DATE_ADD(NOW(), INTERVAL " . RESET_CODE_MINUTES . " MINUTE), NOW())");
+                    $up->execute([$email, hash('sha256', $code)]);
+                });
+                sendResetCodeEmail($email, $user['full_name'], $code);
+                // Counts towards the per-account limit so codes cannot be spammed
+                recordFailedAuth($conn, 'reset:' . $email);
+            }
+
+            // Same answer whether or not the account exists
+            echo json_encode([
+                "success" => true,
+                "message" => "If an account exists for this email, a 6-digit code has been sent. Check your inbox and spam folder."
+            ]);
+            break;
+
+        // ----------------------------------------------------
+        // 10. PASSWORD RESET STEP 2: code + new password
+        // ----------------------------------------------------
         case 'reset_password':
             if ($method !== 'POST') {
                 http_response_code(405);
@@ -627,41 +753,70 @@ try {
             }
 
             $email = validateEmail($body['email'] ?? '');
-            $studentId = trim($body['student_id'] ?? '');
             $newPassword = $body['new_password'] ?? '';
+            $code = preg_replace('/[^0-9]/', '', (string)($body['code'] ?? ''));
 
-            if (strlen($newPassword) < 6) {
+            if (strlen($newPassword) < 6 || strlen($newPassword) > 100) {
                 http_response_code(422);
                 echo json_encode(["success" => false, "error" => "New password must be at least 6 characters."]);
                 exit();
             }
 
-            // Verify user by email and student_id
-            $chk = $conn->prepare("SELECT id FROM laundry_users WHERE email = ? AND (student_id = ? OR phone_number = ?)");
-            $chk->execute([$email, $studentId, $studentId]);
-            $user = $chk->fetch();
+            if ($code === '') {
+                // Old app versions verify with roll number / phone instead of an emailed code
+                if (!ALLOW_LEGACY_CLIENTS) {
+                    http_response_code(400);
+                    echo json_encode(["success" => false, "error" => "Please update the VASTRA app to reset your password."]);
+                    exit();
+                }
+                $studentId = trim($body['student_id'] ?? '');
+                $chk = $conn->prepare("SELECT id FROM laundry_users WHERE email = ? AND ? <> '' AND (student_id = ? OR phone_number = ?)");
+                $chk->execute([$email, $studentId, $studentId, $studentId]);
+                $user = $chk->fetch();
+                if (!$user) {
+                    http_response_code(400);
+                    echo json_encode(["success" => false, "error" => "Email and Roll ID / Phone do not match a registered account."]);
+                    exit();
+                }
+            } else {
+                $row = withAuthTables($conn, function () use ($conn, $email) {
+                    $q = $conn->prepare("SELECT code_hash, attempts, expires_at > NOW() AS valid FROM laundry_password_resets WHERE email = ?");
+                    $q->execute([$email]);
+                    return $q->fetch();
+                });
 
-            if (!$user) {
-                // Check if email alone exists to give helpful feedback
-                $chkEmail = $conn->prepare("SELECT id FROM laundry_users WHERE email = ?");
-                $chkEmail->execute([$email]);
-                $userByEmail = $chkEmail->fetch();
-
-                if (!$userByEmail) {
-                    http_response_code(404);
-                    echo json_encode(["success" => false, "error" => "No account found with this email address."]);
+                if (!$row || !$row['valid'] || $row['attempts'] >= RESET_CODE_MAX_ATTEMPTS) {
+                    http_response_code(400);
+                    echo json_encode(["success" => false, "error" => "This code has expired. Please request a new code."]);
+                    exit();
+                }
+                if (!hash_equals($row['code_hash'], hash('sha256', $code))) {
+                    $inc = $conn->prepare("UPDATE laundry_password_resets SET attempts = attempts + 1 WHERE email = ?");
+                    $inc->execute([$email]);
+                    http_response_code(400);
+                    echo json_encode(["success" => false, "error" => "Incorrect code. Please check the email and try again."]);
                     exit();
                 }
 
-                http_response_code(400);
-                echo json_encode(["success" => false, "error" => "Student Roll ID / Phone does not match your registered account."]);
-                exit();
+                $chk = $conn->prepare("SELECT id FROM laundry_users WHERE LOWER(email) = LOWER(?)");
+                $chk->execute([$email]);
+                $user = $chk->fetch();
+                $done = $conn->prepare("DELETE FROM laundry_password_resets WHERE email = ?");
+                $done->execute([$email]);
+                if (!$user) {
+                    http_response_code(400);
+                    echo json_encode(["success" => false, "error" => "No account found with this email address."]);
+                    exit();
+                }
             }
 
-            // Update password hash
             $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
             $upd = $conn->prepare("UPDATE laundry_users SET password_hash = ? WHERE id = ?");
             $upd->execute([$newHash, $user['id']]);
+
+            // Sign out every device that used the old password
+            revokeAllSessions($conn, $user['id']);
+            clearAuthRateLimit($conn, 'reset:' . $email);
 
             echo json_encode([
                 "success" => true,
@@ -670,6 +825,7 @@ try {
             break;
 
         case 'get_students_census':
+            requireStaffOrLegacy($authUser);
             $stmt = $conn->query("SELECT id, email, full_name, role, student_id, academic_year, hostel_block, room_number, phone_number, created_at FROM laundry_users ORDER BY created_at DESC");
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
             echo json_encode(["success" => true, "users" => $users]);
@@ -684,6 +840,7 @@ try {
     http_response_code(422);
     echo json_encode(["success" => false, "error" => $e->getMessage()]);
 } catch (Exception $e) {
+    error_log('VASTRA API error [' . $action . ']: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(["success" => false, "error" => $e->getMessage()]);
+    echo json_encode(["success" => false, "error" => "Something went wrong on the server. Please try again."]);
 }

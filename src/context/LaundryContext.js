@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/apiService';
 import { calculateYearSchedule } from '../constants/schedule';
+import { useAuth } from './AuthContext';
 
 const LaundryContext = createContext({});
 
 export const LaundryProvider = ({ children }) => {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [tickets, setTickets] = useState([]);
@@ -33,12 +35,20 @@ export const LaundryProvider = ({ children }) => {
     }
   }, []);
 
-  // Poll server every 25 seconds for light background synchronization without overloading cPanel server
+  // Poll server every 25 seconds for light background synchronization without overloading cPanel server.
+  // Only while someone is signed in, and only after the saved session (and its token) has been restored.
   useEffect(() => {
+    if (authLoading) return undefined;
+    if (!isAuthenticated) {
+      setBookings([]);
+      setNotifications([]);
+      setTickets([]);
+      return undefined;
+    }
     refreshData();
     const interval = setInterval(refreshData, 25000);
     return () => clearInterval(interval);
-  }, [refreshData]);
+  }, [refreshData, isAuthenticated, authLoading]);
 
   // Create a new laundry booking
   const createBooking = async ({
