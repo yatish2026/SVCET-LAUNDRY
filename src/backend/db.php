@@ -35,7 +35,27 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
 } catch (PDOException $e) {
-    $conn = null;
+    // Intelligent fallback for cPanel prefix/case variations
+    $fallbackUsers = [DB_USER, 'yatish_laundry_user', 'ommx7iasogql_yatish_laundry_user'];
+    $fallbackDbs = [DB_NAME, 'laundry_db', 'ommx7iasogql_laundry_db'];
+    $fallbackPasses = [DB_PASS, 'Yatish@2026', 'yatish@2026'];
+
+    foreach ($fallbackUsers as $u) {
+        foreach ($fallbackDbs as $d) {
+            foreach ($fallbackPasses as $p) {
+                try {
+                    $conn = new PDO("mysql:host=" . DB_HOST . ";dbname=" . $d . ";charset=utf8mb4", $u, $p, [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                        PDO::ATTR_EMULATE_PREPARES => false,
+                    ]);
+                    break 3;
+                } catch (PDOException $e2) {
+                    continue;
+                }
+            }
+        }
+    }
 }
 
 if (!$conn) {
